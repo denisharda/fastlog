@@ -1,0 +1,113 @@
+import Purchases, { LOG_LEVEL, PurchasesPackage } from 'react-native-purchases';
+import { Platform } from 'react-native';
+
+export const PRO_ENTITLEMENT = 'pro';
+
+export const PRODUCT_IDS = {
+  monthly: 'fastai_pro_monthly',
+  annual: 'fastai_pro_annual',
+} as const;
+
+/**
+ * Initialize RevenueCat SDK. Call once at app startup (before auth).
+ */
+export function initRevenueCat(): void {
+  if (Platform.OS !== 'ios') return;
+
+  const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY!;
+
+  if (__DEV__) {
+    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+  }
+
+  Purchases.configure({ apiKey });
+}
+
+/**
+ * Identify the current user to RevenueCat after sign-in.
+ */
+export async function identifyRevenueCatUser(userId: string): Promise<void> {
+  try {
+    await Purchases.logIn(userId);
+  } catch (error) {
+    console.error('[RevenueCat] Failed to identify user:', error);
+  }
+}
+
+/**
+ * Reset RevenueCat user on sign-out.
+ */
+export async function resetRevenueCatUser(): Promise<void> {
+  try {
+    await Purchases.logOut();
+  } catch (error) {
+    console.error('[RevenueCat] Failed to reset user:', error);
+  }
+}
+
+/**
+ * Check if the current user has an active Pro entitlement.
+ * Always reads from RevenueCat — never cache in Supabase.
+ */
+export async function getIsProUser(): Promise<boolean> {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    return (
+      customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined
+    );
+  } catch (error) {
+    console.error('[RevenueCat] Failed to get customer info:', error);
+    return false;
+  }
+}
+
+/**
+ * Fetch available packages from RevenueCat.
+ */
+export async function getOfferings(): Promise<PurchasesPackage[]> {
+  try {
+    const offerings = await Purchases.getOfferings();
+    return offerings.current?.availablePackages ?? [];
+  } catch (error) {
+    console.error('[RevenueCat] Failed to get offerings:', error);
+    return [];
+  }
+}
+
+/**
+ * Purchase a package and return whether the user is now Pro.
+ */
+export async function purchasePackage(
+  pkg: PurchasesPackage
+): Promise<{ success: boolean; isPro: boolean }> {
+  try {
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    const isPro = customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined;
+    return { success: true, isPro };
+  } catch (error: unknown) {
+    // User cancelled — not a real error
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'userCancelled' in error &&
+      (error as { userCancelled: boolean }).userCancelled
+    ) {
+      return { success: false, isPro: false };
+    }
+    console.error('[RevenueCat] Purchase failed:', error);
+    return { success: false, isPro: false };
+  }
+}
+
+/**
+ * Restore previous purchases and return whether the user is now Pro.
+ */
+export async function restorePurchases(): Promise<boolean> {
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+    return customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined;
+  } catch (error) {
+    console.error('[RevenueCat] Restore failed:', error);
+    return false;
+  }
+}
