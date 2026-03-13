@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFastingStore } from '../stores/fastingStore';
 import { useUserStore } from '../stores/userStore';
 import { getCurrentPhase, FastingPhase } from '../constants/phases';
@@ -7,6 +8,7 @@ import * as Crypto from 'expo-crypto';
 import {
   scheduleStartNotification,
   scheduleCompletionNotification,
+  schedulePhaseNotifications,
   scheduleCheckinNotifications,
   cancelAllNotifications,
 } from '../lib/notifications';
@@ -37,6 +39,7 @@ interface UseFastingReturn {
  * calls block the UI. Supabase is written to in the background.
  */
 export function useFasting(): UseFastingReturn {
+  const queryClient = useQueryClient();
   const { activeFast, startFast: storeStart, stopFast: storeStop, setNotificationIds } = useFastingStore();
   const { profile, isPro } = useUserStore();
 
@@ -104,21 +107,32 @@ export function useFasting(): UseFastingReturn {
             })
             .then(({ error: dbError }) => {
               if (dbError) console.error('[useFasting] DB insert error:', dbError);
+              else queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
             });
         }
 
-        // Schedule notifications (Pro only)
-        if (isPro) {
-          const start = new Date(startedAt);
-          const [notifIds] = await Promise.all([
-            scheduleCheckinNotifications(start, hours),
-            scheduleStartNotification(),
-            scheduleCompletionNotification(
-              new Date(start.getTime() + hours * 3600 * 1000)
-            ),
-          ]);
-          setNotificationIds(notifIds);
-        }
+        // Schedule notifications
+        const start = new Date(startedAt);
+        const endTime = new Date(start.getTime() + hours * 3600 * 1000);
+
+        // Free notifications for all users: start, phases, completion
+        const freeNotifPromises = [
+          scheduleStartNotification(),
+          schedulePhaseNotifications(start, hours),
+          scheduleCompletionNotification(endTime),
+        ];
+
+        // Pro-only: AI coach check-in notifications
+        const proNotifPromise = isPro
+          ? scheduleCheckinNotifications(start, hours)
+          : Promise.resolve([]);
+
+        const [, phaseIds, , checkinIds] = await Promise.all([
+          ...freeNotifPromises,
+          proNotifPromise,
+        ]);
+
+        setNotificationIds([...phaseIds, ...checkinIds]);
       } catch (err) {
         setError('Failed to start fast. Please try again.');
         console.error('[useFasting] startFast error:', err);
@@ -126,7 +140,7 @@ export function useFasting(): UseFastingReturn {
         setIsLoading(false);
       }
     },
-    [profile, isPro, storeStart, setNotificationIds]
+    [profile, isPro, storeStart, setNotificationIds, queryClient]
   );
 
   const stopFast = useCallback(
@@ -163,6 +177,7 @@ export function useFasting(): UseFastingReturn {
             .eq('id', activeFast.sessionId)
             .then(({ error: dbError }) => {
               if (dbError) console.error('[useFasting] DB update error:', dbError);
+              else queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
             });
         }
       } catch (err) {
@@ -172,7 +187,7 @@ export function useFasting(): UseFastingReturn {
         setIsLoading(false);
       }
     },
-    [activeFast, profile, elapsedHours, storeStop]
+    [activeFast, profile, elapsedHours, storeStop, queryClient]
   );
 
   return {

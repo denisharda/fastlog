@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useFasting } from '../../hooks/useFasting';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
+import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { TimerControls } from '../../components/timer/TimerControls';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
@@ -41,6 +42,7 @@ export default function TimerScreen() {
   const [selectedHours, setSelectedHours] = useState(16);
   const [isCustom, setIsCustom] = useState(false);
   const [customHoursText, setCustomHoursText] = useState('');
+  const [showPhases, setShowPhases] = useState(false);
 
   async function handleStart() {
     if (isCustom) {
@@ -95,7 +97,7 @@ export default function TimerScreen() {
             </View>
           </FastingRing>
 
-          <PhaseLabel phase={currentPhase} visible={isActive} />
+          <PhaseLabel phase={currentPhase} visible={isActive} onPress={() => setShowPhases(true)} />
         </View>
 
         {/* Error */}
@@ -178,6 +180,11 @@ export default function TimerScreen() {
           </View>
         )}
       </View>
+      <PhasesDrawer
+        visible={showPhases}
+        onClose={() => setShowPhases(false)}
+        currentPhase={isActive ? currentPhase : null}
+      />
     </SafeAreaView>
   );
 }

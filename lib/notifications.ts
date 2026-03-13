@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { CHECKIN_HOURS } from '../constants/phases';
+import { CHECKIN_HOURS, FASTING_PHASES } from '../constants/phases';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -47,40 +47,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   return token.data;
 }
 
-/**
- * Schedule check-in notifications at hours 4, 8, and 12 from fastStartTime.
- * Only applicable for Pro users. Returns the array of scheduled notification IDs.
- */
-export async function scheduleCheckinNotifications(
-  fastStartTime: Date,
-  targetHours: number
-): Promise<string[]> {
-  const ids: string[] = [];
-
-  for (const hour of CHECKIN_HOURS) {
-    if (hour >= targetHours) continue;
-
-    const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
-
-    if (triggerDate <= new Date()) continue;
-
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'FastAI Check-in',
-        body: `You're ${hour} hours in — tap for your AI coach message.`,
-        data: { fastingHour: hour },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate,
-      },
-    });
-
-    ids.push(id);
-  }
-
-  return ids;
-}
+// ─── Free notifications (all users) ─────────────────────────────────────────
 
 /**
  * Schedule a single "fast started" notification immediately.
@@ -114,6 +81,77 @@ export async function scheduleCompletionNotification(
       date: endTime,
     },
   });
+}
+
+/**
+ * Schedule phase transition notifications (free for all users).
+ * Notifies when entering each new fasting phase.
+ */
+export async function schedulePhaseNotifications(
+  fastStartTime: Date,
+  targetHours: number
+): Promise<string[]> {
+  const ids: string[] = [];
+
+  for (const phase of FASTING_PHASES) {
+    // Skip "Fed State" (starts at 0) — user just started
+    if (phase.minHours === 0) continue;
+    if (phase.minHours >= targetHours) continue;
+
+    const triggerDate = new Date(fastStartTime.getTime() + phase.minHours * 60 * 60 * 1000);
+    if (triggerDate <= new Date()) continue;
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: phase.name,
+        body: `${phase.minHours}h in — ${phase.description.toLowerCase()}.`,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    ids.push(id);
+  }
+
+  return ids;
+}
+
+// ─── Pro-only notifications (AI coach check-ins) ────────────────────────────
+
+/**
+ * Schedule AI coach check-in notifications at hours 4, 8, and 12.
+ * Pro only — these prompt the user to open the app for their AI message.
+ */
+export async function scheduleCheckinNotifications(
+  fastStartTime: Date,
+  targetHours: number
+): Promise<string[]> {
+  const ids: string[] = [];
+
+  for (const hour of CHECKIN_HOURS) {
+    if (hour >= targetHours) continue;
+
+    const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
+    if (triggerDate <= new Date()) continue;
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'AI Coach Check-in',
+        body: `You're ${hour} hours in — tap for your personalized AI message.`,
+        data: { fastingHour: hour },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    ids.push(id);
+  }
+
+  return ids;
 }
 
 /**
