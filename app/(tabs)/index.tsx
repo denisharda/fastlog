@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useFasting } from '../../hooks/useFasting';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
@@ -11,7 +12,7 @@ import { FastingProtocol } from '../../types';
 const FASTING_OPTIONS = [
   { hours: 16, label: '16:8', protocol: '16:8' as FastingProtocol },
   { hours: 18, label: '18:6', protocol: '18:6' as FastingProtocol },
-  { hours: 24, label: 'OMAD', protocol: '24h' as FastingProtocol },
+  { hours: 24, label: '24h', protocol: '24h' as FastingProtocol },
 ];
 
 function formatDuration(seconds: number): string {
@@ -22,7 +23,8 @@ function formatDuration(seconds: number): string {
 }
 
 export default function TimerScreen() {
-  const { profile } = useUserStore();
+  const router = useRouter();
+  const { profile, isPro } = useUserStore();
   const {
     isActive,
     elapsedSeconds,
@@ -37,10 +39,26 @@ export default function TimerScreen() {
   } = useFasting();
 
   const [selectedHours, setSelectedHours] = useState(16);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customHoursText, setCustomHoursText] = useState('');
 
   async function handleStart() {
-    const option = FASTING_OPTIONS.find((o) => o.hours === selectedHours) ?? FASTING_OPTIONS[3];
-    await startFast(option.protocol, option.hours);
+    if (isCustom) {
+      const hours = parseInt(customHoursText, 10);
+      if (!hours || hours < 1 || hours > 72) return;
+      await startFast('custom' as FastingProtocol, hours);
+    } else {
+      const option = FASTING_OPTIONS.find((o) => o.hours === selectedHours) ?? FASTING_OPTIONS[0];
+      await startFast(option.protocol, option.hours);
+    }
+  }
+
+  function handleCustomPress() {
+    if (!isPro) {
+      router.push('/paywall');
+      return;
+    }
+    setIsCustom(true);
   }
 
   return (
@@ -96,14 +114,17 @@ export default function TimerScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View className="flex-row gap-2">
                     {FASTING_OPTIONS.map((option) => {
-                      const isSelected = selectedHours === option.hours;
+                      const isSelected = !isCustom && selectedHours === option.hours;
                       return (
                         <Pressable
                           key={option.hours}
                           className={`px-5 py-3 rounded-xl ${
                             isSelected ? 'bg-primary' : 'bg-surface'
                           }`}
-                          onPress={() => setSelectedHours(option.hours)}
+                          onPress={() => {
+                            setIsCustom(false);
+                            setSelectedHours(option.hours);
+                          }}
                         >
                           <Text
                             className={`font-semibold text-base ${
@@ -115,8 +136,36 @@ export default function TimerScreen() {
                         </Pressable>
                       );
                     })}
+                    <Pressable
+                      className={`px-5 py-3 rounded-xl ${
+                        isCustom ? 'bg-primary' : 'bg-surface'
+                      }`}
+                      onPress={handleCustomPress}
+                    >
+                      <Text
+                        className={`font-semibold text-base ${
+                          isCustom ? 'text-text-primary' : 'text-text-muted'
+                        }`}
+                      >
+                        {isPro ? 'Custom' : 'Custom (Pro)'}
+                      </Text>
+                    </Pressable>
                   </View>
                 </ScrollView>
+                {isCustom && (
+                  <View className="flex-row items-center gap-2 mt-2">
+                    <TextInput
+                      className="bg-surface text-text-primary rounded-xl px-4 py-3 flex-1 text-center text-lg"
+                      placeholder="Hours (1-72)"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="number-pad"
+                      value={customHoursText}
+                      onChangeText={setCustomHoursText}
+                      maxLength={2}
+                    />
+                    <Text className="text-text-muted text-base">hours</Text>
+                  </View>
+                )}
               </View>
             )}
             <TimerControls

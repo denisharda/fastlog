@@ -16,7 +16,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.fastai.app",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -40,7 +43,8 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
 import { supabase } from '../../lib/supabase';
+import { signOut } from '../../lib/auth';
 import { COACH_LIST } from '../../constants/coaches';
 import { PROTOCOL_LIST } from '../../constants/protocols';
 import { restorePurchases } from '../../lib/revenuecat';
@@ -11,13 +12,13 @@ import { useState } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, isPro, setProfile } = useUserStore();
+  const { profile, isPro, setProfile, setPreferredProtocol, setCoachPersonality } = useUserStore();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
+    await signOut();
     setProfile(null);
-    router.replace('/(auth)/welcome');
+    // Auth guard in root layout handles redirect
   }
 
   async function handleRestorePurchases() {
@@ -85,7 +86,8 @@ export default function ProfileScreen() {
                 }`}
                 onPress={async () => {
                   if (!profile) return;
-                  await supabase
+                  setPreferredProtocol(protocol.id);
+                  supabase
                     .from('profiles')
                     .update({ preferred_protocol: protocol.id })
                     .eq('id', profile.id);
@@ -119,7 +121,8 @@ export default function ProfileScreen() {
                     handleUpgradePress();
                     return;
                   }
-                  await supabase
+                  setCoachPersonality(coach.id);
+                  supabase
                     .from('profiles')
                     .update({ coach_personality: coach.id })
                     .eq('id', profile.id);
