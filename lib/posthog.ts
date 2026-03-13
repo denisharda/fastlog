@@ -5,12 +5,17 @@ let posthogInstance: PostHog | null = null;
 /**
  * Initialize PostHog. Call once at app startup.
  */
-export function initPostHog(): PostHog {
+export function initPostHog(): PostHog | null {
   if (posthogInstance) return posthogInstance;
 
-  posthogInstance = new PostHog(process.env.EXPO_PUBLIC_POSTHOG_KEY!, {
+  const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
+  if (!apiKey) {
+    console.warn('[PostHog] No API key configured — skipping initialization');
+    return null;
+  }
+
+  posthogInstance = new PostHog(apiKey, {
     host: 'https://app.posthog.com',
-    disabled: !process.env.EXPO_PUBLIC_POSTHOG_KEY,
   });
 
   return posthogInstance;

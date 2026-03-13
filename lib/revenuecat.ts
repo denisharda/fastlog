@@ -14,7 +14,11 @@ export const PRODUCT_IDS = {
 export function initRevenueCat(): void {
   if (Platform.OS !== 'ios') return;
 
-  const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY!;
+  const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
+  if (!apiKey) {
+    console.warn('[RevenueCat] No API key configured — skipping initialization');
+    return;
+  }
 
   if (__DEV__) {
     Purchases.setLogLevel(LOG_LEVEL.DEBUG);

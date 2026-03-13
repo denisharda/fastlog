@@ -72,7 +72,6 @@ export function useFasting(): UseFastingReturn {
 
   const startFast = useCallback(
     async (protocol: FastingProtocol, hours: number) => {
-      if (!profile) return;
       setIsLoading(true);
       setError(null);
 
@@ -91,19 +90,21 @@ export function useFasting(): UseFastingReturn {
 
         trackFastStarted({ protocol, targetHours: hours });
 
-        // Background: write to Supabase
-        supabase
-          .from('fasting_sessions')
-          .insert({
-            id: sessionId,
-            user_id: profile.id,
-            protocol,
-            target_hours: hours,
-            started_at: startedAt,
-          })
-          .then(({ error: dbError }) => {
-            if (dbError) console.error('[useFasting] DB insert error:', dbError);
-          });
+        // Background: write to Supabase (only if signed in)
+        if (profile) {
+          supabase
+            .from('fasting_sessions')
+            .insert({
+              id: sessionId,
+              user_id: profile.id,
+              protocol,
+              target_hours: hours,
+              started_at: startedAt,
+            })
+            .then(({ error: dbError }) => {
+              if (dbError) console.error('[useFasting] DB insert error:', dbError);
+            });
+        }
 
         // Schedule notifications (Pro only)
         if (isPro) {
@@ -129,7 +130,7 @@ export function useFasting(): UseFastingReturn {
 
   const stopFast = useCallback(
     async (completed = false) => {
-      if (!activeFast || !profile) return;
+      if (!activeFast) return;
       setIsLoading(true);
 
       try {
@@ -153,14 +154,16 @@ export function useFasting(): UseFastingReturn {
           });
         }
 
-        // Background: update DB record
-        supabase
-          .from('fasting_sessions')
-          .update({ ended_at: endedAt, completed })
-          .eq('id', activeFast.sessionId)
-          .then(({ error: dbError }) => {
-            if (dbError) console.error('[useFasting] DB update error:', dbError);
-          });
+        // Background: update DB record (only if signed in)
+        if (profile) {
+          supabase
+            .from('fasting_sessions')
+            .update({ ended_at: endedAt, completed })
+            .eq('id', activeFast.sessionId)
+            .then(({ error: dbError }) => {
+              if (dbError) console.error('[useFasting] DB update error:', dbError);
+            });
+        }
       } catch (err) {
         setError('Failed to stop fast.');
         console.error('[useFasting] stopFast error:', err);
