@@ -12,7 +12,7 @@ import { useState } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, isPro, setProfile, setPreferredProtocol, setCoachPersonality } = useUserStore();
+  const { profile, isPro, setProfile, setIsPro, setPreferredProtocol, setCoachPersonality } = useUserStore();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
 
   async function handleSignOut() {
@@ -137,6 +137,21 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        {/* Dev toggle (debug only) */}
+        {__DEV__ && (
+          <Pressable
+            className="bg-surface rounded-2xl p-4 mb-4 flex-row items-center justify-between"
+            onPress={() => setIsPro(!isPro)}
+          >
+            <Text className="text-text-primary font-medium">
+              Pro Status (Dev Toggle)
+            </Text>
+            <Text className={`font-bold ${isPro ? 'text-primary' : 'text-red-400'}`}>
+              {isPro ? 'ON' : 'OFF'}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Actions */}
         <View className="gap-3 mt-2">

@@ -58,11 +58,11 @@ export async function scheduleCheckinNotifications(
   const ids: string[] = [];
 
   for (const hour of CHECKIN_HOURS) {
-    if (hour >= targetHours) continue; // Don't schedule past the fast end
+    if (hour >= targetHours) continue;
 
     const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
 
-    if (triggerDate <= new Date()) continue; // Skip past times
+    if (triggerDate <= new Date()) continue;
 
     const id = await Notifications.scheduleNotificationAsync({
       content: {
@@ -71,6 +71,7 @@ export async function scheduleCheckinNotifications(
         data: { fastingHour: hour },
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
       },
     });
@@ -90,7 +91,10 @@ export async function scheduleStartNotification(): Promise<string> {
       title: "Fast started!",
       body: "Your fast has begun. Stay hydrated and you've got this.",
     },
-    trigger: null, // Fire immediately
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 1,
+    },
   });
 }
 
@@ -106,6 +110,7 @@ export async function scheduleCompletionNotification(
       body: "You did it! Time to break your fast mindfully.",
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: endTime,
     },
   });

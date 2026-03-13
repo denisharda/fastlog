@@ -71,6 +71,9 @@ export async function getIsProUser(): Promise<boolean> {
 export async function getOfferings(): Promise<PurchasesPackage[]> {
   try {
     const offerings = await Purchases.getOfferings();
+    if (__DEV__) {
+      console.log('[RevenueCat] Offerings:', JSON.stringify(offerings.current, null, 2));
+    }
     return offerings.current?.availablePackages ?? [];
   } catch (error) {
     console.error('[RevenueCat] Failed to get offerings:', error);

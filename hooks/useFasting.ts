@@ -3,6 +3,7 @@ import { useFastingStore } from '../stores/fastingStore';
 import { useUserStore } from '../stores/userStore';
 import { getCurrentPhase, FastingPhase } from '../constants/phases';
 import { supabase } from '../lib/supabase';
+import * as Crypto from 'expo-crypto';
 import {
   scheduleStartNotification,
   scheduleCompletionNotification,
@@ -76,7 +77,7 @@ export function useFasting(): UseFastingReturn {
       setError(null);
 
       try {
-        const sessionId = globalThis.crypto?.randomUUID?.() ?? String(Date.now());
+        const sessionId = Crypto.randomUUID();
         const startedAt = new Date().toISOString();
 
         // Optimistically update local state first — timer starts immediately
