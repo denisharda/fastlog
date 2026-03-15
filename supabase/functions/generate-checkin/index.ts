@@ -14,6 +14,10 @@ interface CheckinRequest {
   sessionId: string;
   fastingHour: number;
   phase: string;
+  phaseScience?: string;
+  phaseTips?: string[];
+  metabolicMarkers?: string;
+  isPhaseTransition?: boolean;
   streakDays: number;
   personality: 'motivational' | 'calm' | 'brutal';
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
@@ -48,7 +52,11 @@ serve(async (req) => {
     );
 
     const body: CheckinRequest = await req.json();
-    const { userId, sessionId, fastingHour, phase, streakDays, personality, timeOfDay } = body;
+    const {
+      userId, sessionId, fastingHour, phase,
+      phaseScience, phaseTips, metabolicMarkers, isPhaseTransition,
+      streakDays, personality, timeOfDay,
+    } = body;
 
     // Rate limiting: max 5 check-ins per user per day
     const today = new Date();
@@ -66,12 +74,26 @@ serve(async (req) => {
       );
     }
 
-    // Build the user prompt
-    const userPrompt = `The user is ${fastingHour} hours into their fast.
-Current phase: ${phase}.
-Streak: ${streakDays} day(s).
+    // Build the user prompt with phase biology data
+    let userPrompt = `The user is ${fastingHour} hours into their fast.
+Current phase: ${phase}.`;
+
+    if (phaseScience) {
+      userPrompt += `\nWhat's happening: ${phaseScience}`;
+    }
+    if (metabolicMarkers) {
+      userPrompt += `\nMetabolic markers: ${metabolicMarkers}`;
+    }
+    if (phaseTips && phaseTips.length > 0) {
+      userPrompt += `\nTips: ${phaseTips.join(', ')}`;
+    }
+    if (isPhaseTransition) {
+      userPrompt += `\nThe user just entered a new fasting phase — acknowledge this transition.`;
+    }
+
+    userPrompt += `\nStreak: ${streakDays} day(s).
 Time of day: ${timeOfDay}.
-Write a check-in message. Max 2 sentences.`;
+Write a check-in message referencing the biology of their current phase. Max 2 sentences.`;
 
     // Call OpenAI
     const openAiResponse = await fetch(OPENAI_API_URL, {
@@ -86,7 +108,7 @@ Write a check-in message. Max 2 sentences.`;
           { role: 'system', content: SYSTEM_PROMPTS[personality] ?? SYSTEM_PROMPTS.motivational },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 100,
+        max_tokens: 150,
         temperature: 0.7,
       }),
     });

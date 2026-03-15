@@ -10,6 +10,7 @@ import {
   scheduleCompletionNotification,
   schedulePhaseNotifications,
   scheduleCheckinNotifications,
+  scheduleWaterReminders,
   cancelAllNotifications,
 } from '../lib/notifications';
 import {
@@ -17,6 +18,8 @@ import {
   trackFastCompleted,
   trackFastAbandoned,
 } from '../lib/posthog';
+import { writeSharedState } from '../lib/sharedState';
+import { startLiveActivity, updateLiveActivity, endLiveActivity } from '../lib/liveActivity';
 import { FastingProtocol } from '../types';
 
 const TICK_INTERVAL_MS = 1000;
@@ -49,6 +52,9 @@ export function useFasting(): UseFastingReturn {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Track previous phase for transition detection
+  const prevPhaseRef = useRef<string | null>(null);
+
   // Sync elapsed seconds from persisted start time on mount / activeFast change
   useEffect(() => {
     if (activeFast) {
@@ -69,10 +75,39 @@ export function useFasting(): UseFastingReturn {
     };
   }, [activeFast]);
 
+  // Derived values — declared before effects that depend on them
   const elapsedHours = elapsedSeconds / 3600;
   const targetHours = activeFast?.targetHours ?? 0;
   const progressRatio = targetHours > 0 ? Math.min(elapsedHours / targetHours, 1) : 0;
   const currentPhase = getCurrentPhase(elapsedHours);
+
+  // Update Live Activity and shared state on phase change
+  useEffect(() => {
+    if (!activeFast) {
+      prevPhaseRef.current = null;
+      return;
+    }
+
+    if (prevPhaseRef.current !== currentPhase.name) {
+      prevPhaseRef.current = currentPhase.name;
+
+      // Update shared state for widget
+      writeSharedState({
+        isActive: true,
+        startedAt: activeFast.startedAt,
+        targetHours: activeFast.targetHours,
+        phase: currentPhase.name,
+        protocol: activeFast.protocol,
+        elapsedHours,
+      });
+
+      // Update Live Activity
+      updateLiveActivity({
+        phase: currentPhase.name,
+        phaseDescription: currentPhase.description,
+      });
+    }
+  }, [activeFast, currentPhase.name, elapsedHours]);
 
   const startFast = useCallback(
     async (protocol: FastingProtocol, hours: number) => {
@@ -115,11 +150,12 @@ export function useFasting(): UseFastingReturn {
         const start = new Date(startedAt);
         const endTime = new Date(start.getTime() + hours * 3600 * 1000);
 
-        // Free notifications for all users: start, phases, completion
+        // Free notifications for all users: start, phases, completion, water reminders
         const freeNotifPromises = [
           scheduleStartNotification(),
           schedulePhaseNotifications(start, hours),
           scheduleCompletionNotification(endTime),
+          scheduleWaterReminders(start, hours),
         ];
 
         // Pro-only: AI coach check-in notifications
@@ -127,12 +163,22 @@ export function useFasting(): UseFastingReturn {
           ? scheduleCheckinNotifications(start, hours)
           : Promise.resolve([]);
 
-        const [, phaseIds, , checkinIds] = await Promise.all([
+        const [startId, phaseIds, completionId, waterIds, checkinIds] = await Promise.all([
           ...freeNotifPromises,
           proNotifPromise,
         ]);
 
-        setNotificationIds([...phaseIds, ...checkinIds]);
+        setNotificationIds([startId, ...phaseIds, completionId, ...waterIds, ...checkinIds]);
+
+        // Start Live Activity (iOS only, no-op if native module unavailable)
+        const phase = getCurrentPhase(0);
+        startLiveActivity({
+          startedAt,
+          targetHours: hours,
+          phase: phase.name,
+          phaseDescription: phase.description,
+          protocol,
+        });
       } catch (err) {
         setError('Failed to start fast. Please try again.');
         console.error('[useFasting] startFast error:', err);
@@ -154,6 +200,9 @@ export function useFasting(): UseFastingReturn {
 
         storeStop();
         await cancelAllNotifications();
+
+        // End Live Activity (no-op if native module unavailable)
+        endLiveActivity();
 
         if (completed) {
           trackFastCompleted({

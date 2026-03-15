@@ -6,6 +6,7 @@ export interface Profile {
   name: string | null;
   coach_personality: CoachPersonality;
   preferred_protocol: FastingProtocol;
+  daily_water_goal_ml: number;
   push_token: string | null;
   created_at: string;
 }
@@ -37,6 +38,10 @@ export interface CheckinRequest {
   sessionId: string;
   fastingHour: number;
   phase: string;
+  phaseScience: string;
+  phaseTips: string[];
+  metabolicMarkers: string;
+  isPhaseTransition: boolean;
   streakDays: number;
   personality: CoachPersonality;
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
@@ -44,4 +49,12 @@ export interface CheckinRequest {
 
 export interface CheckinResponse {
   message: string;
+}
+
+export interface HydrationLog {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  amount_ml: number;
+  logged_at: string;
 }

@@ -2,10 +2,16 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
+import { useHydration } from '../../hooks/useHydration';
 import { supabase } from '../../lib/supabase';
 import { signOut } from '../../lib/auth';
 import { COACH_LIST } from '../../constants/coaches';
 import { PROTOCOL_LIST } from '../../constants/protocols';
+import {
+  MIN_DAILY_WATER_GOAL_ML,
+  MAX_DAILY_WATER_GOAL_ML,
+  WATER_GOAL_STEP_ML,
+} from '../../constants/hydration';
 import { restorePurchases } from '../../lib/revenuecat';
 import { trackPaywallViewed } from '../../lib/posthog';
 import { useState } from 'react';
@@ -13,6 +19,7 @@ import { useState } from 'react';
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, isPro, setProfile, setIsPro, setPreferredProtocol, setCoachPersonality } = useUserStore();
+  const { dailyGoalMl, setDailyGoal } = useHydration();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
 
   async function handleSignOut() {
@@ -96,6 +103,52 @@ export default function ProfileScreen() {
                 <Text className="text-text-primary font-medium">{protocol.label}</Text>
               </Pressable>
             ))}
+          </View>
+        </View>
+
+        {/* Daily Water Goal */}
+        <View className="bg-surface rounded-2xl p-4 mb-4">
+          <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
+            Daily Water Goal
+          </Text>
+          <View className="flex-row items-center justify-between">
+            <Pressable
+              className="w-11 h-11 rounded-full bg-background items-center justify-center"
+              onPress={() => {
+                const next = dailyGoalMl - WATER_GOAL_STEP_ML;
+                if (next >= MIN_DAILY_WATER_GOAL_ML) {
+                  setDailyGoal(next);
+                  if (profile) {
+                    supabase
+                      .from('profiles')
+                      .update({ daily_water_goal_ml: next })
+                      .eq('id', profile.id);
+                  }
+                }
+              }}
+            >
+              <Text className="text-text-primary text-xl font-bold">−</Text>
+            </Pressable>
+            <Text className="text-text-primary text-lg font-semibold">
+              {dailyGoalMl.toLocaleString()} ml
+            </Text>
+            <Pressable
+              className="w-11 h-11 rounded-full bg-background items-center justify-center"
+              onPress={() => {
+                const next = dailyGoalMl + WATER_GOAL_STEP_ML;
+                if (next <= MAX_DAILY_WATER_GOAL_ML) {
+                  setDailyGoal(next);
+                  if (profile) {
+                    supabase
+                      .from('profiles')
+                      .update({ daily_water_goal_ml: next })
+                      .eq('id', profile.id);
+                  }
+                }
+              }}
+            >
+              <Text className="text-text-primary text-xl font-bold">+</Text>
+            </Pressable>
           </View>
         </View>
 

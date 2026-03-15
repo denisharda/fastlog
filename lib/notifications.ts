@@ -1,7 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { CHECKIN_HOURS, FASTING_PHASES } from '../constants/phases';
+import { FASTING_PHASES, getCheckinHoursForTarget } from '../constants/phases';
+import { WATER_REMINDER_INTERVAL_HOURS } from '../constants/hydration';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -121,7 +122,8 @@ export async function schedulePhaseNotifications(
 // ─── Pro-only notifications (AI coach check-ins) ────────────────────────────
 
 /**
- * Schedule AI coach check-in notifications at hours 4, 8, and 12.
+ * Schedule AI coach check-in notifications at dynamic hours based on target.
+ * Includes base hours (4, 8, 12) plus phase-transition hours (16, 18) for longer fasts.
  * Pro only — these prompt the user to open the app for their AI message.
  */
 export async function scheduleCheckinNotifications(
@@ -129,10 +131,9 @@ export async function scheduleCheckinNotifications(
   targetHours: number
 ): Promise<string[]> {
   const ids: string[] = [];
+  const checkinHours = getCheckinHoursForTarget(targetHours);
 
-  for (const hour of CHECKIN_HOURS) {
-    if (hour >= targetHours) continue;
-
+  for (const hour of checkinHours) {
     const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
     if (triggerDate <= new Date()) continue;
 
@@ -141,6 +142,39 @@ export async function scheduleCheckinNotifications(
         title: 'AI Coach Check-in',
         body: `You're ${hour} hours in — tap for your personalized AI message.`,
         data: { fastingHour: hour },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    ids.push(id);
+  }
+
+  return ids;
+}
+
+// ─── Water reminder notifications ─────────────────────────────────────────
+
+/**
+ * Schedule hydration reminders every 2 hours during a fast.
+ */
+export async function scheduleWaterReminders(
+  fastStartTime: Date,
+  targetHours: number
+): Promise<string[]> {
+  const ids: string[] = [];
+  const now = Date.now();
+
+  for (let h = WATER_REMINDER_INTERVAL_HOURS; h < targetHours; h += WATER_REMINDER_INTERVAL_HOURS) {
+    const triggerDate = new Date(fastStartTime.getTime() + h * 60 * 60 * 1000);
+    if (triggerDate.getTime() <= now) continue;
+
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Stay Hydrated 💧',
+        body: `You're ${h} hours into your fast. Remember to drink water!`,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

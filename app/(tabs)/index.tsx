@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFasting } from '../../hooks/useFasting';
+import { useHydration } from '../../hooks/useHydration';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
 import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { TimerControls } from '../../components/timer/TimerControls';
+import { WaterCard } from '../../components/water/WaterCard';
+import { UndoSnackbar } from '../../components/water/UndoSnackbar';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
 
@@ -39,6 +42,17 @@ export default function TimerScreen() {
     error,
   } = useFasting();
 
+  const {
+    todayTotalMl,
+    dailyGoalMl,
+    progressRatio: waterProgress,
+    logWater,
+    undoLastLog,
+    subtractLast,
+    snackbar,
+    dismissSnackbar,
+  } = useHydration();
+
   const [selectedHours, setSelectedHours] = useState(16);
   const [isCustom, setIsCustom] = useState(false);
   const [customHoursText, setCustomHoursText] = useState('');
@@ -65,7 +79,12 @@ export default function TimerScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-between py-8 px-6">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 32 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View className="w-full">
           <Text className="text-text-primary text-xl font-bold">
@@ -78,8 +97,8 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Ring + phase */}
-        <View className="items-center">
+        {/* Ring + phase + water */}
+        <View className="items-center my-4">
           <FastingRing
             progress={progressRatio}
             size={280}
@@ -98,6 +117,17 @@ export default function TimerScreen() {
           </FastingRing>
 
           <PhaseLabel phase={currentPhase} visible={isActive} onPress={() => setShowPhases(true)} />
+
+          {/* Water tracking — always visible, free feature */}
+          <View className="w-full mt-4">
+            <WaterCard
+              currentMl={todayTotalMl}
+              goalMl={dailyGoalMl}
+              progressRatio={waterProgress}
+              onAdd={logWater}
+              onSubtract={subtractLast}
+            />
+          </View>
         </View>
 
         {/* Error */}
@@ -179,7 +209,14 @@ export default function TimerScreen() {
             />
           </View>
         )}
-      </View>
+      </ScrollView>
+      </TouchableWithoutFeedback>
+      <UndoSnackbar
+        message={snackbar.message}
+        visible={snackbar.visible}
+        onUndo={undoLastLog}
+        onDismiss={dismissSnackbar}
+      />
       <PhasesDrawer
         visible={showPhases}
         onClose={() => setShowPhases(false)}

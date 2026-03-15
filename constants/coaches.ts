@@ -48,19 +48,50 @@ export const COACH_LIST: CoachConfig[] = Object.values(COACHES);
 export const DEFAULT_COACH: CoachPersonality = 'motivational';
 
 /**
- * Builds the full check-in prompt for the AI, injecting context variables.
+ * Builds the full check-in prompt for the AI, injecting context variables
+ * including phase biology data for richer, more personalized messages.
  */
 export function buildCheckinPrompt(params: {
   fastingHour: number;
   phase: string;
+  phaseScience?: string;
+  phaseTips?: string[];
+  metabolicMarkers?: string;
+  isPhaseTransition?: boolean;
   streakDays: number;
   personality: CoachPersonality;
   timeOfDay: string;
 }): string {
-  const { fastingHour, phase, streakDays, timeOfDay } = params;
-  return `The user is ${fastingHour} hours into their fast.
-Current phase: ${phase}.
-Streak: ${streakDays} day(s).
+  const {
+    fastingHour,
+    phase,
+    phaseScience,
+    phaseTips,
+    metabolicMarkers,
+    isPhaseTransition,
+    streakDays,
+    timeOfDay,
+  } = params;
+
+  let prompt = `The user is ${fastingHour} hours into their fast.
+Current phase: ${phase}.`;
+
+  if (phaseScience) {
+    prompt += `\nWhat's happening: ${phaseScience}`;
+  }
+  if (metabolicMarkers) {
+    prompt += `\nMetabolic markers: ${metabolicMarkers}`;
+  }
+  if (phaseTips && phaseTips.length > 0) {
+    prompt += `\nTips: ${phaseTips.join(', ')}`;
+  }
+  if (isPhaseTransition) {
+    prompt += `\nThe user just entered a new fasting phase — acknowledge this transition.`;
+  }
+
+  prompt += `\nStreak: ${streakDays} day(s).
 Time of day: ${timeOfDay}.
-Write a check-in message. Max 2 sentences.`;
+Write a check-in message referencing the biology of their current phase. Max 2 sentences.`;
+
+  return prompt;
 }

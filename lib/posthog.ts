@@ -67,3 +67,20 @@ export function trackCheckinReceived(props: {
 }): void {
   posthogInstance?.capture('checkin_received', props);
 }
+
+export function trackWaterLogged(props: {
+  amount_ml: number;
+  total_today_ml: number;
+}): void {
+  posthogInstance?.capture('water_logged', props);
+}
+
+export function trackWaterGoalReached(props: {
+  goal_ml: number;
+}): void {
+  posthogInstance?.capture('water_goal_reached', props);
+}
+
+export function trackCancellationLinkTapped(): void {
+  posthogInstance?.capture('cancellation_link_tapped');
+}

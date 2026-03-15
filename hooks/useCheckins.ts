@@ -6,8 +6,6 @@ import { Checkin, CheckinRequest } from '../types';
 import { getCurrentPhase } from '../constants/phases';
 import { trackCheckinReceived } from '../lib/posthog';
 
-const MAX_CHECKINS_PER_DAY = 5;
-
 /**
  * Fetch all check-ins for the active fasting session.
  */
@@ -44,6 +42,12 @@ export async function triggerCheckin(params: {
   if (!profile || !activeFast || !isPro) return null;
 
   const phase = getCurrentPhase(params.elapsedHours);
+
+  // Detect if user just transitioned into this phase (within 30 min of phase start)
+  const isPhaseTransition = phase.minHours > 0 &&
+    params.elapsedHours >= phase.minHours &&
+    params.elapsedHours < phase.minHours + 0.5;
+
   const now = new Date();
   const hour = now.getHours();
   const timeOfDay =
@@ -62,6 +66,10 @@ export async function triggerCheckin(params: {
     sessionId: activeFast.sessionId,
     fastingHour: params.fastingHour,
     phase: phase.name,
+    phaseScience: phase.science,
+    phaseTips: phase.tips,
+    metabolicMarkers: phase.metabolicMarkers,
+    isPhaseTransition,
     streakDays: 0, // TODO: compute from fasting_sessions history
     personality: profile.coach_personality,
     timeOfDay,
