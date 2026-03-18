@@ -3,13 +3,10 @@ import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput, Keyboa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useFasting } from '../../hooks/useFasting';
-import { useHydration } from '../../hooks/useHydration';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
 import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { TimerControls } from '../../components/timer/TimerControls';
-import { WaterCard } from '../../components/water/WaterCard';
-import { UndoSnackbar } from '../../components/water/UndoSnackbar';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
 
@@ -41,17 +38,6 @@ export default function TimerScreen() {
     isLoading,
     error,
   } = useFasting();
-
-  const {
-    todayTotalMl,
-    dailyGoalMl,
-    progressRatio: waterProgress,
-    logWater,
-    undoLastLog,
-    subtractLast,
-    snackbar,
-    dismissSnackbar,
-  } = useHydration();
 
   const [selectedHours, setSelectedHours] = useState(16);
   const [isCustom, setIsCustom] = useState(false);
@@ -97,7 +83,7 @@ export default function TimerScreen() {
           )}
         </View>
 
-        {/* Ring + phase + water */}
+        {/* Ring + phase */}
         <View className="items-center my-4">
           <FastingRing
             progress={progressRatio}
@@ -117,17 +103,6 @@ export default function TimerScreen() {
           </FastingRing>
 
           <PhaseLabel phase={currentPhase} visible={isActive} onPress={() => setShowPhases(true)} />
-
-          {/* Water tracking — always visible, free feature */}
-          <View className="w-full mt-4">
-            <WaterCard
-              currentMl={todayTotalMl}
-              goalMl={dailyGoalMl}
-              progressRatio={waterProgress}
-              onAdd={logWater}
-              onSubtract={subtractLast}
-            />
-          </View>
         </View>
 
         {/* Error */}
@@ -211,12 +186,6 @@ export default function TimerScreen() {
         )}
       </ScrollView>
       </TouchableWithoutFeedback>
-      <UndoSnackbar
-        message={snackbar.message}
-        visible={snackbar.visible}
-        onUndo={undoLastLog}
-        onDismiss={dismissSnackbar}
-      />
       <PhasesDrawer
         visible={showPhases}
         onClose={() => setShowPhases(false)}

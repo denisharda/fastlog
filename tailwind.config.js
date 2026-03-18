@@ -14,6 +14,8 @@ module.exports = {
         surface: '#1A1A1A',
         'text-primary': '#F5F5F5',
         'text-muted': '#9CA3AF',
+        water: '#0EA5E9',
+        'water-dark': '#0369A1',
       },
     },
   },

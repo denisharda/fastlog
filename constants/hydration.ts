@@ -11,3 +11,9 @@ export const WATER_GOAL_STEP_ML = 250;
 
 /** Reminder interval during a fast (hours) */
 export const WATER_REMINDER_INTERVAL_HOURS = 2;
+
+/** Add-water sheet stepper constants */
+export const WATER_STEPPER_INCREMENT_ML = 50;
+export const MIN_ADD_AMOUNT_ML = 50;
+export const MAX_ADD_AMOUNT_ML = 1500;
+export const DEFAULT_ADD_AMOUNT_ML = 250;

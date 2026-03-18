@@ -7,6 +7,10 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Timer</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="timer" md="timer" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="water">
+        <NativeTabs.Trigger.Label>Water</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="drop.fill" md="water_drop" />
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
         <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="clock.arrow.counterclockwise" md="history" />
