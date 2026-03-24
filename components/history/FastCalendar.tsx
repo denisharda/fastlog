@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { FastingSession } from '../../types';
 
@@ -11,33 +12,39 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * A simple calendar heatmap showing the last 28 days of fasting activity.
  * TODO: Replace with a proper calendar library for production.
  */
-export function FastCalendar({ sessions }: FastCalendarProps) {
-  // Build a set of dates that had completed fasts
-  const completedDates = new Set(
-    sessions
-      .filter((s) => s.completed)
-      .map((s) => new Date(s.started_at).toDateString())
-  );
-  const partialDates = new Set(
-    sessions
-      .filter((s) => !s.completed && s.ended_at)
-      .map((s) => new Date(s.started_at).toDateString())
-  );
+export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastCalendarProps) {
+  // Build sets of dates that had completed/partial fasts
+  const { completedDates, partialDates } = useMemo(() => {
+    const completed = new Set<string>();
+    const partial = new Set<string>();
+    for (const s of sessions) {
+      const day = new Date(s.started_at).toDateString();
+      if (s.completed) {
+        completed.add(day);
+      } else if (s.ended_at) {
+        partial.add(day);
+      }
+    }
+    return { completedDates: completed, partialDates: partial };
+  }, [sessions]);
 
-  // Build last 28 days
-  const today = new Date();
-  const days: Date[] = [];
-  for (let i = 27; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    days.push(d);
-  }
+  // Build last 28 days and split into weeks
+  const { days, weeks, today } = useMemo(() => {
+    const t = new Date();
+    const d: Date[] = [];
+    for (let i = 27; i >= 0; i--) {
+      const date = new Date(t);
+      date.setDate(t.getDate() - i);
+      d.push(date);
+    }
 
-  // Split into weeks
-  const weeks: Date[][] = [];
-  for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7));
-  }
+    const w: Date[][] = [];
+    for (let i = 0; i < d.length; i += 7) {
+      w.push(d.slice(i, i + 7));
+    }
+
+    return { days: d, weeks: w, today: t };
+  }, []);
 
   return (
     <View className="mb-4">
@@ -99,4 +106,4 @@ export function FastCalendar({ sessions }: FastCalendarProps) {
       </View>
     </View>
   );
-}
+});

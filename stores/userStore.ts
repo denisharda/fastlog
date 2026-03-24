@@ -61,9 +61,9 @@ export const useUserStore = create<UserState>()(
       name: 'user-store',
       storage: createJSONStorage(() => AsyncStorage),
       // Don't persist isProLoading — always recalculate on mount
+      // isPro deliberately NOT persisted — always derived fresh from RevenueCat
       partialize: (state) => ({
         profile: state.profile,
-        isPro: state.isPro,
       }),
     }
   )

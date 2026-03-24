@@ -2,6 +2,8 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
+import { useFastingStore } from '../../stores/fastingStore';
+import { useHydrationStore } from '../../stores/hydrationStore';
 import { useHydration } from '../../hooks/useHydration';
 import { supabase } from '../../lib/supabase';
 import { signOut } from '../../lib/auth';
@@ -18,13 +20,20 @@ import { useState } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, isPro, setProfile, setIsPro, setPreferredProtocol, setCoachPersonality } = useUserStore();
+  const profile = useUserStore(s => s.profile);
+  const isPro = useUserStore(s => s.isPro);
+  const setIsPro = useUserStore(s => s.setIsPro);
+  const setPreferredProtocol = useUserStore(s => s.setPreferredProtocol);
+  const setCoachPersonality = useUserStore(s => s.setCoachPersonality);
+  const resetUser = useUserStore(s => s.reset);
   const { dailyGoalMl, setDailyGoal } = useHydration();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
 
   async function handleSignOut() {
     await signOut();
-    setProfile(null);
+    resetUser();
+    useFastingStore.getState().stopFast();
+    useHydrationStore.setState({ todayLogs: [], lastResetDate: new Date().toISOString().split('T')[0] });
     // Auth guard in root layout handles redirect
   }
 
@@ -97,7 +106,10 @@ export default function ProfileScreen() {
                   supabase
                     .from('profiles')
                     .update({ preferred_protocol: protocol.id })
-                    .eq('id', profile.id);
+                    .eq('id', profile.id)
+                    .then(({ error }) => {
+                      if (error) console.error('[Profile] Failed to update protocol:', error);
+                    });
                 }}
               >
                 <Text className="text-text-primary font-medium">{protocol.label}</Text>
@@ -122,7 +134,10 @@ export default function ProfileScreen() {
                     supabase
                       .from('profiles')
                       .update({ daily_water_goal_ml: next })
-                      .eq('id', profile.id);
+                      .eq('id', profile.id)
+                      .then(({ error }) => {
+                        if (error) console.error('[Profile] Failed to update water goal:', error);
+                      });
                   }
                 }
               }}
@@ -142,7 +157,10 @@ export default function ProfileScreen() {
                     supabase
                       .from('profiles')
                       .update({ daily_water_goal_ml: next })
-                      .eq('id', profile.id);
+                      .eq('id', profile.id)
+                      .then(({ error }) => {
+                        if (error) console.error('[Profile] Failed to update water goal:', error);
+                      });
                   }
                 }
               }}
@@ -178,7 +196,10 @@ export default function ProfileScreen() {
                   supabase
                     .from('profiles')
                     .update({ coach_personality: coach.id })
-                    .eq('id', profile.id);
+                    .eq('id', profile.id)
+                    .then(({ error }) => {
+                      if (error) console.error('[Profile] Failed to update coach:', error);
+                    });
                 }}
               >
                 <Text className="text-xl mr-3">{coach.emoji}</Text>

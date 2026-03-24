@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import { useHydrationStore, LocalHydrationLog } from '../stores/hydrationStore';
 import { useFastingStore } from '../stores/fastingStore';
@@ -25,16 +25,16 @@ interface UseHydrationReturn {
 }
 
 export function useHydration(): UseHydrationReturn {
-  const {
-    todayLogs,
-    dailyGoalMl,
-    logWater: storeLog,
-    removeLog: storeRemove,
-    setDailyGoal,
-    resetIfNewDay,
-  } = useHydrationStore();
-  const { activeFast } = useFastingStore();
-  const { profile } = useUserStore();
+  // Use individual selectors to avoid re-renders from unrelated store changes
+  const todayLogs = useHydrationStore((s) => s.todayLogs);
+  const dailyGoalMl = useHydrationStore((s) => s.dailyGoalMl);
+  const storeLog = useHydrationStore((s) => s.logWater);
+  const storeRemove = useHydrationStore((s) => s.removeLog);
+  const setDailyGoal = useHydrationStore((s) => s.setDailyGoal);
+  const resetIfNewDay = useHydrationStore((s) => s.resetIfNewDay);
+
+  const activeFast = useFastingStore((s) => s.activeFast);
+  const profile = useUserStore((s) => s.profile);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     visible: false,
@@ -46,8 +46,15 @@ export function useHydration(): UseHydrationReturn {
     resetIfNewDay();
   }, [resetIfNewDay]);
 
-  const todayTotalMl = todayLogs.reduce((sum, log) => sum + log.amount_ml, 0);
-  const progressRatio = dailyGoalMl > 0 ? Math.min(todayTotalMl / dailyGoalMl, 1) : 0;
+  const todayTotalMl = useMemo(
+    () => todayLogs.reduce((sum, log) => sum + log.amount_ml, 0),
+    [todayLogs]
+  );
+
+  const progressRatio = useMemo(
+    () => (dailyGoalMl > 0 ? Math.min(todayTotalMl / dailyGoalMl, 1) : 0),
+    [todayTotalMl, dailyGoalMl]
+  );
 
   const logWater = useCallback(
     (amountMl: number) => {

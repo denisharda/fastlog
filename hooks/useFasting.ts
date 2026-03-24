@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFastingStore } from '../stores/fastingStore';
 import { useUserStore } from '../stores/userStore';
@@ -44,7 +44,8 @@ interface UseFastingReturn {
 export function useFasting(): UseFastingReturn {
   const queryClient = useQueryClient();
   const { activeFast, startFast: storeStart, stopFast: storeStop, setNotificationIds } = useFastingStore();
-  const { profile, isPro } = useUserStore();
+  const profile = useUserStore(s => s.profile);
+  const isPro = useUserStore(s => s.isPro);
 
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,11 +76,11 @@ export function useFasting(): UseFastingReturn {
     };
   }, [activeFast]);
 
-  // Derived values — declared before effects that depend on them
+  // Derived values — memoized to avoid unnecessary recalculations
   const elapsedHours = elapsedSeconds / 3600;
   const targetHours = activeFast?.targetHours ?? 0;
   const progressRatio = targetHours > 0 ? Math.min(elapsedHours / targetHours, 1) : 0;
-  const currentPhase = getCurrentPhase(elapsedHours);
+  const currentPhase = useMemo(() => getCurrentPhase(elapsedHours), [elapsedHours]);
 
   // Update Live Activity and shared state on phase change
   useEffect(() => {
@@ -91,6 +92,9 @@ export function useFasting(): UseFastingReturn {
     if (prevPhaseRef.current !== currentPhase.name) {
       prevPhaseRef.current = currentPhase.name;
 
+      // Compute fresh elapsed hours to avoid stale value in dependency
+      const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+
       // Update shared state for widget
       writeSharedState({
         isActive: true,
@@ -98,7 +102,7 @@ export function useFasting(): UseFastingReturn {
         targetHours: activeFast.targetHours,
         phase: currentPhase.name,
         protocol: activeFast.protocol,
-        elapsedHours,
+        elapsedHours: elapsed,
       });
 
       // Update Live Activity
@@ -107,7 +111,7 @@ export function useFasting(): UseFastingReturn {
         phaseDescription: currentPhase.description,
       });
     }
-  }, [activeFast, currentPhase.name, elapsedHours]);
+  }, [activeFast, currentPhase.name]);
 
   const startFast = useCallback(
     async (protocol: FastingProtocol, hours: number) => {
@@ -150,23 +154,18 @@ export function useFasting(): UseFastingReturn {
         const start = new Date(startedAt);
         const endTime = new Date(start.getTime() + hours * 3600 * 1000);
 
-        // Free notifications for all users: start, phases, completion, water reminders
-        const freeNotifPromises = [
-          scheduleStartNotification(),
-          schedulePhaseNotifications(start, hours),
-          scheduleCompletionNotification(endTime),
-          scheduleWaterReminders(start, hours),
-        ];
-
         // Pro-only: AI coach check-in notifications
         const proNotifPromise = isPro
           ? scheduleCheckinNotifications(start, hours)
           : Promise.resolve([]);
 
         const [startId, phaseIds, completionId, waterIds, checkinIds] = await Promise.all([
-          ...freeNotifPromises,
+          scheduleStartNotification(),
+          schedulePhaseNotifications(start, hours),
+          scheduleCompletionNotification(endTime),
+          scheduleWaterReminders(start, hours),
           proNotifPromise,
-        ]);
+        ] as const);
 
         setNotificationIds([startId, ...phaseIds, completionId, ...waterIds, ...checkinIds]);
 
@@ -196,7 +195,8 @@ export function useFasting(): UseFastingReturn {
 
       try {
         const endedAt = new Date().toISOString();
-        const actualHours = elapsedHours;
+        // Compute fresh elapsed hours instead of using stale closure value
+        const actualHours = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
 
         storeStop();
         await cancelAllNotifications();
@@ -236,7 +236,7 @@ export function useFasting(): UseFastingReturn {
         setIsLoading(false);
       }
     },
-    [activeFast, profile, elapsedHours, storeStop, queryClient]
+    [activeFast, profile, storeStop, queryClient]
   );
 
   return {

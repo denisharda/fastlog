@@ -1,7 +1,8 @@
+import React from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../stores/userStore';
 import { supabase } from '../../lib/supabase';
 import { FastingSession } from '../../types';
@@ -9,9 +10,13 @@ import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
 import { trackPaywallViewed } from '../../lib/posthog';
 
+const ItemSeparator = () => <View className="h-2" />;
+
 export default function HistoryScreen() {
   const router = useRouter();
-  const { profile, isPro } = useUserStore();
+  const queryClient = useQueryClient();
+  const profile = useUserStore(s => s.profile);
+  const isPro = useUserStore(s => s.isPro);
 
   const { data: sessions, isLoading, error } = useQuery({
     queryKey: ['fasting_sessions', profile?.id],
@@ -70,7 +75,13 @@ export default function HistoryScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
-        <Text className="text-red-400 text-center">Failed to load history. Please try again.</Text>
+        <Text className="text-red-400 text-center mb-4">Failed to load history.</Text>
+        <Pressable
+          className="bg-surface px-6 py-3 rounded-xl"
+          onPress={() => queryClient.invalidateQueries({ queryKey: ['fasting_sessions', profile?.id] })}
+        >
+          <Text className="text-text-primary font-medium">Try Again</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -98,7 +109,7 @@ export default function HistoryScreen() {
           }
           renderItem={({ item }) => <FastCard session={item} />}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-          ItemSeparatorComponent={() => <View className="h-2" />}
+          ItemSeparatorComponent={ItemSeparator}
         />
       )}
     </SafeAreaView>

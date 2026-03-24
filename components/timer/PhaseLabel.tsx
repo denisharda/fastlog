@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FastingPhase } from '../../constants/phases';
 
@@ -11,7 +12,7 @@ interface PhaseLabelProps {
  * Displays the current fasting phase name and description below the ring.
  * Tappable to open the phases drawer.
  */
-export function PhaseLabel({ phase, visible, onPress }: PhaseLabelProps) {
+export const PhaseLabel = React.memo(function PhaseLabel({ phase, visible, onPress }: PhaseLabelProps) {
   if (!visible) return null;
 
   return (
@@ -23,4 +24,10 @@ export function PhaseLabel({ phase, visible, onPress }: PhaseLabelProps) {
       <Text className="text-text-muted text-xs text-center">{phase.description}</Text>
     </Pressable>
   );
-}
+}, (prev, next) => {
+  return (
+    prev.phase.name === next.phase.name &&
+    prev.visible === next.visible &&
+    prev.onPress === next.onPress
+  );
+});

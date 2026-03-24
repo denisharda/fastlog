@@ -9,6 +9,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -87,12 +89,13 @@ export async function scheduleCompletionNotification(
 /**
  * Schedule phase transition notifications (free for all users).
  * Notifies when entering each new fasting phase.
+ * Uses Promise.all to schedule all notifications in parallel.
  */
 export async function schedulePhaseNotifications(
   fastStartTime: Date,
   targetHours: number
 ): Promise<string[]> {
-  const ids: string[] = [];
+  const promises: Promise<string>[] = [];
 
   for (const phase of FASTING_PHASES) {
     // Skip "Fed State" (starts at 0) — user just started
@@ -102,21 +105,21 @@ export async function schedulePhaseNotifications(
     const triggerDate = new Date(fastStartTime.getTime() + phase.minHours * 60 * 60 * 1000);
     if (triggerDate <= new Date()) continue;
 
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: phase.name,
-        body: `${phase.minHours}h in — ${phase.description.toLowerCase()}.`,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate,
-      },
-    });
-
-    ids.push(id);
+    promises.push(
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: phase.name,
+          body: `${phase.minHours}h in — ${phase.description.toLowerCase()}.`,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        },
+      })
+    );
   }
 
-  return ids;
+  return Promise.all(promises);
 }
 
 // ─── Pro-only notifications (AI coach check-ins) ────────────────────────────
@@ -125,67 +128,77 @@ export async function schedulePhaseNotifications(
  * Schedule AI coach check-in notifications at dynamic hours based on target.
  * Includes base hours (4, 8, 12) plus phase-transition hours (16, 18) for longer fasts.
  * Pro only — these prompt the user to open the app for their AI message.
+ * Uses Promise.all to schedule all notifications in parallel.
  */
 export async function scheduleCheckinNotifications(
   fastStartTime: Date,
   targetHours: number
 ): Promise<string[]> {
-  const ids: string[] = [];
+  const promises: Promise<string>[] = [];
   const checkinHours = getCheckinHoursForTarget(targetHours);
 
   for (const hour of checkinHours) {
     const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
     if (triggerDate <= new Date()) continue;
 
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'AI Coach Check-in',
-        body: `You're ${hour} hours in — tap for your personalized AI message.`,
-        data: { fastingHour: hour },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate,
-      },
-    });
-
-    ids.push(id);
+    promises.push(
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'AI Coach Check-in',
+          body: `You're ${hour} hours in — tap for your personalized AI message.`,
+          data: { fastingHour: hour },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        },
+      })
+    );
   }
 
-  return ids;
+  return Promise.all(promises);
 }
 
 // ─── Water reminder notifications ─────────────────────────────────────────
 
+const MAX_WATER_REMINDERS = 12; // 24 hours of coverage, prevents exceeding iOS 64-notification limit
+
 /**
  * Schedule hydration reminders every 2 hours during a fast.
+ * Capped at MAX_WATER_REMINDERS to stay within iOS notification limits.
+ * Uses Promise.all to schedule all notifications in parallel.
  */
 export async function scheduleWaterReminders(
   fastStartTime: Date,
   targetHours: number
 ): Promise<string[]> {
-  const ids: string[] = [];
+  const promises: Promise<string>[] = [];
   const now = Date.now();
+  let count = 0;
 
   for (let h = WATER_REMINDER_INTERVAL_HOURS; h < targetHours; h += WATER_REMINDER_INTERVAL_HOURS) {
+    if (count >= MAX_WATER_REMINDERS) break;
+
     const triggerDate = new Date(fastStartTime.getTime() + h * 60 * 60 * 1000);
     if (triggerDate.getTime() <= now) continue;
 
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Stay Hydrated 💧',
-        body: `You're ${h} hours into your fast. Remember to drink water!`,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate,
-      },
-    });
+    promises.push(
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Stay Hydrated',
+          body: `You're ${h} hours into your fast. Remember to drink water!`,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        },
+      })
+    );
 
-    ids.push(id);
+    count++;
   }
 
-  return ids;
+  return Promise.all(promises);
 }
 
 /**

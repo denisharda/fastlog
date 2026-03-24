@@ -8,6 +8,7 @@ export interface Profile {
   preferred_protocol: FastingProtocol;
   daily_water_goal_ml: number;
   push_token: string | null;
+  goals?: string[]; // Local-only — for future AI personalization
   created_at: string;
 }
 

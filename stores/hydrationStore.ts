@@ -55,6 +55,11 @@ export const useHydrationStore = create<HydrationState>()(
     {
       name: 'hydration-store',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        todayLogs: state.todayLogs,
+        dailyGoalMl: state.dailyGoalMl,
+        lastResetDate: state.lastResetDate,
+      }),
     }
   )
 );

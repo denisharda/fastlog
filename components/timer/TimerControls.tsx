@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 interface TimerControlsProps {
@@ -11,7 +12,7 @@ interface TimerControlsProps {
 /**
  * Start / stop / complete button group for the timer screen.
  */
-export function TimerControls({
+export const TimerControls = React.memo(function TimerControls({
   isActive,
   onStart,
   onStop,
@@ -58,4 +59,4 @@ export function TimerControls({
       </Pressable>
     </View>
   );
-}
+});

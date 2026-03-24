@@ -3,7 +3,7 @@ create table hydration_logs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles(id) on delete cascade,
   session_id uuid references fasting_sessions(id) on delete set null,
-  amount_ml int not null,
+  amount_ml int not null check (amount_ml > 0),
   logged_at timestamptz default now()
 );
 

@@ -1,7 +1,8 @@
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { useUserStore } from '../../stores/userStore';
 
 const GOAL_OPTIONS = [
   { label: 'Lose weight', emoji: '⚡' },
@@ -13,6 +14,7 @@ const GOAL_OPTIONS = [
 
 export default function OnboardingGoalScreen() {
   const router = useRouter();
+  const updateProfile = useUserStore(s => s.updateProfile);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
   function toggleGoal(goal: string) {
@@ -38,7 +40,7 @@ export default function OnboardingGoalScreen() {
           What's your goal?
         </Text>
         <Text className="text-text-muted mb-8">
-          Select all that apply. This helps personalize your experience.
+          Optional — select all that apply. These will personalize your AI check-ins in a future update.
         </Text>
 
         <View className="gap-3 mb-8">
@@ -71,7 +73,14 @@ export default function OnboardingGoalScreen() {
         <View className="gap-3">
           <Pressable
             className="bg-primary py-4 rounded-2xl items-center"
-            onPress={() => router.push('/onboarding/coach')}
+            onPress={() => {
+              // Goals stored locally for future AI personalization
+              // When AI features are built out, these will be sent with check-in requests
+              if (selectedGoals.length > 0) {
+                updateProfile({ goals: selectedGoals });
+              }
+              router.push('/onboarding/coach');
+            }}
           >
             <Text className="text-text-primary font-semibold text-lg">Continue</Text>
           </Pressable>

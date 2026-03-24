@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface FullScreenWaveProps {
-  /** 0–1 fill ratio */
+  /** 0-1 fill ratio */
   progress: number;
   width: number;
   height: number;
@@ -12,113 +12,104 @@ interface FullScreenWaveProps {
 /**
  * Full-screen animated water fill background with two overlapping sine waves.
  * Positioned as an absolute overlay with pointerEvents="none".
+ *
+ * Performance: SVG paths are only rebuilt when progress/dimensions change.
+ * Wave shimmer is driven by a native-driver opacity animation on an Animated.View
+ * wrapper (no setInterval, no private _value access).
  */
-export function FullScreenWave({ progress, width, height }: FullScreenWaveProps) {
-  const wave1Offset = useRef(new Animated.Value(0)).current;
-  const wave2Offset = useRef(new Animated.Value(0)).current;
-  const fillAnim = useRef(new Animated.Value(progress)).current;
+export const FullScreenWave = React.memo(function FullScreenWave({ progress, width, height }: FullScreenWaveProps) {
+  const clampedProgress = Math.min(Math.max(progress, 0), 1);
+  const fillHeight = clampedProgress * height;
+  const baseY = height - fillHeight;
 
-  const [paths, setPaths] = useState({ front: '', back: '' });
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Build wave paths only when progress or dimensions change
+  const { wave1Path, wave2Path } = useMemo(() => {
+    const amplitude = 15;
+    const steps = 20;
+    const stepWidth = width / steps;
 
-  // Wave phase animation loops
-  useEffect(() => {
-    const loop1 = Animated.loop(
-      Animated.timing(wave1Offset, {
-        toValue: 1,
-        duration: 3000,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      })
-    );
-    const loop2 = Animated.loop(
-      Animated.timing(wave2Offset, {
-        toValue: 1,
-        duration: 4200,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      })
-    );
-    loop1.start();
-    loop2.start();
-    return () => {
-      loop1.stop();
-      loop2.stop();
-    };
-  }, []);
-
-  // Animate fill level with spring
-  useEffect(() => {
-    Animated.spring(fillAnim, {
-      toValue: progress,
-      damping: 12,
-      stiffness: 80,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
-
-  // Rebuild SVG paths at ~30fps
-  useEffect(() => {
-    if (width === 0 || height === 0) return;
-
-    function tick() {
-      const w1 = (wave1Offset as unknown as { _value: number })._value;
-      const w2 = (wave2Offset as unknown as { _value: number })._value;
-      const f = (fillAnim as unknown as { _value: number })._value;
-
-      const fillHeight = Math.min(f, 1) * height;
-      const waveY = height - fillHeight;
-
-      setPaths({
-        back: buildWavePath(width, height, waveY, 15, w2),
-        front: buildWavePath(width, height, waveY + 4, 15, w1),
-      });
+    function buildPath(phaseOffset: number): string {
+      const points: string[] = [];
+      for (let i = 0; i <= steps; i++) {
+        const x = i * stepWidth;
+        const y = baseY + Math.sin((i / steps) * Math.PI * 4 + phaseOffset) * amplitude;
+        points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+      }
+      points.push(`L${width},${height}`);
+      points.push(`L0,${height}`);
+      points.push('Z');
+      return points.join(' ');
     }
 
-    tick();
-    intervalRef.current = setInterval(tick, 33);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    return {
+      wave1Path: buildPath(0),
+      wave2Path: buildPath(1.5),
     };
-  }, [width, height]);
+  }, [clampedProgress, width, height, baseY]);
+
+  // Simple opacity-based animation for wave shimmer effect (uses native driver on View)
+  const shimmer = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmer]);
+
+  const wave2Opacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.5],
+  });
+
+  if (clampedProgress <= 0 || width === 0 || height === 0) return null;
+
+  const absoluteFill = { position: 'absolute' as const, top: 0, left: 0 };
 
   return (
-    <View
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      pointerEvents="none"
-    >
-      <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-        <Path d={paths.back} fill="#0369A1" fillOpacity={0.5} />
-        <Path d={paths.front} fill="#0EA5E9" fillOpacity={0.4} />
+    <>
+      {/* Front wave — static opacity */}
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        style={absoluteFill}
+        pointerEvents="none"
+      >
+        <Defs>
+          <LinearGradient id="waveGrad1" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#0369A1" stopOpacity="0.5" />
+            <Stop offset="1" stopColor="#0EA5E9" stopOpacity="0.3" />
+          </LinearGradient>
+        </Defs>
+        <Path d={wave1Path} fill="url(#waveGrad1)" opacity={0.4} />
       </Svg>
-    </View>
+
+      {/* Back wave — animated opacity via Animated.View (supports useNativeDriver) */}
+      <Animated.View style={[absoluteFill, { opacity: wave2Opacity }]} pointerEvents="none">
+        <Svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+        >
+          <Defs>
+            <LinearGradient id="waveGrad2" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#0369A1" stopOpacity="0.5" />
+              <Stop offset="1" stopColor="#0EA5E9" stopOpacity="0.3" />
+            </LinearGradient>
+          </Defs>
+          <Path d={wave2Path} fill="url(#waveGrad2)" />
+        </Svg>
+      </Animated.View>
+    </>
   );
-}
-
-/** Build a sine-wave path that fills from waveY down to the bottom */
-function buildWavePath(
-  width: number,
-  height: number,
-  waveY: number,
-  amplitude: number,
-  phaseOffset: number
-): string {
-  const points: string[] = [];
-  const steps = 20;
-
-  for (let i = 0; i <= steps; i++) {
-    const x = (i / steps) * width;
-    const y =
-      waveY +
-      Math.sin((i / steps) * Math.PI * 4 + phaseOffset * Math.PI * 2) *
-        amplitude;
-    points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
-  }
-
-  points.push(`L${width},${height}`);
-  points.push(`L0,${height}`);
-  points.push('Z');
-
-  return points.join(' ');
-}
+}, (prev, next) => {
+  return (
+    Math.abs(prev.progress - next.progress) < 0.005 &&
+    prev.width === next.width &&
+    prev.height === next.height
+  );
+});

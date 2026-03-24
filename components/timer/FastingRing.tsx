@@ -1,3 +1,4 @@
+import React from 'react';
 import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -17,7 +18,7 @@ const COMPLETED_COLOR = '#40916C';
  * Circular SVG progress ring — the hero element of the timer screen.
  * Children are rendered centered inside the ring.
  */
-export function FastingRing({
+export const FastingRing = React.memo(function FastingRing({
   progress,
   size = 280,
   strokeWidth = 16,
@@ -65,4 +66,11 @@ export function FastingRing({
       </View>
     </View>
   );
-}
+}, (prev, next) => {
+  return (
+    Math.abs(prev.progress - next.progress) < 0.001 &&
+    prev.size === next.size &&
+    prev.strokeWidth === next.strokeWidth &&
+    prev.children === next.children
+  );
+});

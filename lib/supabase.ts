@@ -1,3 +1,4 @@
+// TODO: Test removing this polyfill — Hermes in SDK 55+ has native URL support
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';

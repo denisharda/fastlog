@@ -43,6 +43,7 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
             name: profile.name,
             coach_personality: profile.coach_personality,
             preferred_protocol: profile.preferred_protocol,
+            daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
             push_token: null,
             created_at: profile.created_at,
           });

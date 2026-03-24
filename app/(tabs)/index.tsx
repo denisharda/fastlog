@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useFasting } from '../../hooks/useFasting';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
@@ -9,6 +10,7 @@ import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { TimerControls } from '../../components/timer/TimerControls';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
+import { CUSTOM_PROTOCOL_MIN_HOURS, CUSTOM_PROTOCOL_MAX_HOURS } from '../../constants/protocols';
 
 const FASTING_OPTIONS = [
   { hours: 16, label: '16:8', protocol: '16:8' as FastingProtocol },
@@ -25,7 +27,8 @@ function formatDuration(seconds: number): string {
 
 export default function TimerScreen() {
   const router = useRouter();
-  const { profile, isPro } = useUserStore();
+  const profile = useUserStore(s => s.profile);
+  const isPro = useUserStore(s => s.isPro);
   const {
     isActive,
     elapsedSeconds,
@@ -44,16 +47,40 @@ export default function TimerScreen() {
   const [customHoursText, setCustomHoursText] = useState('');
   const [showPhases, setShowPhases] = useState(false);
 
-  async function handleStart() {
+  const handleStart = useCallback(async () => {
     if (isCustom) {
       const hours = parseInt(customHoursText, 10);
-      if (!hours || hours < 1 || hours > 72) return;
+      if (!hours || hours < CUSTOM_PROTOCOL_MIN_HOURS || hours > CUSTOM_PROTOCOL_MAX_HOURS) return;
       await startFast('custom' as FastingProtocol, hours);
     } else {
       const option = FASTING_OPTIONS.find((o) => o.hours === selectedHours) ?? FASTING_OPTIONS[0];
       await startFast(option.protocol, option.hours);
     }
-  }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [isCustom, customHoursText, selectedHours, startFast]);
+
+  const handleStop = useCallback(() => {
+    Alert.alert(
+      'End Fast Early?',
+      'Are you sure you want to stop your fast? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End Fast',
+          style: 'destructive',
+          onPress: () => {
+            stopFast(false);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          },
+        },
+      ]
+    );
+  }, [stopFast]);
+
+  const handleComplete = useCallback(() => {
+    stopFast(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [stopFast]);
 
   function handleCustomPress() {
     if (!isPro) {
@@ -62,6 +89,12 @@ export default function TimerScreen() {
     }
     setIsCustom(true);
   }
+
+  const handleProtocolSelect = useCallback((hours: number) => {
+    setIsCustom(false);
+    setSelectedHours(hours);
+    Haptics.selectionAsync();
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -128,10 +161,7 @@ export default function TimerScreen() {
                           className={`px-5 py-3 rounded-xl ${
                             isSelected ? 'bg-primary' : 'bg-surface'
                           }`}
-                          onPress={() => {
-                            setIsCustom(false);
-                            setSelectedHours(option.hours);
-                          }}
+                          onPress={() => handleProtocolSelect(option.hours)}
                         >
                           <Text
                             className={`font-semibold text-base ${
@@ -163,12 +193,12 @@ export default function TimerScreen() {
                   <View className="flex-row items-center gap-2 mt-2">
                     <TextInput
                       className="bg-surface text-text-primary rounded-xl px-4 py-3 flex-1 text-center text-lg"
-                      placeholder="Hours (1-72)"
+                      placeholder={`Hours (${CUSTOM_PROTOCOL_MIN_HOURS}-${CUSTOM_PROTOCOL_MAX_HOURS})`}
                       placeholderTextColor="#9CA3AF"
                       keyboardType="number-pad"
                       value={customHoursText}
                       onChangeText={setCustomHoursText}
-                      maxLength={2}
+                      maxLength={3}
                     />
                     <Text className="text-text-muted text-base">hours</Text>
                   </View>
@@ -178,8 +208,8 @@ export default function TimerScreen() {
             <TimerControls
               isActive={isActive}
               onStart={handleStart}
-              onStop={() => stopFast(false)}
-              onComplete={() => stopFast(true)}
+              onStop={handleStop}
+              onComplete={handleComplete}
               progressRatio={progressRatio}
             />
           </View>

@@ -53,7 +53,7 @@ export default function PaywallScreen() {
       // Check trial eligibility
       if (annual?.product?.introPrice) {
         try {
-          const eligibility = await Purchases.checkTrialOrIntroDiscountEligibility([
+          const eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility([
             annual.product.identifier,
           ]);
           const status = eligibility[annual.product.identifier];

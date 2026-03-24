@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text } from 'react-native';
 
 interface WaterPercentCircleProps {
@@ -5,7 +6,7 @@ interface WaterPercentCircleProps {
   remainingMl: number;
 }
 
-export function WaterPercentCircle({ progressRatio, remainingMl }: WaterPercentCircleProps) {
+export const WaterPercentCircle = React.memo(function WaterPercentCircle({ progressRatio, remainingMl }: WaterPercentCircleProps) {
   const pct = Math.round(Math.min(progressRatio, 1) * 100);
   const goalReached = progressRatio >= 1;
 
@@ -26,4 +27,4 @@ export function WaterPercentCircle({ progressRatio, remainingMl }: WaterPercentC
       )}
     </View>
   );
-}
+});

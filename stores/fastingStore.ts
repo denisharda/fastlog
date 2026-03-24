@@ -72,6 +72,12 @@ export const useFastingStore = create<FastingState>()(
     {
       name: 'fasting-store',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        activeFast: state.activeFast ? {
+          ...state.activeFast,
+          scheduledNotificationIds: [], // Don't persist notification IDs — they are invalid after app restart
+        } : null,
+      }),
     }
   )
 );

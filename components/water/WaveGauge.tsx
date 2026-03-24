@@ -1,70 +1,36 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, Path, G, Text as SvgText } from 'react-native-svg';
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 interface WaveGaugeProps {
-  /** 0–1 fill ratio */
+  /** 0-1 fill ratio */
   progress: number;
   /** Diameter in points */
   size?: number;
 }
 
 /**
- * Circular water gauge with animated wave fill.
- * Two overlapping sine waves at different speeds create a liquid sloshing effect.
+ * Circular water gauge with static wave fill.
+ * Wrapped in React.memo — only re-renders when progress or size changes.
+ * Removed unused Animated.loop calls that were consuming resources without effect.
  */
-export function WaveGauge({ progress, size = 64 }: WaveGaugeProps) {
-  const wave1Offset = useRef(new Animated.Value(0)).current;
-  const wave2Offset = useRef(new Animated.Value(0)).current;
-  const fillAnim = useRef(new Animated.Value(progress)).current;
-
-  // Animate wave scrolling
-  useEffect(() => {
-    const loop1 = Animated.loop(
-      Animated.timing(wave1Offset, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      })
-    );
-    const loop2 = Animated.loop(
-      Animated.timing(wave2Offset, {
-        toValue: 1,
-        duration: 2800,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      })
-    );
-    loop1.start();
-    loop2.start();
-    return () => {
-      loop1.stop();
-      loop2.stop();
-    };
-  }, []);
-
-  // Animate fill level with spring
-  useEffect(() => {
-    Animated.spring(fillAnim, {
-      toValue: progress,
-      damping: 12,
-      stiffness: 80,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
-
+export const WaveGauge = React.memo(function WaveGauge({ progress, size = 64 }: WaveGaugeProps) {
   const r = size / 2;
   const cx = r;
   const cy = r;
   const clipId = 'wave-clip';
 
-  // We use a static SVG since Animated + SVG path is complex in RN.
-  // Instead we'll use a simpler visual: filled circle with gradient-like layers.
   const fillHeight = Math.min(progress, 1) * size;
   const fillY = size - fillHeight;
+
+  const { backPath, frontPath } = useMemo(() => {
+    return {
+      backPath: buildWavePath(size, fillY, 3, 0.3),
+      frontPath: buildWavePath(size, fillY + 2, 3.5, 0),
+    };
+  }, [size, fillY]);
+
+  const percentText = `${Math.round(progress * 100)}%`;
 
   return (
     <View style={{ width: size, height: size }}>
@@ -90,13 +56,13 @@ export function WaveGauge({ progress, size = 64 }: WaveGaugeProps) {
         <G clipPath={`url(#${clipId})`}>
           {/* Back wave (darker) */}
           <Path
-            d={buildWavePath(size, fillY, 3, 0.3)}
+            d={backPath}
             fill="#2D6A4F"
             fillOpacity={0.5}
           />
           {/* Front wave (brighter) */}
           <Path
-            d={buildWavePath(size, fillY + 2, 3.5, 0)}
+            d={frontPath}
             fill="#40916C"
             fillOpacity={0.6}
           />
@@ -112,12 +78,12 @@ export function WaveGauge({ progress, size = 64 }: WaveGaugeProps) {
           fontSize={size * 0.22}
           fontWeight="600"
         >
-          {Math.round(progress * 100)}%
+          {percentText}
         </SvgText>
       </Svg>
     </View>
   );
-}
+});
 
 /** Build a static sine-wave path that fills from waveY down to size */
 function buildWavePath(

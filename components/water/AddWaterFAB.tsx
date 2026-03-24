@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pressable, Text, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -5,7 +6,7 @@ interface AddWaterFABProps {
   onPress: () => void;
 }
 
-export function AddWaterFAB({ onPress }: AddWaterFABProps) {
+export const AddWaterFAB = React.memo(function AddWaterFAB({ onPress }: AddWaterFABProps) {
   function handlePress() {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -21,4 +22,4 @@ export function AddWaterFAB({ onPress }: AddWaterFABProps) {
       <Text className="text-text-primary text-3xl font-bold">+</Text>
     </Pressable>
   );
-}
+});

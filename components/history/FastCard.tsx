@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text } from 'react-native';
 import { FastingSession } from '../../types';
 
@@ -24,7 +25,7 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 /**
  * Card displaying a single fasting session summary.
  */
-export function FastCard({ session }: FastCardProps) {
+export const FastCard = React.memo(function FastCard({ session }: FastCardProps) {
   const duration = formatDuration(session.started_at, session.ended_at);
   const progress =
     session.ended_at
@@ -63,4 +64,4 @@ export function FastCard({ session }: FastCardProps) {
       </Text>
     </View>
   );
-}
+});

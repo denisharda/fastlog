@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text } from 'react-native';
 
 interface WaterStatusBarProps {
@@ -5,7 +6,7 @@ interface WaterStatusBarProps {
   goalMl: number;
 }
 
-export function WaterStatusBar({ currentMl, goalMl }: WaterStatusBarProps) {
+export const WaterStatusBar = React.memo(function WaterStatusBar({ currentMl, goalMl }: WaterStatusBarProps) {
   return (
     <View className="bg-black/40 rounded-2xl mx-6 mb-4 py-3 px-4">
       <Text className="text-text-primary text-center text-sm font-medium">
@@ -13,4 +14,4 @@ export function WaterStatusBar({ currentMl, goalMl }: WaterStatusBarProps) {
       </Text>
     </View>
   );
-}
+});
