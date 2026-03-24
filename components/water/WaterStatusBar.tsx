@@ -8,7 +8,7 @@ interface WaterStatusBarProps {
 
 export const WaterStatusBar = React.memo(function WaterStatusBar({ currentMl, goalMl }: WaterStatusBarProps) {
   return (
-    <View className="bg-black/40 rounded-2xl mx-6 mb-4 py-3 px-4">
+    <View className="bg-white rounded-2xl mx-6 mb-4 py-3 px-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
       <Text className="text-text-primary text-center text-sm font-medium">
         {currentMl}ml drank{'  '}|{'  '}out of {goalMl}ml
       </Text>

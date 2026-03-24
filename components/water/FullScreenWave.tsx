@@ -81,11 +81,11 @@ export const FullScreenWave = React.memo(function FullScreenWave({ progress, wid
       >
         <Defs>
           <LinearGradient id="waveGrad1" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#0369A1" stopOpacity="0.5" />
-            <Stop offset="1" stopColor="#0EA5E9" stopOpacity="0.3" />
+            <Stop offset="0" stopColor="#0EA5E9" stopOpacity="0.25" />
+            <Stop offset="1" stopColor="#38BDF8" stopOpacity="0.15" />
           </LinearGradient>
         </Defs>
-        <Path d={wave1Path} fill="url(#waveGrad1)" opacity={0.4} />
+        <Path d={wave1Path} fill="url(#waveGrad1)" opacity={0.5} />
       </Svg>
 
       {/* Back wave — animated opacity via Animated.View (supports useNativeDriver) */}
@@ -97,8 +97,8 @@ export const FullScreenWave = React.memo(function FullScreenWave({ progress, wid
         >
           <Defs>
             <LinearGradient id="waveGrad2" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#0369A1" stopOpacity="0.5" />
-              <Stop offset="1" stopColor="#0EA5E9" stopOpacity="0.3" />
+              <Stop offset="0" stopColor="#0EA5E9" stopOpacity="0.2" />
+              <Stop offset="1" stopColor="#38BDF8" stopOpacity="0.1" />
             </LinearGradient>
           </Defs>
           <Path d={wave2Path} fill="url(#waveGrad2)" />

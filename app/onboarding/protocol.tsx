@@ -31,7 +31,7 @@ export default function OnboardingProtocolScreen() {
           {[1, 2, 3].map((step) => (
             <View
               key={step}
-              className={`h-1 flex-1 rounded-full ${step === 1 ? 'bg-primary' : 'bg-surface'}`}
+              className={`h-1 flex-1 rounded-full ${step === 1 ? 'bg-primary' : 'bg-text-muted/20'}`}
             />
           ))}
         </View>
@@ -50,7 +50,7 @@ export default function OnboardingProtocolScreen() {
               className={`p-4 rounded-2xl border-2 ${
                 selected === protocol.id
                   ? 'border-primary bg-primary/10'
-                  : 'border-surface bg-surface'
+                  : 'border-text-muted/20 bg-white'
               }`}
               onPress={() => setSelected(protocol.id)}
             >
@@ -61,12 +61,12 @@ export default function OnboardingProtocolScreen() {
                 </View>
                 {protocol.popular && (
                   <View className="bg-primary px-2 py-1 rounded-lg">
-                    <Text className="text-text-primary text-xs font-medium">Popular</Text>
+                    <Text className="text-white text-xs font-medium">Popular</Text>
                   </View>
                 )}
                 {selected === protocol.id && (
                   <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-                    <Text className="text-text-primary text-xs">✓</Text>
+                    <Text className="text-white text-xs">✓</Text>
                   </View>
                 )}
               </View>
@@ -75,10 +75,10 @@ export default function OnboardingProtocolScreen() {
         </View>
 
         <Pressable
-          className="bg-primary py-4 rounded-2xl items-center"
+          className="bg-text-primary py-4 rounded-2xl items-center"
           onPress={handleContinue}
         >
-          <Text className="text-text-primary font-semibold text-lg">Continue</Text>
+          <Text className="text-white font-semibold text-lg">Continue</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

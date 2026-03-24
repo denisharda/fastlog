@@ -16,10 +16,10 @@ export const AddWaterFAB = React.memo(function AddWaterFAB({ onPress }: AddWater
 
   return (
     <Pressable
-      className="absolute bottom-24 right-6 w-16 h-16 rounded-full bg-primary shadow-lg items-center justify-center active:scale-95"
+      className="absolute bottom-24 right-6 w-16 h-16 rounded-full bg-text-primary shadow-lg items-center justify-center active:scale-95"
       onPress={handlePress}
     >
-      <Text className="text-text-primary text-3xl font-bold">+</Text>
+      <Text className="text-white text-3xl font-bold">+</Text>
     </Pressable>
   );
 });

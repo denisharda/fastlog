@@ -44,7 +44,7 @@ export default function HistoryScreen() {
       <SafeAreaView className="flex-1 bg-background">
         {/* Blurred preview placeholder */}
         <View className="flex-1 items-center justify-center px-6">
-          <View className="w-16 h-16 rounded-full bg-surface items-center justify-center mb-4">
+          <View className="w-16 h-16 rounded-full bg-white items-center justify-center mb-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
             <Text className="text-3xl">📅</Text>
           </View>
           <Text className="text-text-primary text-xl font-bold mb-2 text-center">
@@ -54,10 +54,10 @@ export default function HistoryScreen() {
             Track your progress over time, view streaks, and see your full fasting calendar with FastAI Pro.
           </Text>
           <Pressable
-            className="bg-primary px-8 py-4 rounded-2xl"
+            className="bg-text-primary px-8 py-4 rounded-2xl"
             onPress={handleUpgradePress}
           >
-            <Text className="text-text-primary font-semibold text-lg">Unlock Pro</Text>
+            <Text className="text-white font-semibold text-lg">Unlock Pro</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -77,7 +77,7 @@ export default function HistoryScreen() {
       <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
         <Text className="text-red-400 text-center mb-4">Failed to load history.</Text>
         <Pressable
-          className="bg-surface px-6 py-3 rounded-xl"
+          className="bg-white px-6 py-3 rounded-xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
           onPress={() => queryClient.invalidateQueries({ queryKey: ['fasting_sessions', profile?.id] })}
         >
           <Text className="text-text-primary font-medium">Try Again</Text>

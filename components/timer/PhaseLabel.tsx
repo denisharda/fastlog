@@ -8,20 +8,31 @@ interface PhaseLabelProps {
   onPress?: () => void;
 }
 
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 12,
+  elevation: 3,
+};
+
 /**
  * Displays the current fasting phase name and description below the ring.
- * Tappable to open the phases drawer.
+ * Tappable to open the phases drawer. Light-theme card style.
  */
 export const PhaseLabel = React.memo(function PhaseLabel({ phase, visible, onPress }: PhaseLabelProps) {
   if (!visible) return null;
 
   return (
     <Pressable className="items-center mt-6" onPress={onPress}>
-      <View className="bg-surface px-4 py-2 rounded-full mb-1 flex-row items-center gap-1">
-        <Text className="text-accent font-semibold text-sm">{phase.name}</Text>
-        <Text className="text-text-muted text-xs">&#x25B8;</Text>
+      <View
+        className="bg-white px-5 py-2.5 rounded-full mb-1 flex-row items-center gap-1"
+        style={cardShadow}
+      >
+        <Text className="text-primary font-semibold text-sm">{phase.name}</Text>
+        <Text className="text-gray-400 text-xs">&#x25B8;</Text>
       </View>
-      <Text className="text-text-muted text-xs text-center">{phase.description}</Text>
+      <Text className="text-gray-500 text-xs text-center mt-1">{phase.description}</Text>
     </Pressable>
   );
 }, (prev, next) => {

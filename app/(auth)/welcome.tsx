@@ -116,7 +116,7 @@ export default function WelcomeScreen() {
                 {'\n'}Tap the link to activate your account.
               </Text>
               <Pressable
-                className="mt-4 w-full border border-surface py-4 rounded-2xl items-center"
+                className="mt-4 w-full border border-text-muted/20 py-4 rounded-2xl items-center"
                 onPress={() => {
                   setConfirmEmail(false);
                   setIsSignUp(false);
@@ -134,16 +134,16 @@ export default function WelcomeScreen() {
               {/* Apple */}
               {Platform.OS === 'ios' && (
                 <Pressable
-                  className="w-full bg-white py-4 rounded-2xl items-center flex-row justify-center gap-2"
+                  className="w-full bg-text-primary py-4 rounded-2xl items-center flex-row justify-center gap-2"
                   onPress={handleApple}
                   disabled={loading !== null}
                 >
                   {loading === 'apple' ? (
-                    <ActivityIndicator color="#000" />
+                    <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <Text className="text-black text-lg">{'\uF8FF'}</Text>
-                      <Text className="text-black font-semibold text-lg">
+                      <Text className="text-white text-lg">{'\uF8FF'}</Text>
+                      <Text className="text-white font-semibold text-lg">
                         Sign in with Apple
                       </Text>
                     </>
@@ -153,18 +153,19 @@ export default function WelcomeScreen() {
 
               {/* Divider */}
               <View className="flex-row items-center my-1">
-                <View className="flex-1 h-px bg-surface" />
+                <View className="flex-1 h-px bg-text-muted/20" />
                 <Text className="text-text-muted mx-4 text-sm">or</Text>
-                <View className="flex-1 h-px bg-surface" />
+                <View className="flex-1 h-px bg-text-muted/20" />
               </View>
 
               {/* Email */}
               <Pressable
-                className="w-full border border-surface py-4 rounded-2xl items-center"
+                className="w-full bg-white border border-text-muted/20 py-4 rounded-2xl items-center"
+                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
                 onPress={() => setShowEmail(true)}
                 disabled={loading !== null}
               >
-                <Text className="text-text-muted font-semibold text-lg">
+                <Text className="text-text-primary font-semibold text-lg">
                   Continue with Email
                 </Text>
               </Pressable>
@@ -174,7 +175,7 @@ export default function WelcomeScreen() {
             <View className="w-full gap-3">
               {isSignUp && (
                 <TextInput
-                  className="bg-surface text-text-primary rounded-xl px-4 py-4"
+                  className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
                   placeholder="Your name"
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="words"
@@ -183,7 +184,7 @@ export default function WelcomeScreen() {
                 />
               )}
               <TextInput
-                className="bg-surface text-text-primary rounded-xl px-4 py-4"
+                className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
                 placeholder="Email"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
@@ -192,7 +193,7 @@ export default function WelcomeScreen() {
                 onChangeText={setEmail}
               />
               <TextInput
-                className="bg-surface text-text-primary rounded-xl px-4 py-4"
+                className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
                 placeholder={isSignUp ? 'Password (min 8 characters)' : 'Password'}
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
@@ -201,14 +202,14 @@ export default function WelcomeScreen() {
               />
 
               <Pressable
-                className="bg-primary py-4 rounded-2xl items-center"
+                className="bg-text-primary py-4 rounded-2xl items-center"
                 onPress={handleEmail}
                 disabled={loading !== null}
               >
                 {loading === 'email' ? (
-                  <ActivityIndicator color="#F5F5F5" />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-text-primary font-semibold text-lg">
+                  <Text className="text-white font-semibold text-lg">
                     {isSignUp ? 'Create Account' : 'Sign In'}
                   </Text>
                 )}

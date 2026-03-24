@@ -146,7 +146,7 @@ export default function PaywallScreen() {
         {/* Feature list */}
         <View className="gap-4 mb-8">
           {PRO_FEATURES.map((feature) => (
-            <View key={feature.title} className="flex-row items-center">
+            <View key={feature.title} className="flex-row items-center bg-white rounded-2xl p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
               <Text className="text-2xl mr-4">{feature.icon}</Text>
               <View className="flex-1">
                 <Text className="text-text-primary font-semibold">{feature.title}</Text>
@@ -169,7 +169,7 @@ export default function PaywallScreen() {
                 <Pressable
                   key={pkg.identifier}
                   className={`p-4 rounded-2xl border-2 ${
-                    isSelected ? 'border-primary bg-primary/10' : 'border-surface bg-surface'
+                    isSelected ? 'border-primary bg-primary/10' : 'border-text-muted/20 bg-white'
                   }`}
                   style={{ minHeight: 44 }}
                   onPress={() => setSelectedPackage(pkg)}
@@ -182,7 +182,7 @@ export default function PaywallScreen() {
                         </Text>
                         {isAnnual && trialEligible && (
                           <View className="bg-accent px-2 py-0.5 rounded-full">
-                            <Text className="text-text-primary text-xs font-bold">7-day free trial</Text>
+                            <Text className="text-white text-xs font-bold">7-day free trial</Text>
                           </View>
                         )}
                       </View>
@@ -195,7 +195,7 @@ export default function PaywallScreen() {
                     </View>
                     {isAnnual && (
                       <View className="bg-primary px-2 py-1 rounded-lg">
-                        <Text className="text-text-primary text-xs font-bold">Save 42%</Text>
+                        <Text className="text-white text-xs font-bold">Save 42%</Text>
                       </View>
                     )}
                   </View>
@@ -228,9 +228,9 @@ export default function PaywallScreen() {
             disabled={isPurchasing || !selectedPackage}
           >
             {isPurchasing ? (
-              <ActivityIndicator color="#F5F5F5" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text className="text-text-primary font-bold text-lg">
+              <Text className="text-white font-bold text-lg">
                 {ctaLabel}
               </Text>
             )}

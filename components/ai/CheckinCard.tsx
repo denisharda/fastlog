@@ -16,7 +16,7 @@ export function CheckinCard({ checkin }: CheckinCardProps) {
   const phase = getCurrentPhase(checkin.fasting_hour);
 
   return (
-    <View className="bg-surface rounded-2xl p-4 border border-primary/20">
+    <View className="bg-white rounded-2xl p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
       {/* Coach header */}
       <View className="flex-row items-center mb-3">
         <View className="w-8 h-8 rounded-full bg-primary items-center justify-center mr-2">

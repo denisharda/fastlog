@@ -142,7 +142,7 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
           left: 0,
           right: 0,
           transform: [{ translateY: slideAnim }],
-          backgroundColor: '#1A1A1A',
+          backgroundColor: '#FFFFFF',
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           paddingBottom: 40,
@@ -160,7 +160,7 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
         {/* Stepper row */}
         <View className="flex-row items-center justify-center gap-6 mb-6 px-6">
           <Pressable
-            className="w-12 h-12 rounded-full bg-surface items-center justify-center active:scale-95"
+            className="w-12 h-12 rounded-full bg-background items-center justify-center active:scale-95"
             onPress={decrement}
           >
             <Text className="text-text-primary text-2xl font-bold">−</Text>
@@ -169,7 +169,7 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
             {selectedAmount}ml
           </Text>
           <Pressable
-            className="w-12 h-12 rounded-full bg-surface items-center justify-center active:scale-95"
+            className="w-12 h-12 rounded-full bg-background items-center justify-center active:scale-95"
             onPress={increment}
           >
             <Text className="text-text-primary text-2xl font-bold">+</Text>
@@ -194,7 +194,7 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
           {...panResponder.panHandlers}
         >
           {/* Track background */}
-          <View className="h-1.5 rounded-full bg-surface" />
+          <View className="h-1.5 rounded-full bg-background" />
           {/* Track fill */}
           <Animated.View
             style={{
@@ -228,7 +228,7 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
               className={`px-4 py-2.5 rounded-full border ${
                 selectedAmount === amount
                   ? 'bg-water/20 border-water'
-                  : 'bg-surface border-transparent'
+                  : 'bg-background border-transparent'
               }`}
               onPress={() => setSelectedAmount(amount)}
             >
@@ -246,10 +246,10 @@ export function AddWaterSheet({ visible, onClose, onAdd }: AddWaterSheetProps) {
         {/* Add button */}
         <View className="px-6">
           <Pressable
-            className="bg-primary rounded-2xl py-4 items-center active:scale-[0.98]"
+            className="bg-text-primary rounded-2xl py-4 items-center active:scale-[0.98]"
             onPress={handleAdd}
           >
-            <Text className="text-text-primary text-base font-bold">
+            <Text className="text-white text-base font-bold">
               Add {selectedAmount}ml
             </Text>
           </Pressable>

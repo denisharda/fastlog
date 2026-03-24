@@ -8,11 +8,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'fastai',
-  userInterfaceStyle: 'dark',
+  userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#F2F2F7',
   },
   ios: {
     supportsTablet: false,
@@ -25,7 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#0A0A0A',
+      backgroundColor: '#F2F2F7',
     },
     package: 'com.fastai.app',
   },

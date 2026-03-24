@@ -11,7 +11,7 @@ export const WaterPercentCircle = React.memo(function WaterPercentCircle({ progr
   const goalReached = progressRatio >= 1;
 
   return (
-    <View className="w-48 h-48 rounded-full bg-black/30 border border-white/20 items-center justify-center">
+    <View className="w-48 h-48 rounded-full bg-white items-center justify-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }}>
       {goalReached ? (
         <>
           <Text className="text-text-primary text-4xl font-bold">✓</Text>

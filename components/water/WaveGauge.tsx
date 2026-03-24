@@ -46,10 +46,10 @@ export const WaveGauge = React.memo(function WaveGauge({ progress, size = 64 }: 
           cx={cx}
           cy={cy}
           r={r - 1}
-          fill="#1A1A1A"
-          stroke="#2D6A4F"
+          fill="#FFFFFF"
+          stroke="#E5E7EB"
           strokeWidth={1.5}
-          strokeOpacity={0.3}
+          strokeOpacity={0.5}
         />
 
         {/* Water fill — clipped to circle */}
@@ -74,7 +74,7 @@ export const WaveGauge = React.memo(function WaveGauge({ progress, size = 64 }: 
           y={cy + 1}
           textAnchor="middle"
           alignmentBaseline="central"
-          fill="#F5F5F5"
+          fill="#1A1A1A"
           fontSize={size * 0.22}
           fontWeight="600"
         >

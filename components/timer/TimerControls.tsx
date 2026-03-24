@@ -9,8 +9,17 @@ interface TimerControlsProps {
   progressRatio: number;
 }
 
+const buttonShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  elevation: 3,
+};
+
 /**
  * Start / stop / complete button group for the timer screen.
+ * Light theme: black start button, green complete, white+red-border stop.
  */
 export const TimerControls = React.memo(function TimerControls({
   isActive,
@@ -23,10 +32,11 @@ export const TimerControls = React.memo(function TimerControls({
     return (
       <View className="w-full">
         <Pressable
-          className="w-full bg-primary py-5 rounded-2xl items-center"
+          className="w-full bg-black py-4 rounded-2xl items-center"
+          style={buttonShadow}
           onPress={onStart}
         >
-          <Text className="text-text-primary font-bold text-xl">Start Fast</Text>
+          <Text className="text-white font-bold text-lg">Start Fast</Text>
         </Pressable>
       </View>
     );
@@ -38,22 +48,20 @@ export const TimerControls = React.memo(function TimerControls({
     <View className="w-full gap-3">
       {isNearComplete && (
         <Pressable
-          className="w-full bg-primary py-5 rounded-2xl items-center"
+          className="w-full bg-primary py-4 rounded-2xl items-center"
+          style={buttonShadow}
           onPress={onComplete}
         >
-          <Text className="text-text-primary font-bold text-xl">Complete Fast</Text>
+          <Text className="text-white font-bold text-lg">Complete Fast</Text>
         </Pressable>
       )}
 
       <Pressable
-        className={`w-full border py-4 rounded-2xl items-center ${
-          isNearComplete ? 'border-surface' : 'border-red-800'
-        }`}
+        className="w-full bg-white border border-red-300 py-4 rounded-2xl items-center"
+        style={buttonShadow}
         onPress={onStop}
       >
-        <Text
-          className={`font-semibold text-lg ${isNearComplete ? 'text-text-muted' : 'text-red-400'}`}
-        >
+        <Text className="text-red-500 font-semibold text-lg">
           {isNearComplete ? 'End Early' : 'Stop Fast'}
         </Text>
       </Pressable>

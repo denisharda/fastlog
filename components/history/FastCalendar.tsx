@@ -80,7 +80,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
                       ? 'bg-primary'
                       : isPartial
                       ? 'bg-accent/40'
-                      : 'bg-surface'
+                      : 'bg-white border border-text-muted/10'
                   } ${isToday ? 'border border-accent' : ''}`}
                 />
               );
@@ -100,7 +100,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
           <Text className="text-text-muted text-xs">Partial</Text>
         </View>
         <View className="flex-row items-center gap-1">
-          <View className="w-3 h-3 rounded-sm bg-surface" />
+          <View className="w-3 h-3 rounded-sm bg-white border border-text-muted/20" />
           <Text className="text-text-muted text-xs">No fast</Text>
         </View>
       </View>

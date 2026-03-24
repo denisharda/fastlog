@@ -37,14 +37,14 @@ export const FastCard = React.memo(function FastCard({ session }: FastCardProps)
       : 0;
 
   return (
-    <View className="bg-surface rounded-2xl p-4">
+    <View className="bg-white rounded-2xl p-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
       <View className="flex-row items-center justify-between mb-2">
         <Text className="text-text-primary font-semibold">{formatDate(session.started_at)}</Text>
         <View className="flex-row items-center gap-2">
           <Text className="text-text-muted text-sm">{session.protocol}</Text>
           {session.completed && (
             <View className="bg-primary px-2 py-0.5 rounded-full">
-              <Text className="text-text-primary text-xs">Complete</Text>
+              <Text className="text-white text-xs">Complete</Text>
             </View>
           )}
         </View>

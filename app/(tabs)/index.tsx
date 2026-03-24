@@ -18,6 +18,14 @@ const FASTING_OPTIONS = [
   { hours: 24, label: '24h', protocol: '24h' as FastingProtocol },
 ];
 
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 12,
+  elevation: 3,
+};
+
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -106,7 +114,7 @@ export default function TimerScreen() {
       >
         {/* Header */}
         <View className="w-full">
-          <Text className="text-text-primary text-xl font-bold">
+          <Text className="text-text-primary text-2xl font-bold">
             {isActive ? 'Fasting' : 'Ready to Fast'}
           </Text>
           {isActive && (
@@ -117,19 +125,26 @@ export default function TimerScreen() {
         </View>
 
         {/* Ring + phase */}
-        <View className="items-center my-4">
+        <View className="items-center my-6">
           <FastingRing
             progress={progressRatio}
-            size={280}
+            size={300}
             strokeWidth={16}
           >
             <View className="items-center">
-              <Text className="text-text-primary text-4xl font-bold tracking-wider">
+              <Text
+                className="text-text-primary text-4xl font-bold"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
                 {formatDuration(elapsedSeconds)}
               </Text>
-              {isActive && (
-                <Text className="text-text-muted text-sm mt-1">
-                  {(elapsedHours).toFixed(1)}h / {targetHours}h
+              {isActive ? (
+                <Text className="text-text-muted text-sm mt-2">
+                  {elapsedHours.toFixed(1)}h / {targetHours}h
+                </Text>
+              ) : (
+                <Text className="text-text-muted text-sm mt-2">
+                  Mins Remaining
                 </Text>
               )}
             </View>
@@ -138,9 +153,25 @@ export default function TimerScreen() {
           <PhaseLabel phase={currentPhase} visible={isActive} onPress={() => setShowPhases(true)} />
         </View>
 
+        {/* Info cards when fasting */}
+        {isActive && (
+          <View className="flex-row gap-3 w-full mb-4">
+            <View className="flex-1 bg-white rounded-2xl p-4" style={cardShadow}>
+              <Text className="text-text-muted text-xs mb-1">Current Phase</Text>
+              <Text className="text-text-primary text-lg font-bold">{currentPhase.name}</Text>
+              <Text className="text-text-muted text-xs mt-1">{currentPhase.description}</Text>
+            </View>
+            <View className="flex-1 bg-white rounded-2xl p-4" style={cardShadow}>
+              <Text className="text-text-muted text-xs mb-1">Progress</Text>
+              <Text className="text-text-primary text-lg font-bold">{(progressRatio * 100).toFixed(0)}%</Text>
+              <Text className="text-text-muted text-xs mt-1">{elapsedHours.toFixed(1)}h / {targetHours}h</Text>
+            </View>
+          </View>
+        )}
+
         {/* Error */}
         {error ? (
-          <Text className="text-red-400 text-sm text-center">{error}</Text>
+          <Text className="text-red-500 text-sm text-center">{error}</Text>
         ) : null}
 
         {/* Duration picker + Controls */}
@@ -150,7 +181,7 @@ export default function TimerScreen() {
           <View className="w-full gap-4">
             {!isActive && (
               <View className="gap-2">
-                <Text className="text-text-muted text-sm">Select duration</Text>
+                <Text className="text-text-muted text-sm font-medium">Select duration</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View className="flex-row gap-2">
                     {FASTING_OPTIONS.map((option) => {
@@ -159,13 +190,14 @@ export default function TimerScreen() {
                         <Pressable
                           key={option.hours}
                           className={`px-5 py-3 rounded-xl ${
-                            isSelected ? 'bg-primary' : 'bg-surface'
+                            isSelected ? 'bg-primary' : 'bg-white border border-gray-200'
                           }`}
+                          style={!isSelected ? cardShadow : undefined}
                           onPress={() => handleProtocolSelect(option.hours)}
                         >
                           <Text
                             className={`font-semibold text-base ${
-                              isSelected ? 'text-text-primary' : 'text-text-muted'
+                              isSelected ? 'text-white' : 'text-text-primary'
                             }`}
                           >
                             {option.label}
@@ -175,13 +207,14 @@ export default function TimerScreen() {
                     })}
                     <Pressable
                       className={`px-5 py-3 rounded-xl ${
-                        isCustom ? 'bg-primary' : 'bg-surface'
+                        isCustom ? 'bg-primary' : 'bg-white border border-gray-200'
                       }`}
+                      style={!isCustom ? cardShadow : undefined}
                       onPress={handleCustomPress}
                     >
                       <Text
                         className={`font-semibold text-base ${
-                          isCustom ? 'text-text-primary' : 'text-text-muted'
+                          isCustom ? 'text-white' : 'text-text-primary'
                         }`}
                       >
                         {isPro ? 'Custom' : 'Custom (Pro)'}
@@ -192,7 +225,8 @@ export default function TimerScreen() {
                 {isCustom && (
                   <View className="flex-row items-center gap-2 mt-2">
                     <TextInput
-                      className="bg-surface text-text-primary rounded-xl px-4 py-3 flex-1 text-center text-lg"
+                      className="bg-white border border-gray-200 text-text-primary rounded-xl px-4 py-3 flex-1 text-center text-lg"
+                      style={cardShadow}
                       placeholder={`Hours (${CUSTOM_PROTOCOL_MIN_HOURS}-${CUSTOM_PROTOCOL_MAX_HOURS})`}
                       placeholderTextColor="#9CA3AF"
                       keyboardType="number-pad"

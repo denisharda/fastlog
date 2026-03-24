@@ -31,7 +31,7 @@ export default function OnboardingGoalScreen() {
           {[1, 2, 3].map((step) => (
             <View
               key={step}
-              className={`h-1 flex-1 rounded-full ${step <= 2 ? 'bg-primary' : 'bg-surface'}`}
+              className={`h-1 flex-1 rounded-full ${step <= 2 ? 'bg-primary' : 'bg-text-muted/20'}`}
             />
           ))}
         </View>
@@ -52,7 +52,7 @@ export default function OnboardingGoalScreen() {
                 className={`flex-row items-center p-4 rounded-2xl border-2 ${
                   isSelected
                     ? 'border-primary bg-primary/10'
-                    : 'border-surface bg-surface'
+                    : 'border-text-muted/20 bg-white'
                 }`}
                 onPress={() => toggleGoal(goal.label)}
               >
@@ -62,7 +62,7 @@ export default function OnboardingGoalScreen() {
                 </Text>
                 {isSelected && (
                   <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-                    <Text className="text-text-primary text-xs">✓</Text>
+                    <Text className="text-white text-xs">✓</Text>
                   </View>
                 )}
               </Pressable>
@@ -72,7 +72,7 @@ export default function OnboardingGoalScreen() {
 
         <View className="gap-3">
           <Pressable
-            className="bg-primary py-4 rounded-2xl items-center"
+            className="bg-text-primary py-4 rounded-2xl items-center"
             onPress={() => {
               // Goals stored locally for future AI personalization
               // When AI features are built out, these will be sent with check-in requests
@@ -82,7 +82,7 @@ export default function OnboardingGoalScreen() {
               router.push('/onboarding/coach');
             }}
           >
-            <Text className="text-text-primary font-semibold text-lg">Continue</Text>
+            <Text className="text-white font-semibold text-lg">Continue</Text>
           </Pressable>
 
           <Pressable

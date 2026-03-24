@@ -54,16 +54,16 @@ export default function ProfileScreen() {
         <Text className="text-text-primary text-2xl font-bold mb-6">Profile</Text>
 
         {/* User info */}
-        <View className="bg-surface rounded-2xl p-4 mb-4">
+        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
           <Text className="text-text-muted text-xs mb-1 uppercase tracking-wider">Account</Text>
           <Text className="text-text-primary font-semibold text-lg">
             {profile?.name ?? 'Faster'}
           </Text>
           <View className="flex-row items-center mt-1">
             <View
-              className={`px-2 py-0.5 rounded-full ${isPro ? 'bg-primary' : 'bg-surface border border-text-muted'}`}
+              className={`px-2 py-0.5 rounded-full ${isPro ? 'bg-primary' : 'bg-background border border-text-muted/30'}`}
             >
-              <Text className="text-text-primary text-xs font-medium">
+              <Text className={`text-xs font-medium ${isPro ? 'text-white' : 'text-text-primary'}`}>
                 {isPro ? 'Pro' : 'Free'}
               </Text>
             </View>
@@ -73,21 +73,21 @@ export default function ProfileScreen() {
         {/* Upgrade banner (free users only) */}
         {!isPro && (
           <Pressable
-            className="bg-primary rounded-2xl p-4 mb-4 flex-row items-center justify-between"
+            className="bg-primary rounded-2xl p-4 mb-3 flex-row items-center justify-between"
             onPress={handleUpgradePress}
           >
             <View>
-              <Text className="text-text-primary font-bold text-base">Upgrade to Pro</Text>
-              <Text className="text-text-primary opacity-80 text-sm">
+              <Text className="text-white font-bold text-base">Upgrade to Pro</Text>
+              <Text className="text-white opacity-80 text-sm">
                 AI check-ins, history, streaks
               </Text>
             </View>
-            <Text className="text-text-primary text-xl">→</Text>
+            <Text className="text-white text-xl">→</Text>
           </Pressable>
         )}
 
         {/* Fasting Protocol */}
-        <View className="bg-surface rounded-2xl p-4 mb-4">
+        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
           <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
             Default Protocol
           </Text>
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
                 className={`px-4 py-2 rounded-xl border ${
                   profile?.preferred_protocol === protocol.id
                     ? 'bg-primary border-primary'
-                    : 'border-surface bg-background'
+                    : 'border-text-muted/20 bg-background'
                 }`}
                 onPress={async () => {
                   if (!profile) return;
@@ -112,14 +112,14 @@ export default function ProfileScreen() {
                     });
                 }}
               >
-                <Text className="text-text-primary font-medium">{protocol.label}</Text>
+                <Text className={`font-medium ${profile?.preferred_protocol === protocol.id ? 'text-white' : 'text-text-primary'}`}>{protocol.label}</Text>
               </Pressable>
             ))}
           </View>
         </View>
 
         {/* Daily Water Goal */}
-        <View className="bg-surface rounded-2xl p-4 mb-4">
+        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
           <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
             Daily Water Goal
           </Text>
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* AI Coach (Pro only) */}
-        <View className="bg-surface rounded-2xl p-4 mb-4">
+        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-text-muted text-xs uppercase tracking-wider">AI Coach</Text>
             {!isPro && (
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
                 className={`flex-row items-center p-3 rounded-xl border ${
                   profile?.coach_personality === coach.id
                     ? 'bg-primary border-primary'
-                    : 'border-transparent bg-background'
+                    : 'border-text-muted/10 bg-background'
                 } ${!isPro ? 'opacity-50' : ''}`}
                 onPress={async () => {
                   if (!profile || !isPro) {
@@ -204,8 +204,8 @@ export default function ProfileScreen() {
               >
                 <Text className="text-xl mr-3">{coach.emoji}</Text>
                 <View>
-                  <Text className="text-text-primary font-medium">{coach.label}</Text>
-                  <Text className="text-text-muted text-xs">{coach.tagline}</Text>
+                  <Text className={`font-medium ${profile?.coach_personality === coach.id ? 'text-white' : 'text-text-primary'}`}>{coach.label}</Text>
+                  <Text className={`text-xs ${profile?.coach_personality === coach.id ? 'text-white/70' : 'text-text-muted'}`}>{coach.tagline}</Text>
                 </View>
               </Pressable>
             ))}
@@ -215,7 +215,7 @@ export default function ProfileScreen() {
         {/* Dev toggle (debug only) */}
         {__DEV__ && (
           <Pressable
-            className="bg-surface rounded-2xl p-4 mb-4 flex-row items-center justify-between"
+            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
             onPress={() => setIsPro(!isPro)}
           >
             <Text className="text-text-primary font-medium">
@@ -230,22 +230,23 @@ export default function ProfileScreen() {
         {/* Actions */}
         <View className="gap-3 mt-2">
           <Pressable
-            className="bg-surface py-4 rounded-2xl items-center"
+            className="bg-white py-4 rounded-2xl items-center"
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
             onPress={handleRestorePurchases}
             disabled={restoringPurchases}
           >
             {restoringPurchases ? (
-              <ActivityIndicator color="#F5F5F5" />
+              <ActivityIndicator color="#1A1A1A" />
             ) : (
               <Text className="text-text-primary font-medium">Restore Purchases</Text>
             )}
           </Pressable>
 
           <Pressable
-            className="border border-red-800 py-4 rounded-2xl items-center"
+            className="bg-text-primary py-4 rounded-2xl items-center"
             onPress={handleSignOut}
           >
-            <Text className="text-red-400 font-medium">Sign Out</Text>
+            <Text className="text-white font-medium">Sign Out</Text>
           </Pressable>
         </View>
       </ScrollView>

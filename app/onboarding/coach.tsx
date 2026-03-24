@@ -48,7 +48,7 @@ export default function OnboardingCoachScreen() {
               className={`p-4 rounded-2xl border-2 ${
                 selected === coach.id
                   ? 'border-primary bg-primary/10'
-                  : 'border-surface bg-surface'
+                  : 'border-text-muted/20 bg-white'
               }`}
               onPress={() => setSelected(coach.id)}
             >
@@ -60,7 +60,7 @@ export default function OnboardingCoachScreen() {
                 </View>
                 {selected === coach.id && (
                   <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-                    <Text className="text-text-primary text-xs">✓</Text>
+                    <Text className="text-white text-xs">✓</Text>
                   </View>
                 )}
               </View>
@@ -69,10 +69,10 @@ export default function OnboardingCoachScreen() {
         </View>
 
         <Pressable
-          className="bg-primary py-4 rounded-2xl items-center"
+          className="bg-text-primary py-4 rounded-2xl items-center"
           onPress={handleFinish}
         >
-          <Text className="text-text-primary font-semibold text-lg">Start Fasting</Text>
+          <Text className="text-white font-semibold text-lg">Start Fasting</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

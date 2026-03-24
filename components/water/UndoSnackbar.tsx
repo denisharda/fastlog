@@ -78,8 +78,8 @@ export function UndoSnackbar({
         zIndex: 100,
       }}
     >
-      <View className="bg-surface rounded-2xl px-4 py-3 flex-row items-center justify-between border border-primary/20">
-        <Text className="text-text-primary text-sm flex-1">{message}</Text>
+      <View className="bg-text-primary rounded-2xl px-4 py-3 flex-row items-center justify-between">
+        <Text className="text-white text-sm flex-1">{message}</Text>
         <Pressable
           className="ml-3 px-3 py-1.5 rounded-lg"
           style={{ minHeight: 36 }}
@@ -88,7 +88,7 @@ export function UndoSnackbar({
             onUndo();
           }}
         >
-          <Text className="text-accent font-bold text-sm">Undo</Text>
+          <Text className="text-primary font-bold text-sm">Undo</Text>
         </Pressable>
       </View>
     </Animated.View>
