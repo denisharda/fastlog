@@ -1,17 +1,16 @@
-import { useState } from 'react';
-import { View, Text, useWindowDimensions } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, LayoutAnimation, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHydration } from '../../hooks/useHydration';
 import { FullScreenWave } from '../../components/water/FullScreenWave';
 import { WaterPercentCircle } from '../../components/water/WaterPercentCircle';
-import { AddWaterFAB } from '../../components/water/AddWaterFAB';
-import { AddWaterSheet } from '../../components/water/AddWaterSheet';
-import { WaterStatusBar } from '../../components/water/WaterStatusBar';
+import { QuickTapRow } from '../../components/water/QuickTapRow';
+import { InlineStepper } from '../../components/water/InlineStepper';
 import { UndoSnackbar } from '../../components/water/UndoSnackbar';
 
 export default function WaterScreen() {
   const { width, height } = useWindowDimensions();
-  const [sheetVisible, setSheetVisible] = useState(false);
+  const [stepperVisible, setStepperVisible] = useState(false);
 
   const {
     todayTotalMl,
@@ -24,6 +23,16 @@ export default function WaterScreen() {
   } = useHydration();
 
   const remainingMl = Math.max(dailyGoalMl - todayTotalMl, 0);
+
+  const handleToggleMore = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStepperVisible((prev) => !prev);
+  }, []);
+
+  const handleCollapse = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStepperVisible(false);
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -41,16 +50,26 @@ export default function WaterScreen() {
           />
         </View>
 
-        {/* Bottom status bar */}
-        <WaterStatusBar currentMl={todayTotalMl} goalMl={dailyGoalMl} />
+        {/* Status text */}
+        <Text className="text-text-muted text-center text-sm mb-3">
+          {todayTotalMl} <Text className="text-text-muted/40">/</Text> {dailyGoalMl} ml
+        </Text>
+
+        {/* Quick-tap row */}
+        <QuickTapRow
+          onQuickAdd={logWater}
+          onToggleMore={handleToggleMore}
+          moreExpanded={stepperVisible}
+        />
+
+        {/* Inline stepper */}
+        <InlineStepper
+          visible={stepperVisible}
+          onAdd={logWater}
+          onCollapse={handleCollapse}
+        />
       </View>
 
-      <AddWaterFAB onPress={() => setSheetVisible(true)} />
-      <AddWaterSheet
-        visible={sheetVisible}
-        onClose={() => setSheetVisible(false)}
-        onAdd={logWater}
-      />
       <UndoSnackbar
         message={snackbar.message}
         visible={snackbar.visible}
