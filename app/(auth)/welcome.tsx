@@ -175,7 +175,7 @@ export default function WelcomeScreen() {
             <View className="w-full gap-3">
               {isSignUp && (
                 <TextInput
-                  className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
+                  className="bg-white text-text-primary rounded-xl px-4 h-14 border border-text-muted/20 text-[16px]"
                   placeholder="Your name"
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="words"
@@ -184,7 +184,7 @@ export default function WelcomeScreen() {
                 />
               )}
               <TextInput
-                className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
+                className="bg-white text-text-primary rounded-xl px-4 h-14 border border-text-muted/20 text-[16px]"
                 placeholder="Email"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
@@ -193,7 +193,7 @@ export default function WelcomeScreen() {
                 onChangeText={setEmail}
               />
               <TextInput
-                className="bg-white text-text-primary rounded-xl px-4 py-4 border border-text-muted/20"
+                className="bg-white text-text-primary rounded-xl px-4 h-14 border border-text-muted/20 text-[16px]"
                 placeholder={isSignUp ? 'Password (min 8 characters)' : 'Password'}
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
