@@ -25,10 +25,10 @@ export function QuickTapRow({ onQuickAdd, onToggleMore, moreExpanded }: QuickTap
           key={amount}
           className={`flex-1 h-[52px] rounded-2xl items-center justify-center active:scale-95 ${
             i === 0
-              ? 'bg-water'
+              ? 'bg-primary'
               : 'bg-white border-[1.5px] border-gray-200'
           }`}
-          style={i === 0 ? { shadowColor: '#0EA5E9', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 } : undefined}
+          style={i === 0 ? { shadowColor: '#2D6A4F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 } : undefined}
           onPress={() => handleQuickAdd(amount)}
           accessibilityLabel={`Add ${amount} milliliters`}
           accessibilityRole="button"
@@ -41,14 +41,14 @@ export function QuickTapRow({ onQuickAdd, onToggleMore, moreExpanded }: QuickTap
       ))}
       <Pressable
         className={`w-[52px] h-[52px] rounded-2xl items-center justify-center border-[1.5px] active:scale-95 ${
-          moreExpanded ? 'bg-water/10 border-water' : 'bg-white border-gray-200'
+          moreExpanded ? 'bg-primary/10 border-primary' : 'bg-white border-gray-200'
         }`}
         onPress={onToggleMore}
         accessibilityLabel="Custom amount"
         accessibilityRole="button"
       >
         <Text className="text-[10px]">⚙️</Text>
-        <Text className={`font-semibold text-[8px] ${moreExpanded ? 'text-water' : 'text-text-muted'}`}>
+        <Text className={`font-semibold text-[8px] ${moreExpanded ? 'text-primary' : 'text-text-muted'}`}>
           More
         </Text>
       </Pressable>

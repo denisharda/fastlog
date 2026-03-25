@@ -72,7 +72,7 @@ export function InlineStepper({ visible, onAdd, onCollapse }: InlineStepperProps
         </Pressable>
       </View>
       <Pressable
-        className="bg-water rounded-xl h-11 items-center justify-center mt-2 active:scale-[0.98]"
+        className="bg-primary rounded-xl h-11 items-center justify-center mt-2 active:scale-[0.98]"
         onPress={handleAdd}
         accessibilityRole="button"
       >
