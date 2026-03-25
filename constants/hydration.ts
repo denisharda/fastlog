@@ -1,5 +1,5 @@
 /** Quick-add water amounts in ml */
-export const QUICK_ADD_AMOUNTS = [250, 500, 750] as const;
+export const QUICK_ADD_AMOUNTS = [250, 500] as const;
 
 /** Default daily water goal in ml */
 export const DEFAULT_DAILY_WATER_GOAL_ML = 2000;
