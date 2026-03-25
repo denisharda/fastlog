@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, TextInput, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -52,20 +52,18 @@ export default function TimerScreen() {
 
   const [selectedHours, setSelectedHours] = useState(16);
   const [isCustom, setIsCustom] = useState(false);
-  const [customHoursText, setCustomHoursText] = useState('');
+  const [customHours, setCustomHours] = useState(CUSTOM_PROTOCOL_MIN_HOURS);
   const [showPhases, setShowPhases] = useState(false);
 
   const handleStart = useCallback(async () => {
     if (isCustom) {
-      const hours = parseInt(customHoursText, 10);
-      if (!hours || hours < CUSTOM_PROTOCOL_MIN_HOURS || hours > CUSTOM_PROTOCOL_MAX_HOURS) return;
-      await startFast('custom' as FastingProtocol, hours);
+      await startFast('custom' as FastingProtocol, customHours);
     } else {
       const option = FASTING_OPTIONS.find((o) => o.hours === selectedHours) ?? FASTING_OPTIONS[0];
       await startFast(option.protocol, option.hours);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [isCustom, customHoursText, selectedHours, startFast]);
+  }, [isCustom, customHours, selectedHours, startFast]);
 
   const handleStop = useCallback(() => {
     Alert.alert(
@@ -223,18 +221,30 @@ export default function TimerScreen() {
                   </View>
                 </ScrollView>
                 {isCustom && (
-                  <View className="flex-row items-center gap-2 mt-2">
-                    <TextInput
-                      className="bg-white border border-gray-200 text-text-primary rounded-xl px-4 py-3 flex-1 text-center text-lg"
+                  <View className="flex-row items-center justify-center gap-4 mt-2">
+                    <Pressable
+                      className="w-12 h-12 rounded-full bg-white border border-gray-200 items-center justify-center"
                       style={cardShadow}
-                      placeholder={`Hours (${CUSTOM_PROTOCOL_MIN_HOURS}-${CUSTOM_PROTOCOL_MAX_HOURS})`}
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="number-pad"
-                      value={customHoursText}
-                      onChangeText={setCustomHoursText}
-                      maxLength={3}
-                    />
-                    <Text className="text-text-muted text-base">hours</Text>
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setCustomHours((h) => Math.max(CUSTOM_PROTOCOL_MIN_HOURS, h - 1));
+                      }}
+                    >
+                      <Text className="text-text-primary text-2xl font-medium">−</Text>
+                    </Pressable>
+                    <View className="bg-white border border-gray-200 rounded-xl px-6 h-12 items-center justify-center" style={cardShadow}>
+                      <Text className="text-text-primary text-xl font-semibold">{customHours}h</Text>
+                    </View>
+                    <Pressable
+                      className="w-12 h-12 rounded-full bg-white border border-gray-200 items-center justify-center"
+                      style={cardShadow}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setCustomHours((h) => Math.min(CUSTOM_PROTOCOL_MAX_HOURS, h + 1));
+                      }}
+                    >
+                      <Text className="text-text-primary text-2xl font-medium">+</Text>
+                    </Pressable>
                   </View>
                 )}
               </View>
