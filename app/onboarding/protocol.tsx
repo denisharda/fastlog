@@ -28,7 +28,7 @@ export default function OnboardingProtocolScreen() {
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         {/* Progress indicator */}
         <View className="flex-row gap-1 mb-8">
-          {[1, 2, 3].map((step) => (
+          {[1, 2].map((step) => (
             <View
               key={step}
               className={`h-1 flex-1 rounded-full ${step === 1 ? 'bg-primary' : 'bg-text-muted/20'}`}

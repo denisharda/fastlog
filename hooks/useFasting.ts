@@ -9,7 +9,7 @@ import {
   scheduleStartNotification,
   scheduleCompletionNotification,
   schedulePhaseNotifications,
-  scheduleCheckinNotifications,
+  // scheduleCheckinNotifications, // Hidden: AI coach
   scheduleWaterReminders,
   cancelAllNotifications,
 } from '../lib/notifications';
@@ -154,10 +154,8 @@ export function useFasting(): UseFastingReturn {
         const start = new Date(startedAt);
         const endTime = new Date(start.getTime() + hours * 3600 * 1000);
 
-        // Pro-only: AI coach check-in notifications
-        const proNotifPromise = isPro
-          ? scheduleCheckinNotifications(start, hours)
-          : Promise.resolve([]);
+        // AI coach check-in notifications hidden — re-enable when AI features return
+        const proNotifPromise = Promise.resolve([] as string[]);
 
         const [startId, phaseIds, completionId, waterIds, checkinIds] = await Promise.all([
           scheduleStartNotification(),

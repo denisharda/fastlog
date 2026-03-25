@@ -8,11 +8,15 @@ import { getOfferings, purchasePackage, restorePurchases } from '../lib/revenuec
 import { useUserStore } from '../stores/userStore';
 import { trackProPurchased, trackPaywallViewed, trackCancellationLinkTapped } from '../lib/posthog';
 
+// AI features hidden — re-enable when AI coach returns:
+// { icon: '🤖', title: 'AI Check-ins', description: 'Personalized messages at every fasting phase' },
+// { icon: '📊', title: 'Weekly Insights', description: 'AI-generated weekly summary of your progress' },
+// { icon: '🧠', title: 'Custom Coach', description: 'Choose your AI coach personality' },
 const PRO_FEATURES = [
-  { icon: '🤖', title: 'AI Check-ins', description: 'Personalized messages at every fasting phase' },
   { icon: '📅', title: 'Fasting History', description: 'Track all your fasts and view trends' },
-  { icon: '📊', title: 'Weekly Insights', description: 'AI-generated weekly summary of your progress' },
-  { icon: '🧠', title: 'Custom Coach', description: 'Choose your AI coach personality' },
+  { icon: '🔥', title: 'Streak Tracking', description: 'Build consistency and track your streak' },
+  { icon: '💧', title: 'Water Tracking', description: 'Stay hydrated with smart reminders' },
+  { icon: '🔔', title: 'Smart Notifications', description: 'Phase alerts and motivational reminders' },
 ];
 
 function computePriceBreakdown(pkg: PurchasesPackage): string {
@@ -136,10 +140,10 @@ export default function PaywallScreen() {
         <View className="items-center mb-8">
           <Text className="text-5xl mb-4">⚡</Text>
           <Text className="text-text-primary text-3xl font-bold text-center mb-2">
-            Unlock AI Coaching
+            Unlock Pro
           </Text>
           <Text className="text-text-muted text-center text-base">
-            Get personalized fasting guidance powered by AI, track your history, and build lasting habits.
+            Track your fasting history, build streaks, and stay hydrated with smart reminders.
           </Text>
         </View>
 

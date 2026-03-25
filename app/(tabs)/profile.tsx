@@ -7,7 +7,8 @@ import { useHydrationStore } from '../../stores/hydrationStore';
 import { useHydration } from '../../hooks/useHydration';
 import { supabase } from '../../lib/supabase';
 import { signOut } from '../../lib/auth';
-import { COACH_LIST } from '../../constants/coaches';
+// Hidden: AI coach — re-enable when AI features return
+// import { COACH_LIST } from '../../constants/coaches';
 import { PROTOCOL_LIST } from '../../constants/protocols';
 import {
   MIN_DAILY_WATER_GOAL_ML,
@@ -24,7 +25,8 @@ export default function ProfileScreen() {
   const isPro = useUserStore(s => s.isPro);
   const setIsPro = useUserStore(s => s.setIsPro);
   const setPreferredProtocol = useUserStore(s => s.setPreferredProtocol);
-  const setCoachPersonality = useUserStore(s => s.setCoachPersonality);
+  // Hidden: AI coach
+  // const setCoachPersonality = useUserStore(s => s.setCoachPersonality);
   const resetUser = useUserStore(s => s.reset);
   const { dailyGoalMl, setDailyGoal } = useHydration();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
@@ -79,7 +81,7 @@ export default function ProfileScreen() {
             <View>
               <Text className="text-white font-bold text-base">Upgrade to Pro</Text>
               <Text className="text-white opacity-80 text-sm">
-                AI check-ins, history, streaks
+                History, streaks, water tracking
               </Text>
             </View>
             <Text className="text-white text-xl">→</Text>
@@ -170,47 +172,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* AI Coach (Pro only) */}
-        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-text-muted text-xs uppercase tracking-wider">AI Coach</Text>
-            {!isPro && (
-              <Text className="text-accent text-xs">Pro only</Text>
-            )}
-          </View>
-          <View className="gap-2">
-            {COACH_LIST.map((coach) => (
-              <Pressable
-                key={coach.id}
-                className={`flex-row items-center p-3 rounded-xl border ${
-                  profile?.coach_personality === coach.id
-                    ? 'bg-primary border-primary'
-                    : 'border-text-muted/10 bg-background'
-                } ${!isPro ? 'opacity-50' : ''}`}
-                onPress={async () => {
-                  if (!profile || !isPro) {
-                    handleUpgradePress();
-                    return;
-                  }
-                  setCoachPersonality(coach.id);
-                  supabase
-                    .from('profiles')
-                    .update({ coach_personality: coach.id })
-                    .eq('id', profile.id)
-                    .then(({ error }) => {
-                      if (error) console.error('[Profile] Failed to update coach:', error);
-                    });
-                }}
-              >
-                <Text className="text-xl mr-3">{coach.emoji}</Text>
-                <View>
-                  <Text className={`font-medium ${profile?.coach_personality === coach.id ? 'text-white' : 'text-text-primary'}`}>{coach.label}</Text>
-                  <Text className={`text-xs ${profile?.coach_personality === coach.id ? 'text-white/70' : 'text-text-muted'}`}>{coach.tagline}</Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+        {/* AI Coach section hidden — re-enable when AI features return */}
 
         {/* Dev toggle (debug only) */}
         {__DEV__ && (

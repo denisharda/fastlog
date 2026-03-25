@@ -90,7 +90,7 @@ export default function WelcomeScreen() {
             </View>
             <Text className="text-4xl font-bold text-text-primary mb-2">FastAI</Text>
             <Text className="text-text-muted text-center text-base">
-              Intermittent fasting with{'\n'}AI-powered check-ins
+              Intermittent fasting{'\n'}made simple
             </Text>
           </View>
 

@@ -28,10 +28,10 @@ export default function OnboardingGoalScreen() {
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         {/* Progress indicator */}
         <View className="flex-row gap-1 mb-8">
-          {[1, 2, 3].map((step) => (
+          {[1, 2].map((step) => (
             <View
               key={step}
-              className={`h-1 flex-1 rounded-full ${step <= 2 ? 'bg-primary' : 'bg-text-muted/20'}`}
+              className={`h-1 flex-1 rounded-full bg-primary`}
             />
           ))}
         </View>
@@ -40,7 +40,7 @@ export default function OnboardingGoalScreen() {
           What's your goal?
         </Text>
         <Text className="text-text-muted mb-8">
-          Optional — select all that apply. These will personalize your AI check-ins in a future update.
+          Optional — select all that apply to personalize your experience.
         </Text>
 
         <View className="gap-3 mb-8">
@@ -79,7 +79,7 @@ export default function OnboardingGoalScreen() {
               if (selectedGoals.length > 0) {
                 updateProfile({ goals: selectedGoals });
               }
-              router.push('/onboarding/coach');
+              router.replace('/(tabs)');
             }}
           >
             <Text className="text-white font-semibold text-lg">Continue</Text>
@@ -87,7 +87,7 @@ export default function OnboardingGoalScreen() {
 
           <Pressable
             className="py-4 items-center"
-            onPress={() => router.push('/onboarding/coach')}
+            onPress={() => router.replace('/(tabs)')}
           >
             <Text className="text-text-muted">Skip for now</Text>
           </Pressable>
