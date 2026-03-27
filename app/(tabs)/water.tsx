@@ -1,19 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, Pressable, LayoutAnimation, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-screens/experimental';
+import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import { useHydration } from '../../hooks/useHydration';
 import { useFasting } from '../../hooks/useFasting';
-import { FullScreenWave } from '../../components/water/FullScreenWave';
-import { WaterPercentCircle } from '../../components/water/WaterPercentCircle';
-import { QuickTapRow } from '../../components/water/QuickTapRow';
-import { InlineStepper } from '../../components/water/InlineStepper';
-import { GoalCelebration } from '../../components/water/GoalCelebration';
+import { WaterFillCircle } from '../../components/water/WaterFillCircle';
+import { CustomAmountSheet } from '../../components/water/CustomAmountSheet';
 import { PHASE_HYDRATION_TIPS } from '../../constants/hydration';
 
 export default function WaterScreen() {
-  const { width, height } = useWindowDimensions();
-  const [stepperVisible, setStepperVisible] = useState(false);
-
   const {
     todayTotalMl,
     dailyGoalMl,
@@ -25,80 +21,89 @@ export default function WaterScreen() {
     dismissSnackbar,
   } = useHydration();
 
-  const { isActive, currentPhase, elapsedHours } = useFasting();
+  const { isActive, currentPhase } = useFasting();
 
   const remainingMl = Math.max(dailyGoalMl - todayTotalMl, 0);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
-  // Track goal celebration — only show once per crossing
-  const [showCelebration, setShowCelebration] = useState(false);
+  // Goal celebration: notification + haptic when crossing 100%
   const prevRatio = useRef(progressRatio);
   useEffect(() => {
     if (prevRatio.current < 1 && progressRatio >= 1) {
-      setShowCelebration(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Goal Reached!',
+          body: `You've had ${todayTotalMl}ml today`,
+        },
+        trigger: null,
+      });
     }
     prevRatio.current = progressRatio;
-  }, [progressRatio]);
+  }, [progressRatio, todayTotalMl]);
 
-  const handleToggleMore = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setStepperVisible((prev) => !prev);
-  }, []);
+  // Auto-dismiss snackbar
+  useEffect(() => {
+    if (!snackbar.visible) return;
+    const timer = setTimeout(dismissSnackbar, 4000);
+    return () => clearTimeout(timer);
+  }, [snackbar.visible, dismissSnackbar]);
 
-  const handleCollapse = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setStepperVisible(false);
-  }, []);
+  const handleQuickAdd = useCallback(
+    (amount: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      logWater(amount);
+    },
+    [logWater]
+  );
+
+  const handleCustomAdd = useCallback(
+    (amount: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      logWater(amount);
+    },
+    [logWater]
+  );
 
   const phaseTip = isActive
     ? PHASE_HYDRATION_TIPS[currentPhase.name] ?? null
     : null;
 
   return (
-    <SafeAreaView edges={{ bottom: true }} style={{ flex: 1 }} className="bg-background">
-      <FullScreenWave progress={progressRatio} width={width} height={height} />
-
-      <View className="flex-1 justify-between pt-6 px-6 pb-2">
+    <SafeAreaView edges={{ top: true, bottom: true }} style={{ flex: 1 }} className="bg-background">
+      <View className="flex-1 px-6 pb-2">
         {/* Header */}
-        <View>
+        <View className="pt-2">
           <Text className="text-text-primary text-2xl font-bold">Hydration</Text>
           {phaseTip && (
-            <Text className="text-primary/80 text-xs font-medium mt-1">
-              {phaseTip}
-            </Text>
+            <Text className="text-primary/80 text-xs font-medium mt-1">{phaseTip}</Text>
           )}
         </View>
 
-        {/* Center circle */}
-        <View className="items-center">
-          <WaterPercentCircle
+        {/* Hero circle */}
+        <View className="flex-1 items-center justify-center">
+          <WaterFillCircle
             progressRatio={progressRatio}
-            remainingMl={remainingMl}
             todayTotalMl={todayTotalMl}
             dailyGoalMl={dailyGoalMl}
+            remainingMl={remainingMl}
             lastLoggedAt={lastLoggedAt}
           />
         </View>
 
         {/* Bottom section */}
-        <View>
-          {/* Status text / inline undo feedback */}
+        <View className="items-center">
+          {/* Snackbar */}
           <View className="h-6 mb-3 justify-center">
             {snackbar.visible ? (
               <View className="flex-row items-center justify-center">
-                <Text className="text-accent text-sm font-medium">
-                  {snackbar.message}
-                </Text>
+                <Text className="text-accent text-sm font-medium">{snackbar.message}</Text>
                 {snackbar.lastLog && (
                   <Pressable
-                    onPress={() => {
-                      undoLastLog();
-                      dismissSnackbar();
-                    }}
-                    className="ml-2 px-2 py-0.5 rounded-md bg-white/10"
-                    accessibilityLabel="Undo last water log"
-                    accessibilityRole="button"
+                    onPress={() => { undoLastLog(); dismissSnackbar(); }}
+                    className="ml-2 px-2 py-0.5 rounded-md bg-primary/10"
                   >
-                    <Text className="text-text-muted text-xs font-semibold">Undo</Text>
+                    <Text className="text-primary text-xs font-semibold">Undo</Text>
                   </Pressable>
                 )}
               </View>
@@ -109,23 +114,34 @@ export default function WaterScreen() {
             )}
           </View>
 
-          {/* Quick-tap row */}
-          <QuickTapRow
-            onQuickAdd={logWater}
-            onToggleMore={handleToggleMore}
-            moreExpanded={stepperVisible}
-          />
-
-          {/* Custom amount input */}
-          <InlineStepper
-            visible={stepperVisible}
-            onAdd={logWater}
-            onCollapse={handleCollapse}
-          />
+          {/* Pill buttons */}
+          <View className="flex-row gap-3 mb-2">
+            <Pressable
+              className="h-12 px-8 rounded-full bg-primary items-center justify-center active:scale-95"
+              style={{ shadowColor: '#2D6A4F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 }}
+              onPress={() => handleQuickAdd(250)}
+              onLongPress={() => setSheetVisible(true)}
+              delayLongPress={400}
+            >
+              <Text className="text-white font-bold text-[15px]">+ 250ml</Text>
+            </Pressable>
+            <Pressable
+              className="h-12 px-8 rounded-full bg-white border-[1.5px] border-gray-200 items-center justify-center active:scale-95"
+              onPress={() => handleQuickAdd(500)}
+              onLongPress={() => setSheetVisible(true)}
+              delayLongPress={400}
+            >
+              <Text className="text-text-primary font-bold text-[15px]">+ 500ml</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
-      <GoalCelebration visible={showCelebration} />
+      <CustomAmountSheet
+        visible={sheetVisible}
+        onAdd={handleCustomAdd}
+        onClose={() => setSheetVisible(false)}
+      />
     </SafeAreaView>
   );
 }
