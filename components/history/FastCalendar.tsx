@@ -48,8 +48,6 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
 
   return (
     <View className="mb-4">
-      <Text className="text-text-primary font-bold text-lg mb-3">Last 28 Days</Text>
-
       {/* Day labels */}
       <View className="flex-row mb-1">
         {DAYS_OF_WEEK.map((d) => (
