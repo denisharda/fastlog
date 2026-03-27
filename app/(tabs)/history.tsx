@@ -94,7 +94,8 @@ export default function HistoryScreen() {
       contentContainerStyle={{ paddingHorizontal: 24 }}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Text className="text-text-primary text-2xl font-bold pt-4 pb-2">History</Text>
+      <Text className="text-text-primary text-2xl font-bold pt-4">History</Text>
+      <Text className="text-text-muted text-xs mb-3">Last 28 days</Text>
 
       {isEmpty ? (
         <View className="flex-1 items-center justify-center px-6 py-20">
