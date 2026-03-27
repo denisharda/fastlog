@@ -29,9 +29,6 @@ export const FullScreenWave = React.memo(function FullScreenWave({
   }, [phase]);
 
   const clampedProgress = Math.min(Math.max(progress, 0), 1);
-
-  if (clampedProgress <= 0 || width === 0 || height === 0) return null;
-
   const fillHeight = clampedProgress * height;
   const baseY = height - fillHeight;
 
@@ -45,6 +42,8 @@ export const FullScreenWave = React.memo(function FullScreenWave({
     });
     return () => phase.removeListener(id);
   }, [phase, baseY, width, height]);
+
+  if (clampedProgress <= 0 || width === 0 || height === 0) return null;
 
   return (
     <Svg
