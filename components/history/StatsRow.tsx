@@ -71,6 +71,7 @@ export const StatsRow = React.memo(function StatsRow({ sessions }: StatsRowProps
 
   return (
     <View className="bg-white rounded-2xl p-4 mb-4" style={cardShadow}>
+      <Text className="text-text-muted text-xs mb-3">Last 28 days</Text>
       <View className="flex-row justify-between">
         <StatItem value={`${stats.streak}`} label="Streak" accent />
         <StatItem value={`${stats.totalFasts}`} label="Fasts" />
