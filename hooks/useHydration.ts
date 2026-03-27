@@ -16,6 +16,7 @@ interface UseHydrationReturn {
   todayTotalMl: number;
   dailyGoalMl: number;
   progressRatio: number;
+  lastLoggedAt: string | null;
   logWater: (amountMl: number) => void;
   undoLastLog: () => void;
   subtractLast: () => void;
@@ -54,6 +55,11 @@ export function useHydration(): UseHydrationReturn {
   const progressRatio = useMemo(
     () => (dailyGoalMl > 0 ? Math.min(todayTotalMl / dailyGoalMl, 1) : 0),
     [todayTotalMl, dailyGoalMl]
+  );
+
+  const lastLoggedAt = useMemo(
+    () => (todayLogs.length > 0 ? todayLogs[todayLogs.length - 1].logged_at : null),
+    [todayLogs]
   );
 
   const logWater = useCallback(
@@ -153,6 +159,7 @@ export function useHydration(): UseHydrationReturn {
     todayTotalMl,
     dailyGoalMl,
     progressRatio,
+    lastLoggedAt,
     logWater,
     undoLastLog,
     subtractLast,
