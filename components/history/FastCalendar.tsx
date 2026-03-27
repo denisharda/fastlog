@@ -73,7 +73,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
               return (
                 <View
                   key={di}
-                  className={`flex-1 aspect-square rounded-md ${
+                  className={`flex-1 aspect-square rounded-md items-center justify-center ${
                     isFuture
                       ? 'bg-background'
                       : isCompleted
@@ -82,7 +82,15 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
                       ? 'bg-accent/40'
                       : 'bg-white border border-text-muted/10'
                   } ${isToday ? 'border border-accent' : ''}`}
-                />
+                >
+                  <Text
+                    className={`text-[10px] font-medium ${
+                      isCompleted ? 'text-white' : isFuture ? 'text-text-muted/30' : 'text-text-muted'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </Text>
+                </View>
               );
             })}
           </View>
