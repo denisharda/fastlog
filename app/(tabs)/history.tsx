@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { FastingSession } from '../../types';
 import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
+import { StatsRow } from '../../components/history/StatsRow';
 import { trackPaywallViewed } from '../../lib/posthog';
 
 const ItemSeparator = () => <View className="h-2" />;
@@ -103,7 +104,9 @@ export default function HistoryScreen() {
         </View>
       ) : (
         <View>
+          <StatsRow sessions={sessions ?? []} />
           <FastCalendar sessions={sessions ?? []} />
+          <Text className="text-text-primary font-bold text-lg mb-2">Recent Fasts</Text>
           {sessions!.map((item, index) => (
             <React.Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
