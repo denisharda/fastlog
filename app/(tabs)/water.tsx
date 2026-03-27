@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-screens/experimental';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -15,8 +15,10 @@ export default function WaterScreen() {
     dailyGoalMl,
     progressRatio,
     logWater,
+    removeLog,
     undoLastLog,
     lastLoggedAt,
+    todayLogs,
     snackbar,
     dismissSnackbar,
   } = useHydration();
@@ -81,7 +83,7 @@ export default function WaterScreen() {
         </View>
 
         {/* Hero circle */}
-        <View className="flex-1 items-center justify-center">
+        <View className="items-center justify-center mt-4">
           <WaterFillCircle
             progressRatio={progressRatio}
             todayTotalMl={todayTotalMl}
@@ -90,6 +92,37 @@ export default function WaterScreen() {
             lastLoggedAt={lastLoggedAt}
           />
         </View>
+
+        {/* Today's log */}
+        {todayLogs.length > 0 && (
+          <View className="flex-1 mt-4" style={{ maxHeight: 160 }}>
+            <Text className="text-text-muted text-xs font-medium mb-2">Today</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {[...todayLogs].reverse().map((log) => (
+                <View
+                  key={log.id}
+                  className="flex-row items-center justify-between py-2 border-b border-gray-100"
+                >
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-text-primary text-sm font-semibold">
+                      +{log.amount_ml}ml
+                    </Text>
+                    <Text className="text-text-muted text-xs">
+                      {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => removeLog(log.id)}
+                    className="px-2 py-1"
+                    hitSlop={8}
+                  >
+                    <Text className="text-red-400 text-xs font-medium">Delete</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Bottom section */}
         <View className="items-center">

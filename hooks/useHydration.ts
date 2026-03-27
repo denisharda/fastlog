@@ -17,7 +17,9 @@ interface UseHydrationReturn {
   dailyGoalMl: number;
   progressRatio: number;
   lastLoggedAt: string | null;
+  todayLogs: LocalHydrationLog[];
   logWater: (amountMl: number) => void;
+  removeLog: (logId: string) => void;
   undoLastLog: () => void;
   subtractLast: () => void;
   setDailyGoal: (goalMl: number) => void;
@@ -151,6 +153,23 @@ export function useHydration(): UseHydrationReturn {
     }
   }, [todayLogs, storeRemove, profile]);
 
+  const removeLog = useCallback(
+    (logId: string) => {
+      storeRemove(logId);
+
+      if (profile) {
+        supabase
+          .from('hydration_logs')
+          .delete()
+          .eq('id', logId)
+          .then(({ error }) => {
+            if (error) console.error('[useHydration] DB delete error:', error);
+          });
+      }
+    },
+    [storeRemove, profile]
+  );
+
   const dismissSnackbar = useCallback(() => {
     setSnackbar({ visible: false, message: '', lastLog: null });
   }, []);
@@ -160,7 +179,9 @@ export function useHydration(): UseHydrationReturn {
     dailyGoalMl,
     progressRatio,
     lastLoggedAt,
+    todayLogs,
     logWater,
+    removeLog,
     undoLastLog,
     subtractLast,
     setDailyGoal,
