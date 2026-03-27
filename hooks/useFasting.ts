@@ -9,7 +9,6 @@ import {
   scheduleStartNotification,
   scheduleCompletionNotification,
   schedulePhaseNotifications,
-  scheduleEncouragementNotifications,
   // scheduleCheckinNotifications, // Hidden: AI coach
   scheduleWaterReminders,
   cancelAllNotifications,
@@ -158,16 +157,15 @@ export function useFasting(): UseFastingReturn {
         // AI coach check-in notifications hidden — re-enable when AI features return
         const proNotifPromise = Promise.resolve([] as string[]);
 
-        const [startId, phaseIds, completionId, waterIds, encourageIds, checkinIds] = await Promise.all([
+        const [startId, phaseIds, completionId, waterIds, checkinIds] = await Promise.all([
           scheduleStartNotification(),
           schedulePhaseNotifications(start, hours),
           scheduleCompletionNotification(endTime),
           scheduleWaterReminders(start, hours),
-          scheduleEncouragementNotifications(start, hours),
           proNotifPromise,
         ] as const);
 
-        setNotificationIds([startId, ...phaseIds, completionId, ...waterIds, ...encourageIds, ...checkinIds]);
+        setNotificationIds([startId, ...phaseIds, completionId, ...waterIds, ...checkinIds]);
 
         // Start Live Activity (iOS only, no-op if native module unavailable)
         const phase = getCurrentPhase(0);

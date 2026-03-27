@@ -87,8 +87,34 @@ export async function scheduleCompletionNotification(
 }
 
 /**
+ * Encouraging messages per fasting phase, sent when entering each new phase.
+ */
+const PHASE_NOTIFICATIONS: Record<string, { title: string; body: string }> = {
+  'Early Fasting': {
+    title: 'Going strong!',
+    body: "4h in — insulin is dropping and your body is shifting gears. Keep it up!",
+  },
+  'Fat Burning Begins': {
+    title: "You're crushing it!",
+    body: "8h fasted — glycogen is depleting and fat burning is kicking in. Stay hydrated!",
+  },
+  'Fat Burning Peak': {
+    title: 'Halfway hero!',
+    body: "12h in — ketosis is starting. Your body is tapping into fat stores now.",
+  },
+  'Autophagy Zone': {
+    title: 'Autophagy activated!',
+    body: "16h — your cells are cleaning house. This is where the magic happens.",
+  },
+  'Deep Fast': {
+    title: 'Deep fast territory!',
+    body: "18h+ — maximum autophagy and fat oxidation. You're a fasting machine.",
+  },
+};
+
+/**
  * Schedule phase transition notifications (free for all users).
- * Notifies when entering each new fasting phase.
+ * Sends an encouraging message when entering each new fasting phase.
  * Uses Promise.all to schedule all notifications in parallel.
  */
 export async function schedulePhaseNotifications(
@@ -98,64 +124,14 @@ export async function schedulePhaseNotifications(
   const promises: Promise<string>[] = [];
 
   for (const phase of FASTING_PHASES) {
-    // Skip "Fed State" (starts at 0) — user just started
     if (phase.minHours === 0) continue;
     if (phase.minHours >= targetHours) continue;
 
+    const msg = PHASE_NOTIFICATIONS[phase.name];
+    if (!msg) continue;
+
     const triggerDate = new Date(fastStartTime.getTime() + phase.minHours * 60 * 60 * 1000);
     if (triggerDate <= new Date()) continue;
-
-    promises.push(
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: phase.name,
-          body: `${phase.minHours}h in — ${phase.description.toLowerCase()}.`,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: triggerDate,
-        },
-      })
-    );
-  }
-
-  return Promise.all(promises);
-}
-
-// ─── Encouragement notifications (all users) ────────────────────────────────
-
-const ENCOURAGEMENT_MESSAGES: Record<number, { title: string; body: string }> = {
-  4: {
-    title: 'Going strong!',
-    body: "4 hours in — your insulin is dropping and your body is shifting gears. Keep it up!",
-  },
-  8: {
-    title: "You're crushing it!",
-    body: "8 hours fasted — fat burning is kicking in. Stay hydrated and stay focused!",
-  },
-  12: {
-    title: 'Halfway hero!',
-    body: "12 hours! Ketosis is starting. Your body is tapping into fat stores now.",
-  },
-};
-
-/**
- * Schedule encouragement notifications at hours 4, 8, and 12.
- * Fires for all users currently fasting.
- */
-export async function scheduleEncouragementNotifications(
-  fastStartTime: Date,
-  targetHours: number
-): Promise<string[]> {
-  const promises: Promise<string>[] = [];
-  const now = Date.now();
-
-  for (const [hourStr, msg] of Object.entries(ENCOURAGEMENT_MESSAGES)) {
-    const hour = Number(hourStr);
-    if (hour >= targetHours) continue;
-
-    const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
-    if (triggerDate.getTime() <= now) continue;
 
     promises.push(
       Notifications.scheduleNotificationAsync({
