@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Svg, { Circle, Line } from 'react-native-svg';
 
 interface FastingRingProps {
@@ -50,11 +51,17 @@ export const FastingRing = React.memo(function FastingRing({
     return items;
   }, [progress, size, tickCount, center, radius]);
 
+  const handlePress = useCallback(() => {
+    if (!onPress) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress();
+  }, [onPress]);
+
   const Wrapper = onPress ? Pressable : View;
 
   return (
     <Wrapper
-      onPress={onPress}
+      onPress={handlePress}
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
     >
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
