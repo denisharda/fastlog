@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
 
 interface FastCalendarProps {
   sessions: FastingSession[];
+  onDayPress?: (dateString: string) => void;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -12,7 +14,7 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * A simple calendar heatmap showing the last 28 days of fasting activity.
  * TODO: Replace with a proper calendar library for production.
  */
-export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastCalendarProps) {
+export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPress }: FastCalendarProps) {
   // Build sets of dates that had completed/partial fasts
   const { completedDates, partialDates } = useMemo(() => {
     const completed = new Set<string>();
@@ -68,26 +70,45 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions }: FastC
               const isToday = dateStr === today.toDateString();
               const isFuture = day > today;
 
-              return (
-                <View
-                  key={di}
-                  className={`flex-1 aspect-square rounded-md items-center justify-center ${
-                    isFuture
-                      ? 'bg-background'
-                      : isCompleted
-                      ? 'bg-primary'
-                      : isPartial
-                      ? 'bg-accent/40'
-                      : 'bg-white border border-text-muted/10'
-                  } ${isToday ? 'border border-accent' : ''}`}
+              const hasSession = isCompleted || isPartial;
+              const isTappable = hasSession && !isFuture;
+              const cellClass = `flex-1 aspect-square rounded-md items-center justify-center ${
+                isFuture
+                  ? 'bg-background'
+                  : isCompleted
+                  ? 'bg-primary'
+                  : isPartial
+                  ? 'bg-accent/40'
+                  : 'bg-white border border-text-muted/10'
+              } ${isToday ? 'border border-accent' : ''}`;
+              const label = (
+                <Text
+                  className={`text-[10px] font-medium ${
+                    isCompleted ? 'text-white' : isFuture ? 'text-text-muted/30' : 'text-text-muted'
+                  }`}
                 >
-                  <Text
-                    className={`text-[10px] font-medium ${
-                      isCompleted ? 'text-white' : isFuture ? 'text-text-muted/30' : 'text-text-muted'
-                    }`}
+                  {day.getDate()}
+                </Text>
+              );
+
+              if (isTappable) {
+                return (
+                  <Pressable
+                    key={di}
+                    className={cellClass}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onDayPress?.(dateStr);
+                    }}
                   >
-                    {day.getDate()}
-                  </Text>
+                    {label}
+                  </Pressable>
+                );
+              }
+
+              return (
+                <View key={di} className={cellClass}>
+                  {label}
                 </View>
               );
             })}
