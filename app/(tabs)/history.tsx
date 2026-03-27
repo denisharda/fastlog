@@ -107,6 +107,7 @@ export default function HistoryScreen() {
   const isEmpty = !sessions || sessions.length === 0;
 
   return (
+    <>
     <ScrollView
       className="flex-1 bg-background"
       contentContainerStyle={{ paddingHorizontal: 24 }}
@@ -140,5 +141,6 @@ export default function HistoryScreen() {
       sessions={drawerSessions}
       onClose={() => setDrawerVisible(false)}
     />
+    </>
   );
 }
