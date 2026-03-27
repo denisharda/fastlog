@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { FastingSession } from '../../types';
 import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
 import { StatsRow } from '../../components/history/StatsRow';
+import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
 import { trackPaywallViewed } from '../../lib/posthog';
 
 const ItemSeparator = () => <View className="h-2" />;
@@ -33,6 +34,23 @@ export default function HistoryScreen() {
     },
     enabled: !!profile?.id && isPro,
   });
+
+  const [drawerSessions, setDrawerSessions] = useState<FastingSession[]>([]);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+
+  function handleCardPress(session: FastingSession) {
+    setDrawerSessions([session]);
+    setDrawerVisible(true);
+  }
+
+  function handleDayPress(dateString: string) {
+    const daySessions = (sessions ?? []).filter(
+      (s) => new Date(s.started_at).toDateString() === dateString
+    );
+    if (daySessions.length === 0) return;
+    setDrawerSessions(daySessions);
+    setDrawerVisible(true);
+  }
 
   function handleUpgradePress() {
     trackPaywallViewed('history_screen');
@@ -106,16 +124,21 @@ export default function HistoryScreen() {
       ) : (
         <View>
           <StatsRow sessions={sessions ?? []} />
-          <FastCalendar sessions={sessions ?? []} />
+          <FastCalendar sessions={sessions ?? []} onDayPress={handleDayPress} />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {sessions!.map((item, index) => (
             <React.Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
-              <FastCard session={item} />
+              <FastCard session={item} onPress={() => handleCardPress(item)} />
             </React.Fragment>
           ))}
         </View>
       )}
     </ScrollView>
+    <SessionDetailDrawer
+      visible={drawerVisible}
+      sessions={drawerSessions}
+      onClose={() => setDrawerVisible(false)}
+    />
   );
 }
