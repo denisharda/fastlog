@@ -45,17 +45,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
-      '@bittingz/expo-widgets',
+      'expo-widgets',
       {
-        ios: {
-          src: './widgets',
-          devTeamId: 'TEAM_ID', // Replace with actual team ID before prebuild
-          mode: 'production',
-          useLiveActivities: true,
-          entitlements: {
-            'com.apple.security.application-groups': ['group.com.fastai.app'],
+        bundleIdentifier: 'com.fastai.app.widgets',
+        groupIdentifier: 'group.com.fastai.app',
+        enablePushNotifications: true,
+        widgets: [
+          {
+            name: 'FastingWidget',
+            displayName: 'Fasting Timer',
+            description: 'Track your fasting progress',
+            supportedFamilies: ['systemSmall', 'systemMedium'],
           },
-        },
+        ],
       },
     ],
   ],

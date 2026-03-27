@@ -1,7 +1,7 @@
 /**
  * Live Activity / Dynamic Island for FastAI
  *
- * Uses expo-widgets createLiveActivity API.
+ * Uses expo-widgets createLiveActivity API with @expo/ui modifiers-based API.
  * Shows fasting timer and current phase in the Dynamic Island.
  *
  * Layouts:
@@ -19,14 +19,18 @@
  * - iOS 8h auto-dismiss limit — widget continues working
  */
 
-import { createLiveActivity, Text, VStack, HStack, Image } from '@expo/ui/swift-ui';
-
-const COLORS = {
-  primary: '#2D6A4F',
-  accent: '#40916C',
-  textPrimary: '#F5F5F5',
-  textMuted: '#9CA3AF',
-};
+import { createLiveActivity } from 'expo-widgets';
+import type { LiveActivityLayout } from 'expo-widgets';
+// LiveActivityEnvironment is not re-exported from expo-widgets index, import from types
+import type { LiveActivityEnvironment } from 'expo-widgets/build/Widgets.types';
+import { Text, VStack, HStack } from '@expo/ui/swift-ui';
+import {
+  foregroundStyle,
+  font,
+  padding,
+  bold,
+  monospacedDigit,
+} from '@expo/ui/swift-ui/modifiers';
 
 interface FastingActivityState {
   startedAt: string;
@@ -36,100 +40,141 @@ interface FastingActivityState {
   protocol: string;
 }
 
-const FastingActivity = createLiveActivity<FastingActivityState>({
-  /**
-   * Banner view — shown in notification-style banner
-   */
-  banner: ({ state }) => (
-    <VStack padding={16}>
-      <Text color={COLORS.accent} fontSize={13} fontWeight="semibold">
-        {state.phase}
-      </Text>
-      <HStack>
+function FastingActivityComponent(
+  props: FastingActivityState,
+  env: LiveActivityEnvironment
+): LiveActivityLayout {
+  'widget';
+
+  return {
+    /**
+     * Banner view — shown in notification-style banner
+     */
+    banner: (
+      <VStack modifiers={[padding({ all: 16 })]}>
         <Text
-          color={COLORS.textPrimary}
-          fontSize={24}
-          fontWeight="bold"
-          fontDesign="monospaced"
-          date={state.startedAt}
-          dateStyle="timer"
-        />
-        <Text color={COLORS.textMuted} fontSize={14}>
-          {' '}/ {state.targetHours}h
+          modifiers={[
+            foregroundStyle('#40916C'),
+            font({ size: 13, weight: 'semibold' }),
+          ]}
+        >
+          {props.phase}
         </Text>
-      </HStack>
-    </VStack>
-  ),
+        <HStack>
+          <Text
+            date={new Date(props.startedAt)}
+            dateStyle="timer"
+            modifiers={[
+              foregroundStyle('#F5F5F5'),
+              font({ size: 24, weight: 'bold' }),
+              monospacedDigit(),
+            ]}
+          />
+          <Text
+            modifiers={[
+              foregroundStyle('#9CA3AF'),
+              font({ size: 14 }),
+            ]}
+          >
+            {' '}/ {props.targetHours}h
+          </Text>
+        </HStack>
+      </VStack>
+    ),
 
-  /**
-   * Compact leading — left side of Dynamic Island pill
-   */
-  compactLeading: () => (
-    <Text fontSize={16}>🟢</Text>
-  ),
+    /**
+     * Compact leading — left side of Dynamic Island pill
+     */
+    compactLeading: (
+      <Text modifiers={[font({ size: 16 })]}>🟢</Text>
+    ),
 
-  /**
-   * Compact trailing — right side of Dynamic Island pill
-   */
-  compactTrailing: ({ state }) => (
-    <Text
-      color={COLORS.textPrimary}
-      fontSize={13}
-      fontWeight="medium"
-      fontDesign="monospaced"
-      date={state.startedAt}
-      dateStyle="timer"
-    />
-  ),
-
-  /**
-   * Minimal — smallest Dynamic Island representation
-   */
-  minimal: () => (
-    <Text fontSize={12}>🟢</Text>
-  ),
-
-  /**
-   * Expanded leading — left side when Dynamic Island is expanded
-   */
-  expandedLeading: ({ state }) => (
-    <VStack>
-      <Text color={COLORS.accent} fontSize={14} fontWeight="semibold">
-        {state.phase}
-      </Text>
-      <Text color={COLORS.textMuted} fontSize={11}>
-        {state.protocol}
-      </Text>
-    </VStack>
-  ),
-
-  /**
-   * Expanded trailing — right side when Dynamic Island is expanded
-   */
-  expandedTrailing: ({ state }) => (
-    <VStack alignment="trailing">
+    /**
+     * Compact trailing — right side of Dynamic Island pill
+     */
+    compactTrailing: (
       <Text
-        color={COLORS.textPrimary}
-        fontSize={20}
-        fontWeight="bold"
-        fontDesign="monospaced"
-        date={state.startedAt}
+        date={new Date(props.startedAt)}
         dateStyle="timer"
+        modifiers={[
+          foregroundStyle('#F5F5F5'),
+          font({ size: 13, weight: 'medium' }),
+          monospacedDigit(),
+        ]}
       />
-      <Text color={COLORS.textMuted} fontSize={11}>
-        Goal: {state.targetHours}h
+    ),
+
+    /**
+     * Minimal — smallest Dynamic Island representation
+     */
+    minimal: (
+      <Text modifiers={[font({ size: 12 })]}>🟢</Text>
+    ),
+
+    /**
+     * Expanded leading — left side when Dynamic Island is expanded
+     */
+    expandedLeading: (
+      <VStack>
+        <Text
+          modifiers={[
+            foregroundStyle('#40916C'),
+            font({ size: 14, weight: 'semibold' }),
+          ]}
+        >
+          {props.phase}
+        </Text>
+        <Text
+          modifiers={[
+            foregroundStyle('#9CA3AF'),
+            font({ size: 11 }),
+          ]}
+        >
+          {props.protocol}
+        </Text>
+      </VStack>
+    ),
+
+    /**
+     * Expanded trailing — right side when Dynamic Island is expanded
+     */
+    expandedTrailing: (
+      <VStack alignment="trailing">
+        <Text
+          date={new Date(props.startedAt)}
+          dateStyle="timer"
+          modifiers={[
+            foregroundStyle('#F5F5F5'),
+            font({ size: 20, weight: 'bold' }),
+            monospacedDigit(),
+          ]}
+        />
+        <Text
+          modifiers={[
+            foregroundStyle('#9CA3AF'),
+            font({ size: 11 }),
+          ]}
+        >
+          Goal: {props.targetHours}h
+        </Text>
+      </VStack>
+    ),
+
+    /**
+     * Expanded bottom — bottom section when Dynamic Island is fully expanded
+     */
+    expandedBottom: (
+      <Text
+        modifiers={[
+          foregroundStyle('#9CA3AF'),
+          font({ size: 12 }),
+          padding({ leading: 16, trailing: 16, bottom: 8 }),
+        ]}
+      >
+        {props.phaseDescription}
       </Text>
-    </VStack>
-  ),
+    ),
+  };
+}
 
-  /**
-   * Expanded bottom — bottom section when Dynamic Island is fully expanded
-   */
-  expandedBottom: ({ state }) => (
-    <Text color={COLORS.textMuted} fontSize={12} padding={[0, 16, 8, 16]}>
-      {state.phaseDescription}
-    </Text>
-  ),
-});
-
-export default FastingActivity;
+export default createLiveActivity('FastingActivity', FastingActivityComponent);

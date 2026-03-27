@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, LayoutAnimation, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable, LayoutAnimation, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHydration } from '../../hooks/useHydration';
+import { useFasting } from '../../hooks/useFasting';
 import { FullScreenWave } from '../../components/water/FullScreenWave';
 import { WaterPercentCircle } from '../../components/water/WaterPercentCircle';
 import { QuickTapRow } from '../../components/water/QuickTapRow';
 import { InlineStepper } from '../../components/water/InlineStepper';
-import { UndoSnackbar } from '../../components/water/UndoSnackbar';
 
 export default function WaterScreen() {
   const { width, height } = useWindowDimensions();
@@ -22,6 +22,8 @@ export default function WaterScreen() {
     dismissSnackbar,
   } = useHydration();
 
+  const { isActive, currentPhase, elapsedHours } = useFasting();
+
   const remainingMl = Math.max(dailyGoalMl - todayTotalMl, 0);
 
   const handleToggleMore = useCallback(() => {
@@ -34,11 +36,13 @@ export default function WaterScreen() {
     setStepperVisible(false);
   }, []);
 
+  const { top } = useSafeAreaInsets();
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <View className="flex-1 bg-background" style={{ paddingTop: top }}>
       <FullScreenWave progress={progressRatio} width={width} height={height} />
 
-      <View className="flex-1 justify-between py-8 px-6">
+      <View className="flex-1 justify-between pt-8 pb-36 px-6">
         {/* Header */}
         <Text className="text-text-primary text-2xl font-bold">Hydration</Text>
 
@@ -48,12 +52,42 @@ export default function WaterScreen() {
             progressRatio={progressRatio}
             remainingMl={remainingMl}
           />
+
+          {/* Fasting phase context */}
+          {isActive && (
+            <Text className="text-text-muted text-xs text-center mt-4 px-8">
+              Hour {Math.floor(elapsedHours)} — {currentPhase.name} — stay hydrated
+            </Text>
+          )}
         </View>
 
-        {/* Status text */}
-        <Text className="text-text-muted text-center text-sm mb-3">
-          {todayTotalMl} <Text className="text-text-muted/40">/</Text> {dailyGoalMl} ml
-        </Text>
+        {/* Status text / inline undo feedback */}
+        <View className="h-6 mb-3 justify-center">
+          {snackbar.visible ? (
+            <View className="flex-row items-center justify-center">
+              <Text className="text-accent text-sm font-medium">
+                {snackbar.message}
+              </Text>
+              {snackbar.lastLog && (
+                <Pressable
+                  onPress={() => {
+                    undoLastLog();
+                    dismissSnackbar();
+                  }}
+                  className="ml-2 px-2 py-0.5 rounded-md bg-white/10"
+                  accessibilityLabel="Undo last water log"
+                  accessibilityRole="button"
+                >
+                  <Text className="text-text-muted text-xs font-semibold">Undo</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <Text className="text-text-muted text-center text-sm">
+              {todayTotalMl} <Text className="text-text-muted/40">/</Text> {dailyGoalMl} ml
+            </Text>
+          )}
+        </View>
 
         {/* Quick-tap row */}
         <QuickTapRow
@@ -62,20 +96,13 @@ export default function WaterScreen() {
           moreExpanded={stepperVisible}
         />
 
-        {/* Inline stepper */}
+        {/* Custom amount input */}
         <InlineStepper
           visible={stepperVisible}
           onAdd={logWater}
           onCollapse={handleCollapse}
         />
       </View>
-
-      <UndoSnackbar
-        message={snackbar.message}
-        visible={snackbar.visible}
-        onUndo={undoLastLog}
-        onDismiss={dismissSnackbar}
-      />
-    </SafeAreaView>
+    </View>
   );
 }

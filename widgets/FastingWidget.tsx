@@ -1,7 +1,7 @@
 /**
  * Home Screen Widget for FastAI
  *
- * Uses @expo/ui/swift-ui components via @bittingz/expo-widgets.
+ * Uses the official expo-widgets API with @expo/ui/swift-ui components.
  * Reads fasting state from App Groups shared UserDefaults.
  *
  * Sizes:
@@ -14,7 +14,15 @@
  * WidgetKit Swift code. The JSX-like API maps to SwiftUI views.
  */
 
-import { Widget, Text, VStack, HStack, Spacer } from '@expo/ui/swift-ui';
+import { createWidget, WidgetEnvironment } from 'expo-widgets';
+import { Text, VStack, HStack, Spacer } from '@expo/ui/swift-ui';
+import {
+  foregroundStyle,
+  font,
+  padding,
+  background,
+  widgetURL,
+} from '@expo/ui/swift-ui/modifiers';
 
 // Colors from design system
 const COLORS = {
@@ -39,15 +47,27 @@ function SmallWidget({ state }: { state: FastingState }) {
   if (!state.isActive) {
     return (
       <VStack
-        background={COLORS.background}
-        padding={16}
-        link="fastai://start"
+        modifiers={[
+          background(COLORS.background),
+          padding({ all: 16 }),
+          widgetURL('fastai://start'),
+        ]}
       >
-        <Text color={COLORS.textMuted} fontSize={12}>
+        <Text
+          modifiers={[
+            foregroundStyle(COLORS.textMuted),
+            font({ size: 12 }),
+          ]}
+        >
           No Active Fast
         </Text>
         <Spacer />
-        <Text color={COLORS.accent} fontSize={14} fontWeight="semibold">
+        <Text
+          modifiers={[
+            foregroundStyle(COLORS.accent),
+            font({ size: 14, weight: 'semibold' }),
+          ]}
+        >
           Tap to start
         </Text>
       </VStack>
@@ -57,28 +77,39 @@ function SmallWidget({ state }: { state: FastingState }) {
   const elapsed = state.startedAt
     ? (Date.now() - new Date(state.startedAt).getTime()) / 3600000
     : state.elapsedHours;
-  const progress = state.targetHours > 0 ? Math.min(elapsed / state.targetHours, 1) : 0;
 
   return (
     <VStack
-      background={COLORS.background}
-      padding={16}
-      link="fastai://timer"
+      modifiers={[
+        background(COLORS.background),
+        padding({ all: 16 }),
+        widgetURL('fastai://timer'),
+      ]}
     >
-      <Text color={COLORS.accent} fontSize={12} fontWeight="medium">
+      <Text
+        modifiers={[
+          foregroundStyle(COLORS.accent),
+          font({ size: 12, weight: 'medium' }),
+        ]}
+      >
         {state.phase}
       </Text>
       <Spacer />
       {/* SwiftUI relative date text provides live countdown without refreshes */}
       <Text
-        color={COLORS.textPrimary}
-        fontSize={28}
-        fontWeight="bold"
-        fontDesign="monospaced"
-        date={state.startedAt ?? undefined}
+        date={new Date(state.startedAt!)}
         dateStyle="timer"
+        modifiers={[
+          foregroundStyle(COLORS.textPrimary),
+          font({ size: 28, weight: 'bold', design: 'monospaced' }),
+        ]}
       />
-      <Text color={COLORS.textMuted} fontSize={11}>
+      <Text
+        modifiers={[
+          foregroundStyle(COLORS.textMuted),
+          font({ size: 11 }),
+        ]}
+      >
         {elapsed.toFixed(1)}h / {state.targetHours}h
       </Text>
     </VStack>
@@ -89,19 +120,36 @@ function MediumWidget({ state }: { state: FastingState }) {
   if (!state.isActive) {
     return (
       <HStack
-        background={COLORS.background}
-        padding={16}
-        link="fastai://start"
+        modifiers={[
+          background(COLORS.background),
+          padding({ all: 16 }),
+          widgetURL('fastai://start'),
+        ]}
       >
         <VStack>
-          <Text color={COLORS.textPrimary} fontSize={16} fontWeight="bold">
+          <Text
+            modifiers={[
+              foregroundStyle(COLORS.textPrimary),
+              font({ size: 16, weight: 'bold' }),
+            ]}
+          >
             FastAI
           </Text>
-          <Text color={COLORS.textMuted} fontSize={13}>
+          <Text
+            modifiers={[
+              foregroundStyle(COLORS.textMuted),
+              font({ size: 13 }),
+            ]}
+          >
             No active fast
           </Text>
           <Spacer />
-          <Text color={COLORS.accent} fontSize={14} fontWeight="semibold">
+          <Text
+            modifiers={[
+              foregroundStyle(COLORS.accent),
+              font({ size: 14, weight: 'semibold' }),
+            ]}
+          >
             Tap to start fasting
           </Text>
         </VStack>
@@ -116,31 +164,48 @@ function MediumWidget({ state }: { state: FastingState }) {
 
   return (
     <HStack
-      background={COLORS.background}
-      padding={16}
-      link="fastai://timer"
+      modifiers={[
+        background(COLORS.background),
+        padding({ all: 16 }),
+        widgetURL('fastai://timer'),
+      ]}
     >
       {/* Left: Timer */}
       <VStack>
         <Text
-          color={COLORS.textPrimary}
-          fontSize={32}
-          fontWeight="bold"
-          fontDesign="monospaced"
-          date={state.startedAt ?? undefined}
+          date={new Date(state.startedAt!)}
           dateStyle="timer"
+          modifiers={[
+            foregroundStyle(COLORS.textPrimary),
+            font({ size: 32, weight: 'bold', design: 'monospaced' }),
+          ]}
         />
-        <Text color={COLORS.textMuted} fontSize={12}>
+        <Text
+          modifiers={[
+            foregroundStyle(COLORS.textMuted),
+            font({ size: 12 }),
+          ]}
+        >
           {elapsed.toFixed(1)}h / {state.targetHours}h ({state.protocol})
         </Text>
       </VStack>
       <Spacer />
       {/* Right: Phase */}
       <VStack alignment="trailing">
-        <Text color={COLORS.accent} fontSize={14} fontWeight="semibold">
+        <Text
+          modifiers={[
+            foregroundStyle(COLORS.accent),
+            font({ size: 14, weight: 'semibold' }),
+          ]}
+        >
           {state.phase}
         </Text>
-        <Text color={COLORS.textMuted} fontSize={11}>
+        <Text
+          modifiers={[
+            foregroundStyle(COLORS.textMuted),
+            font({ size: 11 }),
+          ]}
+        >
           Goal: {state.targetHours}h
         </Text>
       </VStack>
@@ -148,21 +213,14 @@ function MediumWidget({ state }: { state: FastingState }) {
   );
 }
 
-export default function FastingWidget() {
-  return (
-    <Widget
-      appGroup="group.com.fastai.app"
-      sharedKey="fastingState"
-      supportedFamilies={['small', 'medium']}
-      refreshPolicy="atEnd"
-    >
-      {({ state, family }: { state: FastingState; family: string }) =>
-        family === 'small' ? (
-          <SmallWidget state={state} />
-        ) : (
-          <MediumWidget state={state} />
-        )
-      }
-    </Widget>
+function FastingWidgetComponent(props: FastingState, env: WidgetEnvironment) {
+  'widget';
+
+  return env.widgetFamily === 'systemSmall' ? (
+    <SmallWidget state={props} />
+  ) : (
+    <MediumWidget state={props} />
   );
 }
+
+export default createWidget('FastingWidget', FastingWidgetComponent);

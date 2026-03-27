@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
 
 interface FastingRingProps {
@@ -8,6 +8,7 @@ interface FastingRingProps {
   size?: number;
   strokeWidth?: number;
   children?: React.ReactNode;
+  onPress?: () => void;
 }
 
 /**
@@ -19,6 +20,7 @@ export const FastingRing = React.memo(function FastingRing({
   size = 300,
   strokeWidth = 16,
   children,
+  onPress,
 }: FastingRingProps) {
   const center = size / 2;
   const radius = (size - strokeWidth * 2) / 2;
@@ -48,8 +50,13 @@ export const FastingRing = React.memo(function FastingRing({
     return items;
   }, [progress, size, tickCount, center, radius]);
 
+  const Wrapper = onPress ? Pressable : View;
+
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <Wrapper
+      onPress={onPress}
+      style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+    >
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
         {/* Background circle */}
         <Circle
@@ -78,7 +85,7 @@ export const FastingRing = React.memo(function FastingRing({
       <View style={{ alignItems: 'center', justifyContent: 'center' }}>
         {children}
       </View>
-    </View>
+    </Wrapper>
   );
 }, (prev, next) => {
   return (

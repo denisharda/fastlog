@@ -6,7 +6,7 @@ interface UndoSnackbarProps {
   visible: boolean;
   onUndo: () => void;
   onDismiss: () => void;
-  /** Auto-dismiss timeout in ms (default 4000) */
+  /** Auto-dismiss timeout in ms (default 3000) */
   timeout?: number;
 }
 
@@ -19,7 +19,7 @@ export function UndoSnackbar({
   visible,
   onUndo,
   onDismiss,
-  timeout = 4000,
+  timeout = 3000,
 }: UndoSnackbarProps) {
   const translateY = useRef(new Animated.Value(80)).current;
   const opacity = useRef(new Animated.Value(0)).current;

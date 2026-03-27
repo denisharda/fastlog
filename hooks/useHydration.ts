@@ -73,10 +73,14 @@ export function useHydration(): UseHydrationReturn {
         trackWaterGoalReached({ goal_ml: dailyGoalMl });
       }
 
-      // Show undo snackbar
+      // Show undo snackbar with contextual message
+      const remaining = Math.max(dailyGoalMl - newTotal, 0);
+      const snackMsg = remaining > 0
+        ? `Added ${amountMl}ml — ${remaining}ml to go`
+        : `Added ${amountMl}ml — goal reached!`;
       setSnackbar({
         visible: true,
-        message: `Added ${amountMl}ml`,
+        message: snackMsg,
         lastLog: log,
       });
 

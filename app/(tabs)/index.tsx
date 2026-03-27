@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useFasting } from '../../hooks/useFasting';
 import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
 import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
-import { TimerControls } from '../../components/timer/TimerControls';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
 import { CUSTOM_PROTOCOL_MIN_HOURS, CUSTOM_PROTOCOL_MAX_HOURS } from '../../constants/protocols';
@@ -66,27 +65,41 @@ export default function TimerScreen() {
   }, [isCustom, customHours, selectedHours, startFast]);
 
   const handleStop = useCallback(() => {
-    Alert.alert(
-      'End Fast Early?',
-      'Are you sure you want to stop your fast? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Fast',
-          style: 'destructive',
-          onPress: () => {
-            stopFast(false);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (progressRatio >= 0.9) {
+      // Near complete — confirm completion
+      Alert.alert(
+        'Complete Fast?',
+        'Great job! Ready to finish this fast?',
+        [
+          { text: 'Keep Going', style: 'cancel' },
+          {
+            text: 'Complete',
+            onPress: () => {
+              stopFast(true);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            },
           },
-        },
-      ]
-    );
-  }, [stopFast]);
+        ]
+      );
+    } else {
+      Alert.alert(
+        'End Fast Early?',
+        'Are you sure you want to stop your fast? This cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'End Fast',
+            style: 'destructive',
+            onPress: () => {
+              stopFast(false);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            },
+          },
+        ]
+      );
+    }
+  }, [stopFast, progressRatio]);
 
-  const handleComplete = useCallback(() => {
-    stopFast(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [stopFast]);
 
   function handleCustomPress() {
     if (!isPro) {
@@ -102,12 +115,14 @@ export default function TimerScreen() {
     Haptics.selectionAsync();
   }, []);
 
+  const { top } = useSafeAreaInsets();
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <View className="flex-1 bg-background">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 32 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: top + 16, paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -128,6 +143,7 @@ export default function TimerScreen() {
             progress={progressRatio}
             size={300}
             strokeWidth={16}
+            onPress={isActive ? handleStop : handleStart}
           >
             <View className="items-center">
               <Text
@@ -142,9 +158,12 @@ export default function TimerScreen() {
                 </Text>
               ) : (
                 <Text className="text-text-muted text-sm mt-2">
-                  Mins Remaining
+                  {isCustom ? customHours : selectedHours}h fast
                 </Text>
               )}
+              <Text className={`text-sm font-semibold mt-3 ${isActive ? 'text-red-500' : 'text-primary'}`}>
+                {isActive ? (progressRatio >= 0.9 ? 'Tap to Complete' : 'Tap to Stop') : 'Tap to Start'}
+              </Text>
             </View>
           </FastingRing>
 
@@ -249,13 +268,6 @@ export default function TimerScreen() {
                 )}
               </View>
             )}
-            <TimerControls
-              isActive={isActive}
-              onStart={handleStart}
-              onStop={handleStop}
-              onComplete={handleComplete}
-              progressRatio={progressRatio}
-            />
           </View>
         )}
       </ScrollView>
@@ -265,6 +277,6 @@ export default function TimerScreen() {
         onClose={() => setShowPhases(false)}
         currentPhase={isActive ? currentPhase : null}
       />
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../stores/userStore';
@@ -41,7 +41,7 @@ export default function HistoryScreen() {
 
   if (!isPro) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-1 bg-background">
         {/* Blurred preview placeholder */}
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-16 h-16 rounded-full bg-white items-center justify-center mb-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
@@ -60,21 +60,21 @@ export default function HistoryScreen() {
             <Text className="text-white font-semibold text-lg">Unlock Pro</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+      <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator color="#2D6A4F" size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
+      <View className="flex-1 bg-background items-center justify-center px-6">
         <Text className="text-red-400 text-center mb-4">Failed to load history.</Text>
         <Pressable
           className="bg-white px-6 py-3 rounded-xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
@@ -82,14 +82,16 @@ export default function HistoryScreen() {
         >
           <Text className="text-text-primary font-medium">Try Again</Text>
         </Pressable>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const isEmpty = !sessions || sessions.length === 0;
 
+  const { top } = useSafeAreaInsets();
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <View className="flex-1 bg-background" style={{ paddingTop: top }}>
       <View className="px-6 pt-4 pb-2">
         <Text className="text-text-primary text-2xl font-bold">History</Text>
       </View>
@@ -108,10 +110,10 @@ export default function HistoryScreen() {
             <FastCalendar sessions={sessions ?? []} />
           }
           renderItem={({ item }) => <FastCard session={item} />}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}
           ItemSeparatorComponent={ItemSeparator}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }

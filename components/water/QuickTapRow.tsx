@@ -2,8 +2,6 @@ import { View, Text, Pressable, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { QUICK_ADD_AMOUNTS } from '../../constants/hydration';
 
-const ICONS = ['🥤', '🫗'] as const;
-
 interface QuickTapRowProps {
   onQuickAdd: (amountMl: number) => void;
   onToggleMore: () => void;
@@ -33,8 +31,7 @@ export function QuickTapRow({ onQuickAdd, onToggleMore, moreExpanded }: QuickTap
           accessibilityLabel={`Add ${amount} milliliters`}
           accessibilityRole="button"
         >
-          <Text className={`text-xs ${i === 0 ? 'text-white' : ''}`}>{ICONS[i]}</Text>
-          <Text className={`font-bold text-[13px] ${i === 0 ? 'text-white' : 'text-text-primary'}`}>
+          <Text className={`font-bold text-[15px] ${i === 0 ? 'text-white' : 'text-text-primary'}`}>
             +{amount}ml
           </Text>
         </Pressable>
@@ -47,9 +44,8 @@ export function QuickTapRow({ onQuickAdd, onToggleMore, moreExpanded }: QuickTap
         accessibilityLabel="Custom amount"
         accessibilityRole="button"
       >
-        <Text className="text-[10px]">⚙️</Text>
-        <Text className={`font-semibold text-[8px] ${moreExpanded ? 'text-primary' : 'text-text-muted'}`}>
-          More
+        <Text className={`font-semibold text-[11px] ${moreExpanded ? 'text-primary' : 'text-text-muted'}`}>
+          Custom
         </Text>
       </Pressable>
     </View>
