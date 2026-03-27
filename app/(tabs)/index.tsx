@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useFasting } from '../../hooks/useFasting';
@@ -115,14 +114,12 @@ export default function TimerScreen() {
     Haptics.selectionAsync();
   }, []);
 
-  const { top } = useSafeAreaInsets();
-
   return (
-    <View className="flex-1 bg-background">
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <>
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: top + 16, paddingBottom: 140 }}
+        className="flex-1 bg-background"
+        contentContainerStyle={{ paddingHorizontal: 24 }}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -271,12 +268,12 @@ export default function TimerScreen() {
           </View>
         )}
       </ScrollView>
-      </TouchableWithoutFeedback>
       <PhasesDrawer
         visible={showPhases}
         onClose={() => setShowPhases(false)}
         currentPhase={isActive ? currentPhase : null}
       />
-    </View>
+    </>
   );
 }
+

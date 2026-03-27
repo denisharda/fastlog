@@ -1,0 +1,61 @@
+<h2>Water-Fill Circle — Interaction Details</h2>
+<p class="subtitle">How should the quick-add buttons work? Click to select.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0faf4;padding:24px;text-align:center;">
+      <div style="display:flex;gap:12px;justify-content:center;align-items:center;">
+        <div style="background:#2D6A4F;color:white;padding:14px 28px;border-radius:20px;font-weight:700;font-size:16px;box-shadow:0 4px 16px rgba(45,106,79,0.3);">+ 250ml</div>
+        <div style="background:white;border:2px solid #e5e7eb;padding:14px 28px;border-radius:20px;font-weight:600;font-size:16px;color:#1a1a1a;">+ 500ml</div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#9CA3AF;">Long-press either button for custom amount</div>
+    </div>
+    <div class="card-body">
+      <h3>A: Two Pill Buttons</h3>
+      <p>Just 250ml and 500ml as pills. Long-press opens a number input for custom amounts. Covers 95% of use cases. No "Custom" button cluttering the UI.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0faf4;padding:24px;text-align:center;">
+      <div style="display:flex;gap:10px;justify-content:center;align-items:center;">
+        <div style="width:60px;height:60px;border-radius:50%;background:#2D6A4F;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;box-shadow:0 4px 12px rgba(45,106,79,0.3);">250</div>
+        <div style="width:60px;height:60px;border-radius:50%;background:white;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#1a1a1a;">500</div>
+        <div style="width:60px;height:60px;border-radius:50%;background:white;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#1a1a1a;">750</div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#9CA3AF;">Long-press any circle for custom amount</div>
+    </div>
+    <div class="card-body">
+      <h3>B: Three Round Targets</h3>
+      <p>250, 500, 750ml as round tappable circles. Satisfying to hit. Three options covers most glass/bottle sizes. Long-press for custom.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0faf4;padding:24px;text-align:center;">
+      <div style="display:flex;gap:10px;justify-content:center;align-items:center;">
+        <div style="width:56px;height:56px;border-radius:50%;background:#2D6A4F;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-direction:column;box-shadow:0 4px 12px rgba(45,106,79,0.3);">
+          <span style="font-size:18px;">🥤</span>
+          <span style="font-size:10px;margin-top:1px;">250</span>
+        </div>
+        <div style="width:56px;height:56px;border-radius:50%;background:white;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex-direction:column;">
+          <span style="font-size:18px;">🥛</span>
+          <span style="font-size:10px;margin-top:1px;">350</span>
+        </div>
+        <div style="width:56px;height:56px;border-radius:50%;background:white;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex-direction:column;">
+          <span style="font-size:18px;">🍶</span>
+          <span style="font-size:10px;margin-top:1px;">500</span>
+        </div>
+        <div style="width:56px;height:56px;border-radius:50%;background:white;border:2px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex-direction:column;">
+          <span style="font-size:18px;">💧</span>
+          <span style="font-size:10px;margin-top:1px;">750</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#9CA3AF;">Long-press for custom amount</div>
+    </div>
+    <div class="card-body">
+      <h3>C: Icon Circles (glass, cup, bottle)</h3>
+      <p>Round targets with container icons — glass (250), cup (350), bottle (500), large (750). Makes each amount feel like a real thing you drank, not just a number.</p>
+    </div>
+  </div>
+</div>

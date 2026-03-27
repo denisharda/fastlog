@@ -184,12 +184,15 @@ Entitlement name: `pro`
 - PostHog event on every meaningful user action (fast_started, fast_completed, fast_abandoned, paywall_viewed, pro_purchased, checkin_received)
 
 ## Design system
-- Primary color: #2D6A4F (deep green)
-- Accent: #40916C
-- Background: #0A0A0A (near black — fasting app should feel calm/dark)
-- Surface: #1A1A1A
-- Text primary: #F5F5F5
-- Text muted: #9CA3AF
+- Primary: #2D6A4F (deep green)
+- Accent: #40916C (lighter green)
+- Background: #F2F2F7 (light gray — iOS system background)
+- Surface: #FFFFFF (white)
+- Text primary: #1A1A1A (near black)
+- Text muted: #6B7280 (gray)
+- Water: #0EA5E9 (sky blue — currently unused, green theme active)
+- Water dark: #0369A1 (dark blue — currently unused)
+- Card: #FFFFFF (white)
 - The timer ring is the hero element — it must be large, centered, beautiful
 - Use SF Pro font on iOS (system default via NativeWind)
 

@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../stores/userStore';
@@ -88,32 +87,31 @@ export default function HistoryScreen() {
 
   const isEmpty = !sessions || sessions.length === 0;
 
-  const { top } = useSafeAreaInsets();
-
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: top }}>
-      <View className="px-6 pt-4 pb-2">
-        <Text className="text-text-primary text-2xl font-bold">History</Text>
-      </View>
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerStyle={{ paddingHorizontal: 24 }}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      <Text className="text-text-primary text-2xl font-bold pt-4 pb-2">History</Text>
 
       {isEmpty ? (
-        <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-1 items-center justify-center px-6 py-20">
           <Text className="text-text-muted text-center">
             No fasts yet. Start your first fast on the Timer tab!
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={sessions}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={
-            <FastCalendar sessions={sessions ?? []} />
-          }
-          renderItem={({ item }) => <FastCard session={item} />}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}
-          ItemSeparatorComponent={ItemSeparator}
-        />
+        <View>
+          <FastCalendar sessions={sessions ?? []} />
+          {sessions!.map((item, index) => (
+            <React.Fragment key={item.id}>
+              {index > 0 && <ItemSeparator />}
+              <FastCard session={item} />
+            </React.Fragment>
+          ))}
+        </View>
       )}
-    </View>
+    </ScrollView>
   );
 }

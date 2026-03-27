@@ -1,5 +1,4 @@
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
 import { useFastingStore } from '../../stores/fastingStore';
@@ -50,11 +49,8 @@ export default function ProfileScreen() {
     router.push('/paywall');
   }
 
-  const { top } = useSafeAreaInsets();
-
   return (
-    <View className="flex-1 bg-background">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, paddingTop: top + 24, paddingBottom: 140 }}>
+    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 24 }} contentInsetAdjustmentBehavior="automatic">
         <Text className="text-text-primary text-2xl font-bold mb-6">Profile</Text>
 
         {/* User info */}
@@ -213,7 +209,6 @@ export default function ProfileScreen() {
             <Text className="text-white font-medium">Sign Out</Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </View>
+    </ScrollView>
   );
 }
