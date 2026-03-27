@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
@@ -37,20 +37,25 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
  */
 export function FastCard({ session }: FastCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const isInProgress = !session.ended_at;
 
-  const duration = formatDuration(session.started_at, session.ended_at);
-  const progress =
-    session.ended_at
-      ? Math.min(
-          (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) /
-            (session.target_hours * 3600000),
-          1
-        )
-      : 0;
+  // Live tick for in-progress sessions
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!isInProgress) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isInProgress]);
 
-  const elapsedHours = session.ended_at
-    ? (new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 3600000
-    : 0;
+  const endTime = session.ended_at ? new Date(session.ended_at).getTime() : now;
+  const elapsedMs = endTime - new Date(session.started_at).getTime();
+  const elapsedHours = elapsedMs / 3600000;
+
+  const duration = isInProgress
+    ? formatDuration(session.started_at, new Date(now).toISOString())
+    : formatDuration(session.started_at, session.ended_at);
+
+  const progress = Math.min(elapsedMs / (session.target_hours * 3600000), 1);
 
   const phase = getCurrentPhase(elapsedHours);
 
@@ -70,11 +75,15 @@ export function FastCard({ session }: FastCardProps) {
         <Text className="text-text-primary font-semibold">{formatDate(session.started_at)}</Text>
         <View className="flex-row items-center gap-2">
           <Text className="text-text-muted text-sm">{session.protocol}</Text>
-          {session.completed && (
+          {session.completed ? (
             <View className="bg-primary px-2 py-0.5 rounded-full">
               <Text className="text-white text-xs">Complete</Text>
             </View>
-          )}
+          ) : isInProgress ? (
+            <View className="bg-accent/20 px-2 py-0.5 rounded-full">
+              <Text className="text-accent text-xs font-medium">Live</Text>
+            </View>
+          ) : null}
           <Text className="text-text-muted text-base">{expanded ? '▾' : '▸'}</Text>
         </View>
       </View>
