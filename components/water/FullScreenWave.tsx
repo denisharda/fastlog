@@ -1,40 +1,50 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface FullScreenWaveProps {
-  /** 0-1 fill ratio */
   progress: number;
   width: number;
   height: number;
 }
 
-/**
- * Single-wave full-screen water fill background.
- * Height directly maps to progress — no decorative shimmer.
- */
-export const FullScreenWave = React.memo(function FullScreenWave({ progress, width, height }: FullScreenWaveProps) {
+export const FullScreenWave = React.memo(function FullScreenWave({
+  progress,
+  width,
+  height,
+}: FullScreenWaveProps) {
+  const phase = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(phase, {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [phase]);
+
   const clampedProgress = Math.min(Math.max(progress, 0), 1);
+
+  if (clampedProgress <= 0 || width === 0 || height === 0) return null;
+
   const fillHeight = clampedProgress * height;
   const baseY = height - fillHeight;
 
-  const wavePath = useMemo(() => {
-    const amplitude = 12;
-    const steps = 20;
-    const stepWidth = width / steps;
+  const [wavePath, setWavePath] = React.useState(() =>
+    buildWavePath(0, baseY, width, height)
+  );
 
-    const points: string[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const x = i * stepWidth;
-      const y = baseY + Math.sin((i / steps) * Math.PI * 4) * amplitude;
-      points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
-    }
-    points.push(`L${width},${height}`);
-    points.push(`L0,${height}`);
-    points.push('Z');
-    return points.join(' ');
-  }, [clampedProgress, width, height, baseY]);
-
-  if (clampedProgress <= 0 || width === 0 || height === 0) return null;
+  useEffect(() => {
+    const id = phase.addListener(({ value }) => {
+      setWavePath(buildWavePath(value, baseY, width, height));
+    });
+    return () => phase.removeListener(id);
+  }, [phase, baseY, width, height]);
 
   return (
     <Svg
@@ -53,10 +63,27 @@ export const FullScreenWave = React.memo(function FullScreenWave({ progress, wid
       <Path d={wavePath} fill="url(#waveGrad)" />
     </Svg>
   );
-}, (prev, next) => {
-  return (
-    Math.abs(prev.progress - next.progress) < 0.005 &&
-    prev.width === next.width &&
-    prev.height === next.height
-  );
 });
+
+function buildWavePath(
+  phaseOffset: number,
+  baseY: number,
+  width: number,
+  height: number
+): string {
+  const amplitude = 12;
+  const steps = 40;
+  const stepWidth = width / steps;
+  const shift = phaseOffset * Math.PI * 2;
+
+  const points: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = i * stepWidth;
+    const y = baseY + Math.sin((i / steps) * Math.PI * 4 + shift) * amplitude;
+    points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  points.push(`L${width},${height}`);
+  points.push(`L0,${height}`);
+  points.push('Z');
+  return points.join(' ');
+}
