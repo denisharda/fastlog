@@ -122,6 +122,58 @@ export async function schedulePhaseNotifications(
   return Promise.all(promises);
 }
 
+// ─── Encouragement notifications (all users) ────────────────────────────────
+
+const ENCOURAGEMENT_MESSAGES: Record<number, { title: string; body: string }> = {
+  4: {
+    title: 'Going strong!',
+    body: "4 hours in — your insulin is dropping and your body is shifting gears. Keep it up!",
+  },
+  8: {
+    title: "You're crushing it!",
+    body: "8 hours fasted — fat burning is kicking in. Stay hydrated and stay focused!",
+  },
+  12: {
+    title: 'Halfway hero!',
+    body: "12 hours! Ketosis is starting. Your body is tapping into fat stores now.",
+  },
+};
+
+/**
+ * Schedule encouragement notifications at hours 4, 8, and 12.
+ * Fires for all users currently fasting.
+ */
+export async function scheduleEncouragementNotifications(
+  fastStartTime: Date,
+  targetHours: number
+): Promise<string[]> {
+  const promises: Promise<string>[] = [];
+  const now = Date.now();
+
+  for (const [hourStr, msg] of Object.entries(ENCOURAGEMENT_MESSAGES)) {
+    const hour = Number(hourStr);
+    if (hour >= targetHours) continue;
+
+    const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
+    if (triggerDate.getTime() <= now) continue;
+
+    promises.push(
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: msg.title,
+          body: msg.body,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        },
+      })
+    );
+  }
+
+  return Promise.all(promises);
+}
+
 // ─── Pro-only notifications (AI coach check-ins) ────────────────────────────
 
 /**
