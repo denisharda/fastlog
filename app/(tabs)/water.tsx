@@ -167,6 +167,7 @@ export default function WaterScreen() {
               <Text className="text-text-primary font-bold text-[15px]">+ 500ml</Text>
             </Pressable>
           </View>
+          <Text className="text-text-muted text-[10px] text-center mt-2">Hold to add a custom amount</Text>
         </View>
       </View>
 
