@@ -15,7 +15,7 @@ export function initPostHog(): PostHog | null {
   }
 
   posthogInstance = new PostHog(apiKey, {
-    host: 'https://app.posthog.com',
+    host: 'https://us.i.posthog.com',
   });
 
   return posthogInstance;
