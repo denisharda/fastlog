@@ -23,6 +23,8 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   { label: 'Smart Notifications', free: true,  pro: true  },
   { label: 'Full History',        free: false, pro: true  },
   { label: 'Custom Protocols',    free: false, pro: true  },
+  { label: 'Share & Export',      free: false, pro: true  },
+  { label: 'Scheduled Fasts',    free: false, pro: true  },
 ];
 
 function computePriceBreakdown(pkg: PurchasesPackage): string {

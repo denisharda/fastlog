@@ -5,10 +5,9 @@ import { trackPaywallViewed } from '../../lib/posthog';
 
 const PRO_FEATURES = [
   'Full fasting history & analytics',
-  'Streak tracking & stats',
-  'Phase science & metabolic insights',
-  'Hydration tracking & daily goals',
-  'Smart fasting notifications',
+  'Custom fasting protocols',
+  'Share & export your progress',
+  'Scheduled recurring fasts',
 ];
 
 export default function TrialScreen() {
