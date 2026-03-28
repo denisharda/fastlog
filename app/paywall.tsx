@@ -17,12 +17,12 @@ import { CARD_SHADOW } from '../constants/styles';
 type ComparisonRow = { label: string; free: boolean; pro: boolean };
 
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { label: 'Fasting Timer',      free: true,  pro: true  },
-  { label: 'Water Tracking',     free: true,  pro: true  },
-  { label: 'Full History',       free: false, pro: true  },
-  { label: 'Phase Science',      free: true,  pro: true  },
-  { label: 'Custom Protocols',   free: false, pro: true  },
-  { label: 'Smart Notifications',free: true,  pro: true  },
+  { label: 'Fasting Timer',       free: true,  pro: true  },
+  { label: 'Water Tracking',      free: true,  pro: true  },
+  { label: 'Phase Science',       free: true,  pro: true  },
+  { label: 'Smart Notifications', free: true,  pro: true  },
+  { label: 'Full History',        free: false, pro: true  },
+  { label: 'Custom Protocols',    free: false, pro: true  },
 ];
 
 function computePriceBreakdown(pkg: PurchasesPackage): string {
