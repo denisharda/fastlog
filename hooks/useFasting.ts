@@ -47,6 +47,8 @@ export function useFasting(): UseFastingReturn {
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
 
+  console.log('[useFasting] render — activeFast:', activeFast?.sessionId ?? 'null');
+
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
