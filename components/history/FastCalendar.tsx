@@ -50,7 +50,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
     }
 
     return { days: d, weeks: w, today: t };
-  }, []);
+  }, [isPro]);
 
   return (
     <View className="mb-4">
