@@ -1,5 +1,6 @@
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useUserStore } from '../../stores/userStore';
 import { useFastingStore } from '../../stores/fastingStore';
 import { useHydrationStore } from '../../stores/hydrationStore';
@@ -17,6 +18,7 @@ import {
 import { restorePurchases } from '../../lib/revenuecat';
 import { trackPaywallViewed } from '../../lib/posthog';
 import { useState } from 'react';
+import { CARD_SHADOW } from '../../constants/styles';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -31,6 +33,7 @@ export default function ProfileScreen() {
   const [restoringPurchases, setRestoringPurchases] = useState(false);
 
   async function handleSignOut() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await signOut();
     resetUser();
     useFastingStore.getState().stopFast();
@@ -102,6 +105,7 @@ export default function ProfileScreen() {
                 }`}
                 onPress={async () => {
                   if (!profile) return;
+                  Haptics.selectionAsync();
                   setPreferredProtocol(protocol.id);
                   supabase
                     .from('profiles')
@@ -127,6 +131,7 @@ export default function ProfileScreen() {
             <Pressable
               className="w-11 h-11 rounded-full bg-background items-center justify-center"
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl - WATER_GOAL_STEP_ML;
                 if (next >= MIN_DAILY_WATER_GOAL_ML) {
                   setDailyGoal(next);
@@ -150,6 +155,7 @@ export default function ProfileScreen() {
             <Pressable
               className="w-11 h-11 rounded-full bg-background items-center justify-center"
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl + WATER_GOAL_STEP_ML;
                 if (next <= MAX_DAILY_WATER_GOAL_ML) {
                   setDailyGoal(next);
