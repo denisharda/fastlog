@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
 import { getCurrentPhase } from '../../constants/phases';
 import { CARD_SHADOW } from '../../constants/styles';
 import { useNow } from '../../hooks/useNow';
+import { useSessionHydration } from '../../hooks/useSessionHydration';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -48,6 +49,10 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
   const isInProgress = session && !session.ended_at;
 
   const now = useNow(visible && !!isInProgress);
+
+  const { logs: hydrationLogs, totalMl: sessionWaterMl, logCount: waterLogCount, isLoading: waterLoading } = useSessionHydration(
+    isInProgress ? null : session?.id ?? null
+  );
 
   if (!session) return null;
 
@@ -161,6 +166,37 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
               </View>
             </View>
           </View>
+
+          {/* Hydration */}
+          {!isInProgress && (
+            <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
+              <Text className="text-text-muted text-xs mb-2">Hydration</Text>
+              {waterLoading ? (
+                <ActivityIndicator color="#2D6A4F" size="small" />
+              ) : sessionWaterMl > 0 ? (
+                <>
+                  <View className="flex-row items-baseline gap-1 mb-2">
+                    <Text className="text-text-primary text-2xl font-bold">
+                      {sessionWaterMl.toLocaleString()}ml
+                    </Text>
+                    <Text className="text-text-muted text-xs">
+                      ({waterLogCount} {waterLogCount === 1 ? 'entry' : 'entries'})
+                    </Text>
+                  </View>
+                  {hydrationLogs.map((log) => (
+                    <View key={log.id} className="flex-row items-center justify-between py-1.5 border-b border-gray-50">
+                      <Text className="text-text-primary text-sm">+{log.amount_ml}ml</Text>
+                      <Text className="text-text-muted text-xs">
+                        {new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  ))}
+                </>
+              ) : (
+                <Text className="text-text-muted text-sm">No water logged during this session</Text>
+              )}
+            </View>
+          )}
 
           {/* Phase */}
           <Pressable
