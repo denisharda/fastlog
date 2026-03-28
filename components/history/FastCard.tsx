@@ -8,7 +8,6 @@ import { useNow } from '../../hooks/useNow';
 interface FastCardProps {
   session: FastingSession;
   onPress: () => void;
-  waterMl?: number;
 }
 
 function formatDate(isoString: string): string {
@@ -31,7 +30,7 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
  * Card displaying a single fasting session summary.
  * Tappable to open the SessionDetailDrawer.
  */
-export function FastCard({ session, onPress, waterMl }: FastCardProps) {
+export function FastCard({ session, onPress }: FastCardProps) {
   const isInProgress = !session.ended_at;
   const now = useNow(isInProgress);
 
@@ -83,11 +82,6 @@ export function FastCard({ session, onPress, waterMl }: FastCardProps) {
       <Text className="text-text-muted text-xs mt-1">
         {Math.round(progress * 100)}% of {session.target_hours}h goal
       </Text>
-      {waterMl != null && waterMl > 0 && (
-        <Text className="text-text-muted text-xs mt-1">
-          💧 {waterMl.toLocaleString()}ml
-        </Text>
-      )}
     </Pressable>
   );
 }
