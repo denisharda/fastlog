@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Crypto from 'expo-crypto';
+import { useQueryClient } from '@tanstack/react-query';
 import { useHydrationStore, LocalHydrationLog } from '../stores/hydrationStore';
 import { useFastingStore } from '../stores/fastingStore';
 import { useUserStore } from '../stores/userStore';
@@ -28,6 +29,7 @@ interface UseHydrationReturn {
 }
 
 export function useHydration(): UseHydrationReturn {
+  const queryClient = useQueryClient();
   // Use individual selectors to avoid re-renders from unrelated store changes
   const todayLogs = useHydrationStore((s) => s.todayLogs);
   const dailyGoalMl = useHydrationStore((s) => s.dailyGoalMl);
@@ -104,13 +106,18 @@ export function useHydration(): UseHydrationReturn {
               amount_ml: amountMl,
               logged_at: log.logged_at,
             });
-          if (error) console.error('[useHydration] DB insert error:', error);
+          if (error) {
+            console.error('[useHydration] DB insert error:', error);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ['daily_hydration_totals'] });
+            queryClient.invalidateQueries({ queryKey: ['daily_hydration'] });
+          }
         } catch (err) {
           console.error('[useHydration] DB insert failed:', err);
         }
       }
     },
-    [storeLog, profile, activeFast, todayTotalMl, dailyGoalMl]
+    [storeLog, profile, activeFast, todayTotalMl, dailyGoalMl, queryClient]
   );
 
   const undoLastLog = useCallback(async () => {
@@ -127,12 +134,17 @@ export function useHydration(): UseHydrationReturn {
           .from('hydration_logs')
           .delete()
           .eq('id', logId);
-        if (error) console.error('[useHydration] DB delete error:', error);
+        if (error) {
+          console.error('[useHydration] DB delete error:', error);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['daily_hydration_totals'] });
+          queryClient.invalidateQueries({ queryKey: ['daily_hydration'] });
+        }
       } catch (err) {
         console.error('[useHydration] DB delete failed:', err);
       }
     }
-  }, [snackbar.lastLog, storeRemove, profile]);
+  }, [snackbar.lastLog, storeRemove, profile, queryClient]);
 
   const subtractLast = useCallback(async () => {
     if (todayLogs.length === 0) return;
@@ -153,12 +165,17 @@ export function useHydration(): UseHydrationReturn {
           .from('hydration_logs')
           .delete()
           .eq('id', lastLog.id);
-        if (error) console.error('[useHydration] DB delete error:', error);
+        if (error) {
+          console.error('[useHydration] DB delete error:', error);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['daily_hydration_totals'] });
+          queryClient.invalidateQueries({ queryKey: ['daily_hydration'] });
+        }
       } catch (err) {
         console.error('[useHydration] DB delete failed:', err);
       }
     }
-  }, [todayLogs, storeRemove, profile]);
+  }, [todayLogs, storeRemove, profile, queryClient]);
 
   const removeLog = useCallback(
     (logId: string) => {
@@ -170,11 +187,16 @@ export function useHydration(): UseHydrationReturn {
           .delete()
           .eq('id', logId)
           .then(({ error }) => {
-            if (error) console.error('[useHydration] DB delete error:', error);
+            if (error) {
+              console.error('[useHydration] DB delete error:', error);
+            } else {
+              queryClient.invalidateQueries({ queryKey: ['daily_hydration_totals'] });
+              queryClient.invalidateQueries({ queryKey: ['daily_hydration'] });
+            }
           });
       }
     },
-    [storeRemove, profile]
+    [storeRemove, profile, queryClient]
   );
 
   const dismissSnackbar = useCallback(() => {
