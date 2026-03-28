@@ -125,13 +125,21 @@ export default function ProfileScreen() {
 
         {/* Daily Water Goal */}
         <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-          <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
-            Daily Water Goal
-          </Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
+              Daily Water Goal
+            </Text>
+            {!isPro && <Text className="text-primary text-xs font-medium mb-3">Pro</Text>}
+          </View>
           <View className="flex-row items-center justify-between">
             <Pressable
               className="w-11 h-11 rounded-full bg-background items-center justify-center"
               onPress={() => {
+                if (!isPro) {
+                  trackPaywallViewed('water_goal_setting');
+                  router.push('/paywall');
+                  return;
+                }
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl - WATER_GOAL_STEP_ML;
                 if (next >= MIN_DAILY_WATER_GOAL_ML) {
@@ -157,6 +165,11 @@ export default function ProfileScreen() {
             <Pressable
               className="w-11 h-11 rounded-full bg-background items-center justify-center"
               onPress={() => {
+                if (!isPro) {
+                  trackPaywallViewed('water_goal_setting');
+                  router.push('/paywall');
+                  return;
+                }
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl + WATER_GOAL_STEP_ML;
                 if (next <= MAX_DAILY_WATER_GOAL_ML) {
