@@ -57,7 +57,7 @@ export default function ProfileScreen() {
         <Text className="text-text-primary text-2xl font-bold mb-6">Profile</Text>
 
         {/* User info */}
-        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
+        <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
           <Text className="text-text-muted text-xs mb-1 uppercase tracking-wider">Account</Text>
           <Text className="text-text-primary font-semibold text-lg">
             {profile?.name ?? 'Faster'}
@@ -90,7 +90,7 @@ export default function ProfileScreen() {
         )}
 
         {/* Fasting Protocol */}
-        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
+        <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
           <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
             Default Protocol
           </Text>
@@ -123,7 +123,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Daily Water Goal */}
-        <View className="bg-white rounded-2xl p-4 mb-3" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
+        <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
           <Text className="text-text-muted text-xs mb-3 uppercase tracking-wider">
             Daily Water Goal
           </Text>
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
         {/* Dev toggle (debug only) */}
         {__DEV__ && (
           <Pressable
-            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
+            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between" style={CARD_SHADOW}
             onPress={() => setIsPro(!isPro)}
           >
             <Text className="text-text-primary font-medium">
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
         <View className="gap-3 mt-2">
           <Pressable
             className="bg-white py-4 rounded-2xl items-center"
-            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
+            style={CARD_SHADOW}
             onPress={handleRestorePurchases}
             disabled={restoringPurchases}
           >

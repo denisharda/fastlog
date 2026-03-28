@@ -103,7 +103,3 @@ export function getCheckinHoursForTarget(targetHours: number): number[] {
 
   return Array.from(hours).sort((a, b) => a - b);
 }
-
-/** @deprecated Use getCheckinHoursForTarget() for dynamic scheduling */
-export const CHECKIN_HOURS = BASE_CHECKIN_HOURS;
-export type CheckinHour = (typeof BASE_CHECKIN_HOURS)[number];

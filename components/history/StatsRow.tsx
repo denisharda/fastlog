@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { FastingSession } from '../../types';
+import { CARD_SHADOW } from '../../constants/styles';
 
 interface StatsRowProps {
   sessions: FastingSession[];
@@ -58,19 +59,11 @@ function computeStats(sessions: FastingSession[]): Stats {
   return { streak, totalFasts, avgDuration, completionRate };
 }
 
-const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
-  elevation: 3,
-};
-
 export const StatsRow = React.memo(function StatsRow({ sessions }: StatsRowProps) {
   const stats = useMemo(() => computeStats(sessions), [sessions]);
 
   return (
-    <View className="bg-white rounded-2xl p-4 mb-4" style={cardShadow}>
+    <View className="bg-white rounded-2xl p-4 mb-4" style={CARD_SHADOW}>
       <View className="flex-row justify-between">
         <StatItem value={`${stats.streak}`} label="Streak" accent />
         <StatItem value={`${stats.totalFasts}`} label="Fasts" />

@@ -9,20 +9,13 @@ import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { useUserStore } from '../../stores/userStore';
 import { FastingProtocol } from '../../types';
 import { CUSTOM_PROTOCOL_MIN_HOURS, CUSTOM_PROTOCOL_MAX_HOURS } from '../../constants/protocols';
+import { CARD_SHADOW } from '../../constants/styles';
 
 const FASTING_OPTIONS = [
   { hours: 16, label: '16:8', protocol: '16:8' as FastingProtocol },
   { hours: 18, label: '18:6', protocol: '18:6' as FastingProtocol },
   { hours: 24, label: '24h', protocol: '24h' as FastingProtocol },
 ];
-
-const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
-  elevation: 3,
-};
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -170,12 +163,12 @@ export default function TimerScreen() {
         {/* Info cards when fasting */}
         {isActive && (
           <View className="flex-row gap-3 w-full mb-4">
-            <View className="flex-1 bg-white rounded-2xl p-4" style={cardShadow}>
+            <View className="flex-1 bg-white rounded-2xl p-4" style={CARD_SHADOW}>
               <Text className="text-text-muted text-xs mb-1">Current Phase</Text>
               <Text className="text-text-primary text-lg font-bold">{currentPhase.name}</Text>
               <Text className="text-text-muted text-xs mt-1">{currentPhase.description}</Text>
             </View>
-            <View className="flex-1 bg-white rounded-2xl p-4" style={cardShadow}>
+            <View className="flex-1 bg-white rounded-2xl p-4" style={CARD_SHADOW}>
               <Text className="text-text-muted text-xs mb-1">Progress</Text>
               <Text className="text-text-primary text-lg font-bold">{(progressRatio * 100).toFixed(0)}%</Text>
               <Text className="text-text-muted text-xs mt-1">{elapsedHours.toFixed(1)}h / {targetHours}h</Text>
@@ -206,7 +199,7 @@ export default function TimerScreen() {
                           className={`px-5 py-3 rounded-xl ${
                             isSelected ? 'bg-primary' : 'bg-white border border-gray-200'
                           }`}
-                          style={!isSelected ? cardShadow : undefined}
+                          style={!isSelected ? CARD_SHADOW : undefined}
                           onPress={() => handleProtocolSelect(option.hours)}
                         >
                           <Text
@@ -223,7 +216,7 @@ export default function TimerScreen() {
                       className={`px-5 py-3 rounded-xl ${
                         isCustom ? 'bg-primary' : 'bg-white border border-gray-200'
                       }`}
-                      style={!isCustom ? cardShadow : undefined}
+                      style={!isCustom ? CARD_SHADOW : undefined}
                       onPress={handleCustomPress}
                     >
                       <Text
@@ -240,7 +233,7 @@ export default function TimerScreen() {
                   <View className="flex-row items-center justify-center gap-4 mt-2">
                     <Pressable
                       className="w-12 h-12 rounded-full bg-white border border-gray-200 items-center justify-center"
-                      style={cardShadow}
+                      style={CARD_SHADOW}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setCustomHours((h) => Math.max(CUSTOM_PROTOCOL_MIN_HOURS, h - 1));
@@ -248,12 +241,12 @@ export default function TimerScreen() {
                     >
                       <Text className="text-text-primary text-2xl font-medium">−</Text>
                     </Pressable>
-                    <View className="bg-white border border-gray-200 rounded-xl px-6 h-12 items-center justify-center" style={cardShadow}>
+                    <View className="bg-white border border-gray-200 rounded-xl px-6 h-12 items-center justify-center" style={CARD_SHADOW}>
                       <Text className="text-text-primary text-xl font-semibold">{customHours}h</Text>
                     </View>
                     <Pressable
                       className="w-12 h-12 rounded-full bg-white border border-gray-200 items-center justify-center"
-                      style={cardShadow}
+                      style={CARD_SHADOW}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setCustomHours((h) => Math.min(CUSTOM_PROTOCOL_MAX_HOURS, h + 1));

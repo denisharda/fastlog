@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -153,10 +153,10 @@ export default function HistoryScreen() {
           <FastCalendar sessions={sessions ?? []} onDayPress={handleDayPress} />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {sessions!.map((item, index) => (
-            <React.Fragment key={item.id}>
+            <Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
               <FastCard session={item} onPress={() => handleCardPress(item)} />
-            </React.Fragment>
+            </Fragment>
           ))}
         </View>
       )}

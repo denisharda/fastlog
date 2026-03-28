@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
+import { CARD_SHADOW } from '../../constants/styles';
 
 interface FastCardProps {
   session: FastingSession;
@@ -57,7 +58,7 @@ export function FastCard({ session, onPress }: FastCardProps) {
     <Pressable
       onPress={handlePress}
       className="bg-white rounded-2xl p-4"
-      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}
+      style={CARD_SHADOW}
     >
       <View className="flex-row items-center justify-between mb-2">
         <Text className="text-text-primary font-semibold">{formatDate(session.started_at)}</Text>
