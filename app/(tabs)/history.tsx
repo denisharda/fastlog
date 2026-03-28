@@ -142,7 +142,13 @@ export default function HistoryScreen() {
       visible={drawerVisible}
       sessions={drawerSessions}
       onClose={() => setDrawerVisible(false)}
-      onStopFast={stopFast}
+      onStopFast={(completed) => {
+        stopFast(completed);
+        // Refetch after DB update settles
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['fasting_sessions', profile?.id] });
+        }, 1000);
+      }}
     />
     </>
   );
