@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   Pressable,
   TextInput,
   ActivityIndicator,
@@ -85,9 +86,10 @@ export default function WelcomeScreen() {
         <View className="flex-1 items-center justify-center px-6">
           {/* Logo */}
           <View className="mb-12 items-center">
-            <View className="w-24 h-24 rounded-full bg-primary items-center justify-center mb-6">
-              <Text className="text-4xl">&#x23F1;</Text>
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              className="w-24 h-24 rounded-2xl mb-6"
+            />
             <Text className="text-4xl font-bold text-text-primary mb-2">FastAI</Text>
             <Text className="text-text-muted text-center text-base">
               Intermittent fasting{'\n'}made simple
