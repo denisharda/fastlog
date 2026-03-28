@@ -50,7 +50,7 @@ export default function HistoryScreen() {
 
   function handleCardPress(session: FastingSession) {
     setDrawerSessions([session]);
-    setDrawerDate(new Date(session.started_at).toDateString());
+    setDrawerDate(null);
     setDrawerVisible(true);
   }
 

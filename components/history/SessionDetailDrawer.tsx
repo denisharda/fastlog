@@ -185,8 +185,8 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
             </>
           )}
 
-          {/* Hydration — shown for all days */}
-          <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
+          {/* Hydration — only shown for calendar day taps */}
+          {date && <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
             <Text className="text-text-muted text-xs mb-2">
               {hydrationDateLabel ? `Hydration — ${hydrationDateLabel}` : 'Hydration'}
             </Text>
@@ -228,7 +228,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                 )}
               </>
             )}
-          </View>
+          </View>}
 
           {hasSessions && (
             <>
