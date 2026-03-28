@@ -9,6 +9,7 @@ import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
 import { StatsRow } from '../../components/history/StatsRow';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
+import { useFasting } from '../../hooks/useFasting';
 import { trackPaywallViewed } from '../../lib/posthog';
 
 const ItemSeparator = () => <View className="h-2" />;
@@ -18,6 +19,7 @@ export default function HistoryScreen() {
   const queryClient = useQueryClient();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
+  const { stopFast } = useFasting();
 
   const { data: sessions, isLoading, error } = useQuery({
     queryKey: ['fasting_sessions', profile?.id],
@@ -140,6 +142,7 @@ export default function HistoryScreen() {
       visible={drawerVisible}
       sessions={drawerSessions}
       onClose={() => setDrawerVisible(false)}
+      onStopFast={stopFast}
     />
     </>
   );

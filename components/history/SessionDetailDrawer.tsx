@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
 import { getCurrentPhase, FastingPhase } from '../../constants/phases';
@@ -8,6 +8,7 @@ interface SessionDetailDrawerProps {
   visible: boolean;
   sessions: FastingSession[];
   onClose: () => void;
+  onStopFast?: (completed: boolean) => void;
 }
 
 function formatTime(isoString: string): string {
@@ -39,7 +40,7 @@ const cardShadow = {
   elevation: 3,
 };
 
-export function SessionDetailDrawer({ visible, sessions, onClose }: SessionDetailDrawerProps) {
+export function SessionDetailDrawer({ visible, sessions, onClose, onStopFast }: SessionDetailDrawerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [phaseExpanded, setPhaseExpanded] = useState(false);
@@ -206,6 +207,50 @@ export function SessionDetailDrawer({ visible, sessions, onClose }: SessionDetai
             <View className="bg-white rounded-2xl p-4 mb-3" style={cardShadow}>
               <Text className="text-text-muted text-xs mb-1">Notes</Text>
               <Text className="text-text-primary text-sm italic">{session.notes}</Text>
+            </View>
+          )}
+
+          {/* Stop/Complete buttons for in-progress sessions */}
+          {isInProgress && onStopFast && (
+            <View className="gap-2 mt-2">
+              {progress >= 0.9 && (
+                <Pressable
+                  className="bg-primary rounded-2xl py-4 items-center active:scale-[0.98]"
+                  onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    onStopFast(true);
+                    onClose();
+                  }}
+                >
+                  <Text className="text-white font-bold text-base">Complete Fast</Text>
+                </Pressable>
+              )}
+              <Pressable
+                className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98]"
+                style={cardShadow}
+                onPress={() => {
+                  Alert.alert(
+                    'End Fast Early?',
+                    'Are you sure you want to stop your fast?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'End Fast',
+                        style: 'destructive',
+                        onPress: () => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          onStopFast(false);
+                          onClose();
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Text className="text-red-500 font-semibold text-base">
+                  {progress >= 0.9 ? 'End Early' : 'Stop Fast'}
+                </Text>
+              </Pressable>
             </View>
           )}
         </ScrollView>
