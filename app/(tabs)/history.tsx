@@ -10,7 +10,8 @@ import { FastCalendar } from '../../components/history/FastCalendar';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
 import { useFastingStore } from '../../stores/fastingStore';
 import { cancelAllNotifications } from '../../lib/notifications';
-import { trackPaywallViewed } from '../../lib/posthog';
+import { trackPaywallViewed, trackHistoryExported } from '../../lib/posthog';
+import { exportHistoryCSV } from '../../lib/exportHistory';
 import { CARD_SHADOW } from '../../constants/styles';
 import { useDailyHydrationTotals } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
@@ -137,6 +138,27 @@ export default function HistoryScreen() {
             dailyGoalMl={dailyGoalMl}
             isPro={isPro}
           />
+          {/* Export button */}
+          <Pressable
+            className="flex-row items-center justify-center gap-1 py-2 mb-2"
+            onPress={() => {
+              if (!isPro) {
+                trackPaywallViewed('export_history');
+                router.push('/paywall');
+                return;
+              }
+              if (sessions && sessions.length > 0) {
+                exportHistoryCSV(sessions).then(() => {
+                  trackHistoryExported();
+                });
+              }
+            }}
+          >
+            {!isPro && <Text className="text-primary text-xs font-medium">Pro</Text>}
+            <Text className={`text-sm font-medium ${isPro ? 'text-primary' : 'text-gray-400'}`}>
+              Export History
+            </Text>
+          </Pressable>
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {visibleSessions!.map((item, index) => (
             <Fragment key={item.id}>
