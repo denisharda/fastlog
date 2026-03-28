@@ -29,6 +29,8 @@ export default function TimerScreen() {
   const router = useRouter();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
+  const hasSeenSuccessPaywall = useUserStore(s => s.hasSeenSuccessPaywall);
+  const setHasSeenSuccessPaywall = useUserStore(s => s.setHasSeenSuccessPaywall);
   const {
     isActive,
     elapsedSeconds,
@@ -70,6 +72,13 @@ export default function TimerScreen() {
             onPress: () => {
               stopFast(true);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // Show paywall after first completed fast
+              if (!isPro && !hasSeenSuccessPaywall) {
+                setHasSeenSuccessPaywall(true);
+                setTimeout(() => {
+                  router.push('/paywall');
+                }, 2000);
+              }
             },
           },
         ]
@@ -91,7 +100,7 @@ export default function TimerScreen() {
         ]
       );
     }
-  }, [stopFast, progressRatio]);
+  }, [stopFast, progressRatio, isPro, hasSeenSuccessPaywall, setHasSeenSuccessPaywall, router]);
 
 
   function handleCustomPress() {

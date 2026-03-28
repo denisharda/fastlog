@@ -9,11 +9,13 @@ interface UserState {
   profile: Profile | null;
   isPro: boolean;
   isProLoading: boolean;
+  hasSeenSuccessPaywall: boolean;
   // Actions
   setProfile: (profile: Profile | null) => void;
   updateProfile: (updates: Partial<Profile>) => void;
   setIsPro: (isPro: boolean) => void;
   setIsProLoading: (loading: boolean) => void;
+  setHasSeenSuccessPaywall: (val: boolean) => void;
   setCoachPersonality: (personality: CoachPersonality) => void;
   setPreferredProtocol: (protocol: FastingProtocol) => void;
   reset: () => void;
@@ -23,6 +25,7 @@ const initialState = {
   profile: null as Profile | null,
   isPro: false,
   isProLoading: true,
+  hasSeenSuccessPaywall: false,
 };
 
 export const useUserStore = create<UserState>()(
@@ -40,6 +43,8 @@ export const useUserStore = create<UserState>()(
       setIsPro: (isPro) => set({ isPro }),
 
       setIsProLoading: (isProLoading) => set({ isProLoading }),
+
+      setHasSeenSuccessPaywall: (val) => set({ hasSeenSuccessPaywall: val }),
 
       setCoachPersonality: (personality) =>
         set((state) => ({
@@ -64,6 +69,7 @@ export const useUserStore = create<UserState>()(
       // isPro deliberately NOT persisted — always derived fresh from RevenueCat
       partialize: (state) => ({
         profile: state.profile,
+        hasSeenSuccessPaywall: state.hasSeenSuccessPaywall,
       }),
     }
   )
