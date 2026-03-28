@@ -53,7 +53,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 24 }} contentInsetAdjustmentBehavior="automatic">
+    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 24, paddingBottom: 40 }} contentInsetAdjustmentBehavior="automatic">
         <Text className="text-text-primary text-2xl font-bold mb-6">Profile</Text>
 
         {/* User info */}

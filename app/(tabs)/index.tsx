@@ -122,7 +122,7 @@ export default function TimerScreen() {
     <>
       <ScrollView
         className="flex-1 bg-background"
-        contentContainerStyle={{ paddingHorizontal: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
