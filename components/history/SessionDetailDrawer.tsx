@@ -210,48 +210,32 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onStopFast }: 
             </View>
           )}
 
-          {/* Stop/Complete buttons for in-progress sessions */}
+          {/* End fast button for in-progress sessions */}
           {isInProgress && onStopFast && (
-            <View className="gap-2 mt-2">
-              {progress >= 0.9 && (
-                <Pressable
-                  className="bg-primary rounded-2xl py-4 items-center active:scale-[0.98]"
-                  onPress={() => {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    onStopFast(true);
-                    onClose();
-                  }}
-                >
-                  <Text className="text-white font-bold text-base">Complete Fast</Text>
-                </Pressable>
-              )}
-              <Pressable
-                className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98]"
-                style={cardShadow}
-                onPress={() => {
-                  Alert.alert(
-                    'End Fast Early?',
-                    'Are you sure you want to stop your fast?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'End Fast',
-                        style: 'destructive',
-                        onPress: () => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          onStopFast(false);
-                          onClose();
-                        },
+            <Pressable
+              className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98] mt-2"
+              style={cardShadow}
+              onPress={() => {
+                Alert.alert(
+                  'End Fast?',
+                  'Are you sure you want to end your fast?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'End Fast',
+                      style: 'destructive',
+                      onPress: () => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        onStopFast(progress >= 0.9);
+                        onClose();
                       },
-                    ]
-                  );
-                }}
-              >
-                <Text className="text-red-500 font-semibold text-base">
-                  {progress >= 0.9 ? 'End Early' : 'Stop Fast'}
-                </Text>
-              </Pressable>
-            </View>
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text className="text-red-500 font-semibold text-base">End Fast</Text>
+            </Pressable>
           )}
         </ScrollView>
       </View>
