@@ -216,16 +216,18 @@ export function useFasting(): UseFastingReturn {
           });
         }
 
-        // Background: update DB record (only if signed in)
+        // Update DB record (only if signed in)
         if (profile) {
-          supabase
+          const { error: dbError } = await supabase
             .from('fasting_sessions')
             .update({ ended_at: endedAt, completed })
-            .eq('id', activeFast.sessionId)
-            .then(({ error: dbError }) => {
-              if (dbError) console.error('[useFasting] DB update error:', dbError);
-              else queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
-            });
+            .eq('id', activeFast.sessionId);
+
+          if (dbError) {
+            console.error('[useFasting] DB update error:', dbError);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
+          }
         }
       } catch (err) {
         setError('Failed to stop fast.');
