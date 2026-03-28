@@ -59,7 +59,7 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
 
   return (
     <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-      <View className="flex-row items-center justify-between mb-3">
+      <View className={`flex-row items-center justify-between ${enabled && isPro ? 'mb-3' : ''}`}>
         <View className="flex-row items-center gap-2">
           <Text className="text-text-muted text-xs uppercase tracking-wider">
             Fast Schedule
