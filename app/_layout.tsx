@@ -13,6 +13,8 @@ import { useUserStore } from '../stores/userStore';
 import { initRevenueCat, identifyRevenueCatUser } from '../lib/revenuecat';
 import { initPostHog, trackAppLaunched } from '../lib/posthog';
 import { useSubscription } from '../hooks/useSubscription';
+import { syncFastSchedule } from '../lib/fastScheduler';
+import * as Notifications from 'expo-notifications';
 
 validateEnv();
 
@@ -65,6 +67,7 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const profile = useUserStore((s) => s.profile);
+  const router = useRouter();
 
   // Sync Pro status from RevenueCat into the user store
   useSubscription();
@@ -75,6 +78,26 @@ export default function RootLayout() {
       identifyRevenueCatUser(profile.id);
     }
   }, [profile?.id]);
+
+  // Sync the recurring fast schedule notification on app launch
+  useEffect(() => {
+    syncFastSchedule();
+  }, []);
+
+  // Handle notification taps — navigate to timer tab and reschedule
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.action === 'start_fast') {
+        // Navigate to timer tab — the user will start manually from there
+        // We don't auto-start because the user should confirm
+        router.push('/(tabs)');
+        // Reschedule the next occurrence
+        syncFastSchedule();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     initRevenueCat();
