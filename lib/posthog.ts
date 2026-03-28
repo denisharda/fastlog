@@ -84,3 +84,19 @@ export function trackWaterGoalReached(props: {
 export function trackCancellationLinkTapped(): void {
   posthogInstance?.capture('cancellation_link_tapped');
 }
+
+export function trackAppLaunched(): void {
+  posthogInstance?.capture('app_launched');
+}
+
+export function trackPaywallDismissed(source: string): void {
+  posthogInstance?.capture('paywall_dismissed', { source });
+}
+
+export function trackWaterGoalChanged(params: { old_goal_ml: number; new_goal_ml: number }): void {
+  posthogInstance?.capture('water_goal_changed', params);
+}
+
+export function trackProtocolChanged(params: { old_protocol: string; new_protocol: string }): void {
+  posthogInstance?.capture('protocol_changed', params);
+}

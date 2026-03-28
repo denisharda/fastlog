@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { fetchProfile } from '../lib/auth';
 import { useUserStore } from '../stores/userStore';
 import { initRevenueCat } from '../lib/revenuecat';
-import { initPostHog } from '../lib/posthog';
+import { initPostHog, trackAppLaunched } from '../lib/posthog';
 
 validateEnv();
 
@@ -67,6 +67,7 @@ export default function RootLayout() {
   useEffect(() => {
     initRevenueCat();
     initPostHog();
+    trackAppLaunched();
 
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {

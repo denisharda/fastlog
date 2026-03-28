@@ -6,7 +6,7 @@ import { PurchasesPackage } from 'react-native-purchases';
 import Purchases from 'react-native-purchases';
 import { getOfferings, purchasePackage, restorePurchases } from '../lib/revenuecat';
 import { useUserStore } from '../stores/userStore';
-import { trackProPurchased, trackPaywallViewed, trackCancellationLinkTapped } from '../lib/posthog';
+import { trackProPurchased, trackPaywallViewed, trackCancellationLinkTapped, trackPaywallDismissed } from '../lib/posthog';
 
 // AI features hidden — re-enable when AI coach returns:
 // { icon: '🤖', title: 'AI Check-ins', description: 'Personalized messages at every fasting phase' },
@@ -132,7 +132,7 @@ export default function PaywallScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         {/* Close button */}
-        <Pressable className="self-end mb-4" style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => router.back()}>
+        <Pressable className="self-end mb-4" style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => { trackPaywallDismissed('paywall_screen'); router.back(); }}>
           <Text className="text-text-muted text-2xl">✕</Text>
         </Pressable>
 

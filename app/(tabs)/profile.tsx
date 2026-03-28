@@ -16,7 +16,7 @@ import {
   WATER_GOAL_STEP_ML,
 } from '../../constants/hydration';
 import { restorePurchases } from '../../lib/revenuecat';
-import { trackPaywallViewed } from '../../lib/posthog';
+import { trackPaywallViewed, trackWaterGoalChanged, trackProtocolChanged } from '../../lib/posthog';
 import { useState } from 'react';
 import { CARD_SHADOW } from '../../constants/styles';
 
@@ -106,6 +106,7 @@ export default function ProfileScreen() {
                 onPress={async () => {
                   if (!profile) return;
                   Haptics.selectionAsync();
+                  trackProtocolChanged({ old_protocol: profile.preferred_protocol ?? '', new_protocol: protocol.id });
                   setPreferredProtocol(protocol.id);
                   supabase
                     .from('profiles')
@@ -134,6 +135,7 @@ export default function ProfileScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl - WATER_GOAL_STEP_ML;
                 if (next >= MIN_DAILY_WATER_GOAL_ML) {
+                  trackWaterGoalChanged({ old_goal_ml: dailyGoalMl, new_goal_ml: next });
                   setDailyGoal(next);
                   if (profile) {
                     supabase
@@ -158,6 +160,7 @@ export default function ProfileScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const next = dailyGoalMl + WATER_GOAL_STEP_ML;
                 if (next <= MAX_DAILY_WATER_GOAL_ML) {
+                  trackWaterGoalChanged({ old_goal_ml: dailyGoalMl, new_goal_ml: next });
                   setDailyGoal(next);
                   if (profile) {
                     supabase
