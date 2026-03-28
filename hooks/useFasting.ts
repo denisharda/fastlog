@@ -188,18 +188,28 @@ export function useFasting(): UseFastingReturn {
 
   const stopFast = useCallback(
     async (completed = false) => {
-      if (!activeFast) return;
+      console.log('[stopFast] called with completed:', completed);
+      console.log('[stopFast] activeFast:', activeFast);
+      console.log('[stopFast] profile:', profile?.id);
+
+      if (!activeFast) {
+        console.warn('[stopFast] NO activeFast — returning early');
+        return;
+      }
+
       setIsLoading(true);
 
       try {
         const endedAt = new Date().toISOString();
-        // Compute fresh elapsed hours instead of using stale closure value
         const actualHours = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+        const sessionId = activeFast.sessionId;
+
+        console.log('[stopFast] sessionId:', sessionId);
+        console.log('[stopFast] endedAt:', endedAt);
+        console.log('[stopFast] actualHours:', actualHours);
 
         storeStop();
         await cancelAllNotifications();
-
-        // End Live Activity (no-op if native module unavailable)
         endLiveActivity();
 
         if (completed) {
@@ -216,18 +226,24 @@ export function useFasting(): UseFastingReturn {
           });
         }
 
-        // Update DB record (only if signed in)
+        // Update DB record
         if (profile) {
-          const { error: dbError } = await supabase
+          console.log('[stopFast] updating DB for session:', sessionId);
+          const { error: dbError, data: dbData, count } = await supabase
             .from('fasting_sessions')
             .update({ ended_at: endedAt, completed })
-            .eq('id', activeFast.sessionId);
+            .eq('id', sessionId)
+            .select();
+
+          console.log('[stopFast] DB result — error:', dbError, 'data:', dbData, 'count:', count);
 
           if (dbError) {
             console.error('[useFasting] DB update error:', dbError);
           } else {
             queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
           }
+        } else {
+          console.warn('[stopFast] no profile — skipping DB update');
         }
       } catch (err) {
         setError('Failed to stop fast.');
