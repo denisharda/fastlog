@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
 import { getCurrentPhase } from '../../constants/phases';
 import { CARD_SHADOW } from '../../constants/styles';
+import { useNow } from '../../hooks/useNow';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -35,7 +36,6 @@ function formatDuration(ms: number): string {
 
 export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }: SessionDetailDrawerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [now, setNow] = useState(Date.now());
   const [phaseExpanded, setPhaseExpanded] = useState(false);
 
   // Reset selection when sessions change
@@ -47,12 +47,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
   const session = sessions[selectedIndex];
   const isInProgress = session && !session.ended_at;
 
-  // Live tick for in-progress sessions
-  useEffect(() => {
-    if (!visible || !isInProgress) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [visible, isInProgress]);
+  const now = useNow(visible && !!isInProgress);
 
   if (!session) return null;
 

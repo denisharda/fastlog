@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
 import { CARD_SHADOW } from '../../constants/styles';
+import { useNow } from '../../hooks/useNow';
 
 interface FastCardProps {
   session: FastingSession;
@@ -31,14 +32,7 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
  */
 export function FastCard({ session, onPress }: FastCardProps) {
   const isInProgress = !session.ended_at;
-
-  // Live tick for in-progress sessions
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!isInProgress) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [isInProgress]);
+  const now = useNow(isInProgress);
 
   const endTime = session.ended_at ? new Date(session.ended_at).getTime() : now;
   const elapsedMs = endTime - new Date(session.started_at).getTime();
@@ -69,7 +63,7 @@ export function FastCard({ session, onPress }: FastCardProps) {
               <Text className="text-white text-xs">Complete</Text>
             </View>
           ) : isInProgress ? (
-            <View className="bg-accent/20 px-2 py-0.5 rounded-full">
+            <View className="bg-accent/30 px-2 py-0.5 rounded-full">
               <Text className="text-accent text-xs font-medium">Live</Text>
             </View>
           ) : null}
