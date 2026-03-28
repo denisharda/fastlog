@@ -39,6 +39,28 @@ export default function HistoryScreen() {
     enabled: !!profile?.id && isPro,
   });
 
+  const sessionIds = (sessions ?? []).map((s) => s.id);
+
+  const { data: hydrationTotals } = useQuery({
+    queryKey: ['hydration_totals', sessionIds],
+    queryFn: async () => {
+      if (sessionIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from('hydration_logs')
+        .select('session_id, amount_ml')
+        .in('session_id', sessionIds);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of data ?? []) {
+        if (row.session_id) {
+          map[row.session_id] = (map[row.session_id] ?? 0) + row.amount_ml;
+        }
+      }
+      return map;
+    },
+    enabled: sessionIds.length > 0,
+  });
+
   const [drawerSessions, setDrawerSessions] = useState<FastingSession[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
@@ -153,13 +175,13 @@ export default function HistoryScreen() {
         </View>
       ) : (
         <View>
-          <StatsRow sessions={sessions ?? []} />
+          <StatsRow sessions={sessions ?? []} hydrationTotals={hydrationTotals} />
           <FastCalendar sessions={sessions ?? []} onDayPress={handleDayPress} />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {sessions!.map((item, index) => (
             <Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
-              <FastCard session={item} onPress={() => handleCardPress(item)} />
+              <FastCard session={item} onPress={() => handleCardPress(item)} waterMl={hydrationTotals?.[item.id]} />
             </Fragment>
           ))}
         </View>
