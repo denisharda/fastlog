@@ -142,9 +142,13 @@ export default function HistoryScreen() {
       <Text className="text-text-muted text-xs mb-3">Last 28 days</Text>
 
       {isEmpty ? (
-        <View className="flex-1 items-center justify-center px-6 py-20">
+        <View className="items-center justify-center px-6 py-20">
+          <Text className="text-4xl mb-4">⏱️</Text>
+          <Text className="text-text-primary text-lg font-bold mb-2 text-center">
+            No fasts yet
+          </Text>
           <Text className="text-text-muted text-center">
-            No fasts yet. Start your first fast on the Timer tab!
+            Start your first fast on the Timer tab and your history will appear here.
           </Text>
         </View>
       ) : (

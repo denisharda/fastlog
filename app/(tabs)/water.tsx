@@ -142,7 +142,7 @@ export default function WaterScreen() {
               </View>
             ) : (
               <Text className="text-text-muted text-center text-sm">
-                {Math.round(progressRatio * 100)}% of daily goal
+                {progressRatio === 0 ? 'Tap below to start hydrating!' : `${Math.round(progressRatio * 100)}% of daily goal`}
               </Text>
             )}
           </View>
