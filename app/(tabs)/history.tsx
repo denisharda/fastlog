@@ -7,7 +7,6 @@ import { supabase } from '../../lib/supabase';
 import { FastingSession } from '../../types';
 import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
-import { StatsRow } from '../../components/history/StatsRow';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
 import { useFastingStore } from '../../stores/fastingStore';
 import { cancelAllNotifications } from '../../lib/notifications';
@@ -131,7 +130,6 @@ export default function HistoryScreen() {
         </View>
       ) : (
         <View>
-          <StatsRow sessions={sessions ?? []} />
           <FastCalendar
             sessions={sessions ?? []}
             onDayPress={handleDayPress}

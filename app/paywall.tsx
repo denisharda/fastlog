@@ -20,7 +20,6 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   { label: 'Fasting Timer',      free: true,  pro: true  },
   { label: 'Water Tracking',     free: true,  pro: true  },
   { label: 'Full History',       free: false, pro: true  },
-  { label: 'Streak & Stats',     free: false, pro: true  },
   { label: 'Phase Science',      free: true,  pro: true  },
   { label: 'Custom Protocols',   free: false, pro: true  },
   { label: 'Smart Notifications',free: false, pro: true  },
