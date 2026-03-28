@@ -8,7 +8,8 @@ import { CARD_SHADOW } from '../../constants/styles';
 import { useNow } from '../../hooks/useNow';
 import { useDailyHydration } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
-import { trackPaywallViewed } from '../../lib/posthog';
+import { trackPaywallViewed, trackShareSession } from '../../lib/posthog';
+import { shareSession } from '../../lib/shareSession';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -272,6 +273,27 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                   <Text className="text-text-primary text-sm italic">{session!.notes}</Text>
                 </View>
               )}
+
+              {/* Share */}
+              <Pressable
+                className={`rounded-2xl py-4 items-center mt-2 ${isPro ? 'bg-primary' : 'bg-gray-200'}`}
+                onPress={() => {
+                  if (!isPro) {
+                    trackPaywallViewed('share_session');
+                    router.push('/paywall');
+                    return;
+                  }
+                  trackShareSession();
+                  shareSession(session!, dayWaterMl > 0 ? dayWaterMl : undefined);
+                }}
+              >
+                <View className="flex-row items-center gap-2">
+                  {!isPro && <Text className="text-primary text-xs font-medium">Pro</Text>}
+                  <Text className={`font-bold text-base ${isPro ? 'text-white' : 'text-gray-400'}`}>
+                    Share Session
+                  </Text>
+                </View>
+              </Pressable>
 
               {/* End fast button for in-progress sessions */}
               {isInProgress && onEndSession && (

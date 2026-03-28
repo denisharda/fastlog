@@ -100,3 +100,11 @@ export function trackWaterGoalChanged(params: { old_goal_ml: number; new_goal_ml
 export function trackProtocolChanged(params: { old_protocol: string; new_protocol: string }): void {
   posthogInstance?.capture('protocol_changed', params);
 }
+
+export function trackShareSession(): void {
+  posthogInstance?.capture('share_session');
+}
+
+export function trackHistoryExported(): void {
+  posthogInstance?.capture('history_exported');
+}
