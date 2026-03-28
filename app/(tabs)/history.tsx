@@ -114,7 +114,7 @@ export default function HistoryScreen() {
     <>
     <ScrollView
       className="flex-1 bg-background"
-      contentContainerStyle={{ paddingHorizontal: 24 }}
+      contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
       contentInsetAdjustmentBehavior="automatic"
     >
       <Text className="text-text-primary text-2xl font-bold pt-4">History</Text>
