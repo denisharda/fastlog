@@ -65,7 +65,7 @@ export function useHydration(): UseHydrationReturn {
   );
 
   const logWater = useCallback(
-    (amountMl: number) => {
+    async (amountMl: number) => {
       const log: LocalHydrationLog = {
         id: Crypto.randomUUID(),
         amount_ml: amountMl,
@@ -94,42 +94,47 @@ export function useHydration(): UseHydrationReturn {
 
       // Background: insert to Supabase
       if (profile) {
-        supabase
-          .from('hydration_logs')
-          .insert({
-            id: log.id,
-            user_id: profile.id,
-            session_id: activeFast?.sessionId ?? null,
-            amount_ml: amountMl,
-            logged_at: log.logged_at,
-          })
-          .then(({ error }) => {
-            if (error) console.error('[useHydration] DB insert error:', error);
-          });
+        try {
+          const { error } = await supabase
+            .from('hydration_logs')
+            .insert({
+              id: log.id,
+              user_id: profile.id,
+              session_id: activeFast?.sessionId ?? null,
+              amount_ml: amountMl,
+              logged_at: log.logged_at,
+            });
+          if (error) console.error('[useHydration] DB insert error:', error);
+        } catch (err) {
+          console.error('[useHydration] DB insert failed:', err);
+        }
       }
     },
     [storeLog, profile, activeFast, todayTotalMl, dailyGoalMl]
   );
 
-  const undoLastLog = useCallback(() => {
+  const undoLastLog = useCallback(async () => {
     if (!snackbar.lastLog) return;
 
-    storeRemove(snackbar.lastLog.id);
+    const logId = snackbar.lastLog.id;
+    storeRemove(logId);
     setSnackbar({ visible: false, message: '', lastLog: null });
 
     // Background: delete from Supabase
     if (profile) {
-      supabase
-        .from('hydration_logs')
-        .delete()
-        .eq('id', snackbar.lastLog.id)
-        .then(({ error }) => {
-          if (error) console.error('[useHydration] DB delete error:', error);
-        });
+      try {
+        const { error } = await supabase
+          .from('hydration_logs')
+          .delete()
+          .eq('id', logId);
+        if (error) console.error('[useHydration] DB delete error:', error);
+      } catch (err) {
+        console.error('[useHydration] DB delete failed:', err);
+      }
     }
   }, [snackbar.lastLog, storeRemove, profile]);
 
-  const subtractLast = useCallback(() => {
+  const subtractLast = useCallback(async () => {
     if (todayLogs.length === 0) return;
 
     const lastLog = todayLogs[todayLogs.length - 1];
@@ -143,13 +148,15 @@ export function useHydration(): UseHydrationReturn {
 
     // Background: delete from Supabase
     if (profile) {
-      supabase
-        .from('hydration_logs')
-        .delete()
-        .eq('id', lastLog.id)
-        .then(({ error }) => {
-          if (error) console.error('[useHydration] DB delete error:', error);
-        });
+      try {
+        const { error } = await supabase
+          .from('hydration_logs')
+          .delete()
+          .eq('id', lastLog.id);
+        if (error) console.error('[useHydration] DB delete error:', error);
+      } catch (err) {
+        console.error('[useHydration] DB delete failed:', err);
+      }
     }
   }, [todayLogs, storeRemove, profile]);
 
