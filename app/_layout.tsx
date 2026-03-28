@@ -1,4 +1,5 @@
 import '../global.css';
+import { validateEnv } from '../lib/validateEnv';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -11,6 +12,8 @@ import { fetchProfile } from '../lib/auth';
 import { useUserStore } from '../stores/userStore';
 import { initRevenueCat } from '../lib/revenuecat';
 import { initPostHog } from '../lib/posthog';
+
+validateEnv();
 
 const queryClient = new QueryClient({
   defaultOptions: {
