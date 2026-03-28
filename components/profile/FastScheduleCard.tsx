@@ -104,7 +104,7 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
           {/* Hour picker */}
           <Text className="text-text-muted text-xs mb-2">Start at</Text>
           <View className="flex-row flex-wrap gap-1.5">
-            {[6, 7, 8, 18, 19, 20, 21, 22].map((h) => {
+            {Array.from({ length: 24 }, (_, i) => i).map((h) => {
               const selected = hour === h;
               return (
                 <Pressable
