@@ -55,12 +55,12 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   const { logs: hydrationLogs, totalMl: dayWaterMl, logCount: waterLogCount, isLoading: waterLoading } = useDailyHydration(date ?? null);
   const { dailyGoalMl } = useHydration();
 
-  const hasSessions = sessions.length > 0;
+  const hasSessions = sessions.length > 0 && !!session;
 
   if (!hasSessions && !date) return null;
 
-  const endTime = session && (session.ended_at ? new Date(session.ended_at).getTime() : now);
-  const elapsedMs = session ? (endTime as number) - new Date(session.started_at).getTime() : 0;
+  const endTime = session ? (session.ended_at ? new Date(session.ended_at).getTime() : now) : 0;
+  const elapsedMs = session ? endTime - new Date(session.started_at).getTime() : 0;
   const elapsedHours = elapsedMs / 3600000;
   const progress = session ? Math.min(elapsedMs / (session.target_hours * 3600000), 1) : 0;
   const phase = getCurrentPhase(elapsedHours);
@@ -86,7 +86,9 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 pt-6 pb-4">
-          <Text className="text-text-primary text-xl font-bold">Session Details</Text>
+          <Text className="text-text-primary text-xl font-bold">
+            {hasSessions ? 'Session Details' : 'Daily Summary'}
+          </Text>
           <Pressable
             onPress={onClose}
             className="p-2"
