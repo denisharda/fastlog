@@ -6,6 +6,8 @@ import { FastingSession } from '../../types';
 interface FastCalendarProps {
   sessions: FastingSession[];
   onDayPress?: (dateString: string) => void;
+  hydrationByDay?: Record<string, number>;
+  dailyGoalMl?: number;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -14,7 +16,7 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * A simple calendar heatmap showing the last 28 days of fasting activity.
  * TODO: Replace with a proper calendar library for production.
  */
-export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPress }: FastCalendarProps) {
+export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPress, hydrationByDay, dailyGoalMl = 2000 }: FastCalendarProps) {
   // Build sets of dates that had completed/partial fasts
   const { completedDates, partialDates } = useMemo(() => {
     const completed = new Set<string>();
@@ -71,7 +73,11 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
               const isFuture = day > today;
 
               const hasSession = isCompleted || isPartial;
-              const isTappable = hasSession && !isFuture;
+              const dayHydration = hydrationByDay?.[dateStr] ?? 0;
+              const hydrationGoalMet = dailyGoalMl && dayHydration >= dailyGoalMl;
+              const hydrationPartial = dayHydration > 0 && !hydrationGoalMet;
+              const hasActivity = hasSession || dayHydration > 0;
+              const isTappable = hasActivity && !isFuture;
               const cellClass = `flex-1 aspect-square rounded-md items-center justify-center ${
                 isFuture
                   ? 'bg-background'
@@ -82,13 +88,22 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
                   : 'bg-white border border-text-muted/10'
               } ${isToday ? 'border border-accent' : ''}`;
               const label = (
-                <Text
-                  className={`text-[10px] font-medium ${
-                    isCompleted ? 'text-white' : isFuture ? 'text-text-muted/30' : 'text-text-muted'
-                  }`}
-                >
-                  {day.getDate()}
-                </Text>
+                <>
+                  <Text
+                    className={`text-[10px] font-medium ${
+                      isCompleted ? 'text-white' : isFuture ? 'text-text-muted/30' : 'text-text-muted'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </Text>
+                  {(hydrationGoalMet || hydrationPartial) && (
+                    <View
+                      className={`w-1 h-1 rounded-full mt-0.5 ${
+                        hydrationGoalMet ? 'bg-water' : 'bg-water/40'
+                      }`}
+                    />
+                  )}
+                </>
               );
 
               if (isTappable) {
@@ -96,7 +111,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
                   month: 'long',
                   day: 'numeric',
                 });
-                const statusLabel = isCompleted ? 'completed fast' : 'partial fast';
+                const statusLabel = isCompleted ? 'completed fast' : isPartial ? 'partial fast' : 'hydration logged';
                 return (
                   <Pressable
                     key={di}
@@ -135,6 +150,18 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
         <View className="flex-row items-center gap-1">
           <View className="w-3 h-3 rounded-sm bg-white border border-text-muted/20" />
           <Text className="text-text-muted text-xs">No fast</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <View className="w-3 h-3 rounded-full bg-water items-center justify-center">
+            <View className="w-1.5 h-1.5 rounded-full bg-water" />
+          </View>
+          <Text className="text-text-muted text-xs">Hydrated</Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <View className="w-3 h-3 rounded-full bg-water/40 items-center justify-center">
+            <View className="w-1.5 h-1.5 rounded-full bg-water/40" />
+          </View>
+          <Text className="text-text-muted text-xs">Partial</Text>
         </View>
       </View>
     </View>
