@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
 import { CARD_SHADOW } from '../../constants/styles';
 import { trackPaywallViewed } from '../../lib/posthog';
+import { syncFastSchedule } from '../../lib/fastScheduler';
 import type { FastSchedule } from '../../stores/userStore';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -30,6 +31,7 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
     } else if (!enabled) {
       setSchedule(null);
     }
+    syncFastSchedule();
   }, [enabled, days, hour, preferredProtocol, setSchedule]);
 
   function handleToggle(value: boolean) {
