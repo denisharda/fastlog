@@ -11,6 +11,7 @@ export default function OnboardingLayout() {
     >
       <Stack.Screen name="protocol" />
       <Stack.Screen name="goal" />
+      <Stack.Screen name="trial" />
       {/* AI coach screen hidden — re-enable when AI features return */}
     </Stack>
   );

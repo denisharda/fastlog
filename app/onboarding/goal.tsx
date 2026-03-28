@@ -79,7 +79,7 @@ export default function OnboardingGoalScreen() {
               if (selectedGoals.length > 0) {
                 updateProfile({ goals: selectedGoals });
               }
-              router.replace('/(tabs)');
+              router.push('/onboarding/trial');
             }}
           >
             <Text className="text-white font-semibold text-lg">Continue</Text>
@@ -87,7 +87,7 @@ export default function OnboardingGoalScreen() {
 
           <Pressable
             className="py-4 items-center"
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => router.push('/onboarding/trial')}
           >
             <Text className="text-text-muted">Skip for now</Text>
           </Pressable>
