@@ -8,7 +8,7 @@ interface SessionDetailDrawerProps {
   visible: boolean;
   sessions: FastingSession[];
   onClose: () => void;
-  onStopFast?: (completed: boolean) => void;
+  onEndSession?: (sessionId: string, completed: boolean) => void;
 }
 
 function formatTime(isoString: string): string {
@@ -40,7 +40,7 @@ const cardShadow = {
   elevation: 3,
 };
 
-export function SessionDetailDrawer({ visible, sessions, onClose, onStopFast }: SessionDetailDrawerProps) {
+export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }: SessionDetailDrawerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [phaseExpanded, setPhaseExpanded] = useState(false);
@@ -211,7 +211,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onStopFast }: 
           )}
 
           {/* End fast button for in-progress sessions */}
-          {isInProgress && onStopFast && (
+          {isInProgress && onEndSession && (
             <Pressable
               className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98] mt-2"
               style={cardShadow}
@@ -226,7 +226,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onStopFast }: 
                       style: 'destructive',
                       onPress: () => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        onStopFast(progress >= 0.9);
+                        onEndSession(session.id, progress >= 0.9);
                         onClose();
                       },
                     },

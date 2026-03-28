@@ -47,8 +47,6 @@ export function useFasting(): UseFastingReturn {
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
 
-  console.log('[useFasting] render — activeFast:', activeFast?.sessionId ?? 'null');
-
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,25 +188,12 @@ export function useFasting(): UseFastingReturn {
 
   const stopFast = useCallback(
     async (completed = false) => {
-      console.log('[stopFast] called with completed:', completed);
-      console.log('[stopFast] activeFast:', activeFast);
-      console.log('[stopFast] profile:', profile?.id);
-
-      if (!activeFast) {
-        console.warn('[stopFast] NO activeFast — returning early');
-        return;
-      }
-
+      if (!activeFast) return;
       setIsLoading(true);
 
       try {
         const endedAt = new Date().toISOString();
         const actualHours = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
-        const sessionId = activeFast.sessionId;
-
-        console.log('[stopFast] sessionId:', sessionId);
-        console.log('[stopFast] endedAt:', endedAt);
-        console.log('[stopFast] actualHours:', actualHours);
 
         storeStop();
         await cancelAllNotifications();
@@ -228,24 +213,17 @@ export function useFasting(): UseFastingReturn {
           });
         }
 
-        // Update DB record
         if (profile) {
-          console.log('[stopFast] updating DB for session:', sessionId);
-          const { error: dbError, data: dbData, count } = await supabase
+          const { error: dbError } = await supabase
             .from('fasting_sessions')
             .update({ ended_at: endedAt, completed })
-            .eq('id', sessionId)
-            .select();
-
-          console.log('[stopFast] DB result — error:', dbError, 'data:', dbData, 'count:', count);
+            .eq('id', activeFast.sessionId);
 
           if (dbError) {
             console.error('[useFasting] DB update error:', dbError);
           } else {
             queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
           }
-        } else {
-          console.warn('[stopFast] no profile — skipping DB update');
         }
       } catch (err) {
         setError('Failed to stop fast.');

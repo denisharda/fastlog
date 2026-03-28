@@ -9,7 +9,8 @@ import { FastCard } from '../../components/history/FastCard';
 import { FastCalendar } from '../../components/history/FastCalendar';
 import { StatsRow } from '../../components/history/StatsRow';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
-import { useFasting } from '../../hooks/useFasting';
+import { useFastingStore } from '../../stores/fastingStore';
+import { cancelAllNotifications } from '../../lib/notifications';
 import { trackPaywallViewed } from '../../lib/posthog';
 
 const ItemSeparator = () => <View className="h-2" />;
@@ -19,7 +20,8 @@ export default function HistoryScreen() {
   const queryClient = useQueryClient();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
-  const { stopFast } = useFasting();
+  const activeFast = useFastingStore(s => s.activeFast);
+  const storeStop = useFastingStore(s => s.stopFast);
 
   const { data: sessions, isLoading, error } = useQuery({
     queryKey: ['fasting_sessions', profile?.id],
@@ -52,6 +54,27 @@ export default function HistoryScreen() {
     if (daySessions.length === 0) return;
     setDrawerSessions(daySessions);
     setDrawerVisible(true);
+  }
+
+  async function handleEndSession(sessionId: string, completed: boolean) {
+    // Update Supabase directly — works for fasts started on any device
+    const { error: dbError } = await supabase
+      .from('fasting_sessions')
+      .update({ ended_at: new Date().toISOString(), completed })
+      .eq('id', sessionId);
+
+    if (dbError) {
+      console.error('[history] endSession DB error:', dbError);
+      return;
+    }
+
+    // If this is also the locally active fast, clear local state
+    if (activeFast?.sessionId === sessionId) {
+      storeStop();
+      cancelAllNotifications();
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
   }
 
   function handleUpgradePress() {
@@ -142,7 +165,7 @@ export default function HistoryScreen() {
       visible={drawerVisible}
       sessions={drawerSessions}
       onClose={() => setDrawerVisible(false)}
-      onStopFast={stopFast}
+      onEndSession={handleEndSession}
     />
     </>
   );
