@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { resetRevenueCatUser } from './revenuecat';
 
 /**
  * Sign in with Apple. Returns the Supabase session user ID.
@@ -77,6 +78,7 @@ export async function signUpWithEmail(email: string, password: string, name: str
  * Sign out the current user.
  */
 export async function signOut(): Promise<void> {
+  await resetRevenueCatUser();
   await supabase.auth.signOut();
 }
 

@@ -10,8 +10,9 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { fetchProfile } from '../lib/auth';
 import { useUserStore } from '../stores/userStore';
-import { initRevenueCat } from '../lib/revenuecat';
+import { initRevenueCat, identifyRevenueCatUser } from '../lib/revenuecat';
 import { initPostHog, trackAppLaunched } from '../lib/posthog';
+import { useSubscription } from '../hooks/useSubscription';
 
 validateEnv();
 
@@ -63,6 +64,17 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const profile = useUserStore((s) => s.profile);
+
+  // Sync Pro status from RevenueCat into the user store
+  useSubscription();
+
+  // Identify the user to RevenueCat whenever their profile is loaded
+  useEffect(() => {
+    if (profile?.id) {
+      identifyRevenueCatUser(profile.id);
+    }
+  }, [profile?.id]);
 
   useEffect(() => {
     initRevenueCat();
