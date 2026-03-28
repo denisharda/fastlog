@@ -7,6 +7,7 @@ import { FastingRing } from '../../components/timer/FastingRing';
 import { PhaseLabel } from '../../components/timer/PhaseLabel';
 import { PhasesDrawer } from '../../components/timer/PhasesDrawer';
 import { useUserStore } from '../../stores/userStore';
+import { trackPaywallViewed } from '../../lib/posthog';
 import { FastingProtocol } from '../../types';
 import { CUSTOM_PROTOCOL_MIN_HOURS, CUSTOM_PROTOCOL_MAX_HOURS } from '../../constants/protocols';
 import { CARD_SHADOW } from '../../constants/styles';
@@ -95,6 +96,7 @@ export default function TimerScreen() {
 
   function handleCustomPress() {
     if (!isPro) {
+      trackPaywallViewed('custom_protocol');
       router.push('/paywall');
       return;
     }
