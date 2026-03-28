@@ -22,7 +22,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   { label: 'Full History',       free: false, pro: true  },
   { label: 'Phase Science',      free: true,  pro: true  },
   { label: 'Custom Protocols',   free: false, pro: true  },
-  { label: 'Smart Notifications',free: false, pro: true  },
+  { label: 'Smart Notifications',free: true,  pro: true  },
 ];
 
 function computePriceBreakdown(pkg: PurchasesPackage): string {
