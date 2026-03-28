@@ -236,14 +236,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
               <Pressable
                 className="bg-white rounded-2xl p-4 mb-3"
                 style={CARD_SHADOW}
-                onPress={() => {
-                  if (isPro) {
-                    setPhaseExpanded((p) => !p);
-                  } else {
-                    trackPaywallViewed('phase_science');
-                    router.push('/paywall');
-                  }
-                }}
+                onPress={() => setPhaseExpanded((p) => !p)}
               >
                 <View className="flex-row items-center justify-between">
                   <View>
@@ -253,15 +246,10 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                     <Text className="text-accent text-base font-semibold">{phase.name}</Text>
                     <Text className="text-text-muted text-xs mt-0.5">{phase.description}</Text>
                   </View>
-                  <View className="flex-row items-center gap-2">
-                    {!isPro && (
-                      <Text className="text-primary text-xs font-medium">Pro</Text>
-                    )}
-                    <Text className="text-text-muted text-base">{phaseExpanded ? '▾' : '▸'}</Text>
-                  </View>
+                  <Text className="text-text-muted text-base">{phaseExpanded ? '▾' : '▸'}</Text>
                 </View>
 
-                {phaseExpanded && isPro && (
+                {phaseExpanded && (
                   <View className="mt-3 pt-3 border-t border-gray-100">
                     <Text className="text-text-muted text-xs uppercase tracking-wider mb-2">Science</Text>
                     <Text className="text-text-primary text-sm mb-3">{phase.science}</Text>
