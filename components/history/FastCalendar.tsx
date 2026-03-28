@@ -8,6 +8,7 @@ interface FastCalendarProps {
   onDayPress?: (dateString: string) => void;
   hydrationByDay?: Record<string, number>;
   dailyGoalMl?: number;
+  isPro?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -16,7 +17,7 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * A simple calendar heatmap showing the last 28 days of fasting activity.
  * TODO: Replace with a proper calendar library for production.
  */
-export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPress, hydrationByDay, dailyGoalMl = 2000 }: FastCalendarProps) {
+export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPress, hydrationByDay, dailyGoalMl = 2000, isPro = false }: FastCalendarProps) {
   // Build sets of dates that had completed/partial fasts
   const { completedDates, partialDates } = useMemo(() => {
     const completed = new Set<string>();
@@ -32,11 +33,12 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
     return { completedDates: completed, partialDates: partial };
   }, [sessions]);
 
-  // Build last 28 days and split into weeks
+  // Build last N days and split into weeks (7 for free, 28 for Pro)
   const { days, weeks, today } = useMemo(() => {
+    const dayCount = isPro ? 28 : 7;
     const t = new Date();
     const d: Date[] = [];
-    for (let i = 27; i >= 0; i--) {
+    for (let i = dayCount - 1; i >= 0; i--) {
       const date = new Date(t);
       date.setDate(t.getDate() - i);
       d.push(date);
@@ -136,6 +138,11 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
           </View>
         ))}
       </View>
+
+      {/* Pro upsell for free users */}
+      {!isPro && (
+        <Text className="text-primary/60 text-xs text-center mt-2">Full 28-day view with Pro</Text>
+      )}
 
       {/* Legend */}
       <View className="flex-row items-center gap-4 mt-3">

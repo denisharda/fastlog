@@ -118,7 +118,7 @@ export default function HistoryScreen() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <Text className="text-text-primary text-2xl font-bold pt-4">History</Text>
-      <Text className="text-text-muted text-xs mb-3">Last 28 days</Text>
+      <Text className="text-text-muted text-xs mb-3">{isPro ? 'Last 28 days' : 'Last 7 days'}</Text>
 
       {isEmpty ? (
         <View className="items-center justify-center px-6 py-20">
@@ -138,6 +138,7 @@ export default function HistoryScreen() {
             onDayPress={handleDayPress}
             hydrationByDay={hydrationByDay}
             dailyGoalMl={dailyGoalMl}
+            isPro={isPro}
           />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {visibleSessions!.map((item, index) => (
