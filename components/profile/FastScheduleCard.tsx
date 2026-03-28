@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, Pressable, Switch } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, Pressable, Switch, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../stores/userStore';
@@ -101,15 +101,19 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
             })}
           </View>
 
-          {/* Hour picker */}
+          {/* Hour picker — horizontal scroll */}
           <Text className="text-text-muted text-xs mb-2">Start at</Text>
-          <View className="flex-row flex-wrap gap-1.5">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6 }}
+          >
             {Array.from({ length: 24 }, (_, i) => i).map((h) => {
               const selected = hour === h;
               return (
                 <Pressable
                   key={h}
-                  className={`px-3 py-2 rounded-lg ${
+                  className={`px-4 py-2.5 rounded-xl ${
                     selected ? 'bg-primary' : 'bg-background'
                   }`}
                   onPress={() => {
@@ -118,7 +122,7 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
                   }}
                 >
                   <Text
-                    className={`text-xs font-medium ${
+                    className={`text-sm font-medium ${
                       selected ? 'text-white' : 'text-text-muted'
                     }`}
                   >
@@ -127,7 +131,7 @@ export function FastScheduleCard({ isPro }: FastScheduleCardProps) {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           <Text className="text-text-muted text-[10px] mt-3">
             Using {preferredProtocol} protocol
