@@ -12,6 +12,7 @@ import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawe
 import { useFastingStore } from '../../stores/fastingStore';
 import { cancelAllNotifications } from '../../lib/notifications';
 import { trackPaywallViewed } from '../../lib/posthog';
+import { CARD_SHADOW } from '../../constants/styles';
 import { useDailyHydrationTotals } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
 
@@ -38,7 +39,7 @@ export default function HistoryScreen() {
       if (error) throw error;
       return data as FastingSession[];
     },
-    enabled: !!profile?.id && isPro,
+    enabled: !!profile?.id,
   });
 
   const hydrationByDay = useDailyHydrationTotals();
@@ -84,36 +85,6 @@ export default function HistoryScreen() {
     queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
   }
 
-  function handleUpgradePress() {
-    trackPaywallViewed('history_screen');
-    router.push('/paywall');
-  }
-
-  if (!isPro) {
-    return (
-      <View className="flex-1 bg-background">
-        {/* Blurred preview placeholder */}
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="w-16 h-16 rounded-full bg-white items-center justify-center mb-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 }}>
-            <Text className="text-3xl">📅</Text>
-          </View>
-          <Text className="text-text-primary text-xl font-bold mb-2 text-center">
-            Fasting History
-          </Text>
-          <Text className="text-text-muted text-center mb-8">
-            Track your progress over time, view streaks, and see your full fasting calendar with FastAI Pro.
-          </Text>
-          <Pressable
-            className="bg-text-primary px-8 py-4 rounded-2xl"
-            onPress={handleUpgradePress}
-          >
-            <Text className="text-white font-semibold text-lg">Unlock Pro</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
   if (isLoading) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
@@ -136,6 +107,7 @@ export default function HistoryScreen() {
     );
   }
 
+  const visibleSessions = isPro ? sessions : sessions?.slice(0, 3);
   const isEmpty = !sessions || sessions.length === 0;
 
   return (
@@ -168,12 +140,32 @@ export default function HistoryScreen() {
             dailyGoalMl={dailyGoalMl}
           />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
-          {sessions!.map((item, index) => (
+          {visibleSessions!.map((item, index) => (
             <Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
               <FastCard session={item} onPress={() => handleCardPress(item)} />
             </Fragment>
           ))}
+          {!isPro && sessions && sessions.length > 3 && (
+            <Pressable
+              className="bg-white rounded-2xl p-5 mt-2 items-center"
+              style={CARD_SHADOW}
+              onPress={() => {
+                trackPaywallViewed('history_soft_paywall');
+                router.push('/paywall');
+              }}
+            >
+              <Text className="text-text-primary font-bold text-base mb-1">
+                Unlock Full History
+              </Text>
+              <Text className="text-text-muted text-sm text-center mb-3">
+                See all your fasts, detailed stats, and track your progress over time
+              </Text>
+              <View className="bg-primary px-6 py-3 rounded-xl">
+                <Text className="text-white font-semibold">Upgrade to Pro</Text>
+              </View>
+            </Pressable>
+          )}
         </View>
       )}
     </ScrollView>
@@ -183,6 +175,7 @@ export default function HistoryScreen() {
       date={drawerDate}
       onClose={() => setDrawerVisible(false)}
       onEndSession={handleEndSession}
+      isPro={isPro}
     />
     </>
   );
