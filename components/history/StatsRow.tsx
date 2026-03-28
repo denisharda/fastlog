@@ -5,7 +5,6 @@ import { CARD_SHADOW } from '../../constants/styles';
 
 interface StatsRowProps {
   sessions: FastingSession[];
-  hydrationTotals?: Record<string, number>;
 }
 
 interface Stats {
@@ -60,26 +59,16 @@ function computeStats(sessions: FastingSession[]): Stats {
   return { streak, totalFasts, avgDuration, completionRate };
 }
 
-export const StatsRow = React.memo(function StatsRow({ sessions, hydrationTotals }: StatsRowProps) {
+export const StatsRow = React.memo(function StatsRow({ sessions }: StatsRowProps) {
   const stats = useMemo(() => computeStats(sessions), [sessions]);
-
-  const avgWater = useMemo(() => {
-    if (!hydrationTotals) return '—';
-    const values = Object.values(hydrationTotals).filter((v) => v > 0);
-    if (values.length === 0) return '—';
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-    if (avg >= 1000) return `${(avg / 1000).toFixed(1)}L`;
-    return `${Math.round(avg)}ml`;
-  }, [hydrationTotals]);
 
   return (
     <View className="bg-white rounded-2xl p-4 mb-4" style={CARD_SHADOW}>
-      <View className="flex-row justify-around">
+      <View className="flex-row justify-between">
         <StatItem value={`${stats.streak}`} label="Streak" accent />
         <StatItem value={`${stats.totalFasts}`} label="Fasts" />
         <StatItem value={stats.avgDuration} label="Avg Time" />
         <StatItem value={`${stats.completionRate}%`} label="Complete" />
-        <StatItem value={avgWater} label="Avg Water" />
       </View>
     </View>
   );
