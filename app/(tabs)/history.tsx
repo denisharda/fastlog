@@ -12,6 +12,8 @@ import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawe
 import { useFastingStore } from '../../stores/fastingStore';
 import { cancelAllNotifications } from '../../lib/notifications';
 import { trackPaywallViewed } from '../../lib/posthog';
+import { useDailyHydrationTotals } from '../../hooks/useDailyHydration';
+import { useHydration } from '../../hooks/useHydration';
 
 const ItemSeparator = () => <View className="h-2" />;
 
@@ -39,33 +41,16 @@ export default function HistoryScreen() {
     enabled: !!profile?.id && isPro,
   });
 
-  const sessionIds = (sessions ?? []).map((s) => s.id);
-
-  const { data: hydrationTotals } = useQuery({
-    queryKey: ['hydration_totals', sessionIds],
-    queryFn: async () => {
-      if (sessionIds.length === 0) return {};
-      const { data, error } = await supabase
-        .from('hydration_logs')
-        .select('session_id, amount_ml')
-        .in('session_id', sessionIds);
-      if (error) throw error;
-      const map: Record<string, number> = {};
-      for (const row of data ?? []) {
-        if (row.session_id) {
-          map[row.session_id] = (map[row.session_id] ?? 0) + row.amount_ml;
-        }
-      }
-      return map;
-    },
-    enabled: sessionIds.length > 0,
-  });
+  const hydrationByDay = useDailyHydrationTotals();
+  const { dailyGoalMl } = useHydration();
 
   const [drawerSessions, setDrawerSessions] = useState<FastingSession[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [drawerDate, setDrawerDate] = useState<string | null>(null);
 
   function handleCardPress(session: FastingSession) {
     setDrawerSessions([session]);
+    setDrawerDate(new Date(session.started_at).toDateString());
     setDrawerVisible(true);
   }
 
@@ -73,8 +58,8 @@ export default function HistoryScreen() {
     const daySessions = (sessions ?? []).filter(
       (s) => new Date(s.started_at).toDateString() === dateString
     );
-    if (daySessions.length === 0) return;
     setDrawerSessions(daySessions);
+    setDrawerDate(dateString);
     setDrawerVisible(true);
   }
 
@@ -175,13 +160,18 @@ export default function HistoryScreen() {
         </View>
       ) : (
         <View>
-          <StatsRow sessions={sessions ?? []} hydrationTotals={hydrationTotals} />
-          <FastCalendar sessions={sessions ?? []} onDayPress={handleDayPress} />
+          <StatsRow sessions={sessions ?? []} />
+          <FastCalendar
+            sessions={sessions ?? []}
+            onDayPress={handleDayPress}
+            hydrationByDay={hydrationByDay}
+            dailyGoalMl={dailyGoalMl}
+          />
           <Text className="text-text-primary font-bold text-xl mt-4 mb-3">Recent Fasts</Text>
           {sessions!.map((item, index) => (
             <Fragment key={item.id}>
               {index > 0 && <ItemSeparator />}
-              <FastCard session={item} onPress={() => handleCardPress(item)} waterMl={hydrationTotals?.[item.id]} />
+              <FastCard session={item} onPress={() => handleCardPress(item)} />
             </Fragment>
           ))}
         </View>
@@ -190,6 +180,7 @@ export default function HistoryScreen() {
     <SessionDetailDrawer
       visible={drawerVisible}
       sessions={drawerSessions}
+      date={drawerDate}
       onClose={() => setDrawerVisible(false)}
       onEndSession={handleEndSession}
     />
