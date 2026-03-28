@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated } from 'react-native';
 import Svg, { Circle, Path, Defs, ClipPath, LinearGradient, Stop } from 'react-native-svg';
+import { COLORS } from '../../constants/styles';
 
 const CIRCLE_SIZE = 220;
 const WAVE_AMPLITUDE = 8;
@@ -98,7 +99,11 @@ export const WaterFillCircle = React.memo(function WaterFillCircle({
   const radius = CIRCLE_SIZE / 2;
 
   return (
-    <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE, alignItems: 'center', justifyContent: 'center' }}
+      accessible={true}
+      accessibilityLabel="Water intake progress"
+    >
       <Svg
         width={CIRCLE_SIZE}
         height={CIRCLE_SIZE}
@@ -110,8 +115,8 @@ export const WaterFillCircle = React.memo(function WaterFillCircle({
             <Circle cx={radius} cy={radius} r={radius - 2} />
           </ClipPath>
           <LinearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#2D6A4F" stopOpacity="0.35" />
-            <Stop offset="1" stopColor="#40916C" stopOpacity="0.2" />
+            <Stop offset="0" stopColor={COLORS.primary} stopOpacity="0.35" />
+            <Stop offset="1" stopColor={COLORS.accent} stopOpacity="0.2" />
           </LinearGradient>
         </Defs>
         <Circle
@@ -119,7 +124,7 @@ export const WaterFillCircle = React.memo(function WaterFillCircle({
           cy={radius}
           r={radius - 1}
           fill="white"
-          stroke="#E5E7EB"
+          stroke={COLORS.border}
           strokeWidth={1}
         />
         {clamped > 0 && (

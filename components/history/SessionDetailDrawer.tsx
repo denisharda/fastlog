@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Modal, ScrollView, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FastingSession } from '../../types';
-import { getCurrentPhase, FastingPhase } from '../../constants/phases';
+import { getCurrentPhase } from '../../constants/phases';
+import { CARD_SHADOW } from '../../constants/styles';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -31,14 +32,6 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor((ms % 3600000) / 60000);
   return `${hours}h ${minutes}m`;
 }
-
-const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
-  elevation: 3,
-};
 
 export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }: SessionDetailDrawerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -86,7 +79,12 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
         {/* Header */}
         <View className="flex-row items-center justify-between px-6 pt-6 pb-4">
           <Text className="text-text-primary text-xl font-bold">Session Details</Text>
-          <Pressable onPress={onClose} className="p-2">
+          <Pressable
+            onPress={onClose}
+            className="p-2"
+            accessibilityRole="button"
+            accessibilityLabel="Close session details"
+          >
             <Text className="text-text-muted text-lg">Done</Text>
           </Pressable>
         </View>
@@ -135,7 +133,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
           </View>
 
           {/* Duration */}
-          <View className="bg-white rounded-2xl p-4 mb-3" style={cardShadow}>
+          <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
             <Text className="text-accent font-bold text-3xl text-center mb-2">
               {formatDuration(elapsedMs)}
             </Text>
@@ -152,7 +150,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
           </View>
 
           {/* Time details */}
-          <View className="bg-white rounded-2xl p-4 mb-3" style={cardShadow}>
+          <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
             <View className="flex-row justify-between">
               <View>
                 <Text className="text-text-muted text-xs mb-1">Started</Text>
@@ -172,7 +170,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
           {/* Phase */}
           <Pressable
             className="bg-white rounded-2xl p-4 mb-3"
-            style={cardShadow}
+            style={CARD_SHADOW}
             onPress={() => setPhaseExpanded((p) => !p)}
           >
             <View className="flex-row items-center justify-between">
@@ -204,7 +202,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
 
           {/* Notes */}
           {session.notes && (
-            <View className="bg-white rounded-2xl p-4 mb-3" style={cardShadow}>
+            <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
               <Text className="text-text-muted text-xs mb-1">Notes</Text>
               <Text className="text-text-primary text-sm italic">{session.notes}</Text>
             </View>
@@ -214,7 +212,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession }
           {isInProgress && onEndSession && (
             <Pressable
               className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98] mt-2"
-              style={cardShadow}
+              style={CARD_SHADOW}
               onPress={() => {
                 Alert.alert(
                   'End Fast?',

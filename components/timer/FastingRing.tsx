@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle, Line } from 'react-native-svg';
+import { COLORS } from '../../constants/styles';
 
 interface FastingRingProps {
   /** Progress from 0 to 1 */
@@ -63,6 +64,8 @@ export const FastingRing = React.memo(function FastingRing({
     <Wrapper
       onPress={handlePress}
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? 'Fasting timer' : undefined}
     >
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
         {/* Background circle */}
@@ -71,7 +74,7 @@ export const FastingRing = React.memo(function FastingRing({
           cy={center}
           r={radius + 8}
           fill="white"
-          stroke="#E5E7EB"
+          stroke={COLORS.border}
           strokeWidth={1}
         />
         {/* Tick marks */}
@@ -82,7 +85,7 @@ export const FastingRing = React.memo(function FastingRing({
             y1={tick.y1}
             x2={tick.x2}
             y2={tick.y2}
-            stroke={tick.isActive ? '#2D6A4F' : '#D1D5DB'}
+            stroke={tick.isActive ? COLORS.primary : COLORS.borderLight}
             strokeWidth={tick.isMajor ? 3 : 1.5}
             strokeLinecap="round"
           />

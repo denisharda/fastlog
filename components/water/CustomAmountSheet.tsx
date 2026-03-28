@@ -60,6 +60,7 @@ export function CustomAmountSheet({ visible, onAdd, onClose }: CustomAmountSheet
                 onSubmitEditing={handleAdd}
                 returnKeyType="done"
                 maxLength={4}
+                accessibilityLabel="Custom water amount in milliliters"
               />
               <Text className="text-text-muted text-sm font-medium">ml</Text>
               <Pressable

@@ -92,6 +92,11 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
               );
 
               if (isTappable) {
+                const fullDateLabel = day.toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                });
+                const statusLabel = isCompleted ? 'completed fast' : 'partial fast';
                 return (
                   <Pressable
                     key={di}
@@ -100,6 +105,7 @@ export const FastCalendar = React.memo(function FastCalendar({ sessions, onDayPr
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onDayPress?.(dateStr);
                     }}
+                    accessibilityLabel={`${fullDateLabel}, ${statusLabel}`}
                   >
                     {label}
                   </Pressable>
