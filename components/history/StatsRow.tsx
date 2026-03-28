@@ -83,7 +83,7 @@ function StatItem({ value, label, accent }: { value: string; label: string; acce
       >
         {value}
       </Text>
-      <Text className="text-text-muted text-xs mt-0.5">{label}</Text>
+      <Text className="text-text-muted text-sm mt-0.5">{label}</Text>
     </View>
   );
 }
