@@ -83,7 +83,7 @@ export default function ProfileScreen() {
             <View>
               <Text className="text-white font-bold text-base">Upgrade to Pro</Text>
               <Text className="text-white opacity-80 text-sm">
-                History, streaks, water tracking
+                Full history, custom protocols, share & export
               </Text>
             </View>
             <Text className="text-white text-xl">→</Text>
