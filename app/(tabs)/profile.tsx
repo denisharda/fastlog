@@ -17,6 +17,7 @@ import {
 } from '../../constants/hydration';
 import { restorePurchases } from '../../lib/revenuecat';
 import { trackPaywallViewed, trackWaterGoalChanged, trackProtocolChanged } from '../../lib/posthog';
+import { FastScheduleCard } from '../../components/profile/FastScheduleCard';
 import { useState } from 'react';
 import { CARD_SHADOW } from '../../constants/styles';
 
@@ -122,6 +123,9 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        {/* Fast Schedule (Pro) */}
+        <FastScheduleCard isPro={isPro} />
 
         {/* Daily Water Goal */}
         <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
