@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { FastingSession } from '../../types';
 import { getCurrentPhase } from '../../constants/phases';
 import { CARD_SHADOW } from '../../constants/styles';
 import { useNow } from '../../hooks/useNow';
 import { useDailyHydration } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
+import { trackPaywallViewed } from '../../lib/posthog';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -14,6 +16,7 @@ interface SessionDetailDrawerProps {
   onClose: () => void;
   onEndSession?: (sessionId: string, completed: boolean) => void;
   date?: string | null;
+  isPro?: boolean;
 }
 
 function formatTime(isoString: string): string {
@@ -37,7 +40,8 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, date }: SessionDetailDrawerProps) {
+export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, date, isPro }: SessionDetailDrawerProps) {
+  const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [phaseExpanded, setPhaseExpanded] = useState(false);
 
@@ -199,24 +203,28 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                     {waterLogCount > 0 ? ` · ${waterLogCount} ${waterLogCount === 1 ? 'entry' : 'entries'}` : ''}
                   </Text>
                 </View>
-                {/* Progress bar */}
-                <View className="w-full h-2 bg-background rounded-full overflow-hidden mb-2">
-                  <View
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${Math.round(hydrationProgress * 100)}%` }}
-                  />
-                </View>
-                {hydrationLogs.length > 0 ? (
-                  hydrationLogs.map((log) => (
-                    <View key={log.id} className="flex-row items-center justify-between py-1.5 border-b border-gray-50">
-                      <Text className="text-text-primary text-sm">+{log.amount_ml}ml</Text>
-                      <Text className="text-text-muted text-xs">
-                        {new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </Text>
+                {isPro && (
+                  <>
+                    {/* Progress bar */}
+                    <View className="w-full h-2 bg-background rounded-full overflow-hidden mb-2">
+                      <View
+                        className="h-full bg-primary rounded-full"
+                        style={{ width: `${Math.round(hydrationProgress * 100)}%` }}
+                      />
                     </View>
-                  ))
-                ) : (
-                  <Text className="text-text-muted text-sm">No water logged this day</Text>
+                    {hydrationLogs.length > 0 ? (
+                      hydrationLogs.map((log) => (
+                        <View key={log.id} className="flex-row items-center justify-between py-1.5 border-b border-gray-50">
+                          <Text className="text-text-primary text-sm">+{log.amount_ml}ml</Text>
+                          <Text className="text-text-muted text-xs">
+                            {new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-text-muted text-sm">No water logged this day</Text>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -228,7 +236,14 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
               <Pressable
                 className="bg-white rounded-2xl p-4 mb-3"
                 style={CARD_SHADOW}
-                onPress={() => setPhaseExpanded((p) => !p)}
+                onPress={() => {
+                  if (isPro) {
+                    setPhaseExpanded((p) => !p);
+                  } else {
+                    trackPaywallViewed('phase_science');
+                    router.push('/paywall');
+                  }
+                }}
               >
                 <View className="flex-row items-center justify-between">
                   <View>
@@ -238,10 +253,15 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                     <Text className="text-accent text-base font-semibold">{phase.name}</Text>
                     <Text className="text-text-muted text-xs mt-0.5">{phase.description}</Text>
                   </View>
-                  <Text className="text-text-muted text-base">{phaseExpanded ? '▾' : '▸'}</Text>
+                  <View className="flex-row items-center gap-2">
+                    {!isPro && (
+                      <Text className="text-primary text-xs font-medium">Pro</Text>
+                    )}
+                    <Text className="text-text-muted text-base">{phaseExpanded ? '▾' : '▸'}</Text>
+                  </View>
                 </View>
 
-                {phaseExpanded && (
+                {phaseExpanded && isPro && (
                   <View className="mt-3 pt-3 border-t border-gray-100">
                     <Text className="text-text-muted text-xs uppercase tracking-wider mb-2">Science</Text>
                     <Text className="text-text-primary text-sm mb-3">{phase.science}</Text>
