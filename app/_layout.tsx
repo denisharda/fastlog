@@ -16,7 +16,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
 import * as Notifications from 'expo-notifications';
 
-validateEnv();
+try { validateEnv(); } catch (e) { console.warn('[RootLayout] validateEnv failed:', e); }
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,13 +75,13 @@ export default function RootLayout() {
   // Identify the user to RevenueCat whenever their profile is loaded
   useEffect(() => {
     if (profile?.id) {
-      identifyRevenueCatUser(profile.id);
+      try { identifyRevenueCatUser(profile.id); } catch (e) { console.warn('[RootLayout] RC identify failed:', e); }
     }
   }, [profile?.id]);
 
   // Sync the recurring fast schedule notification on app launch
   useEffect(() => {
-    syncFastSchedule();
+    try { syncFastSchedule(); } catch (e) { console.warn('[RootLayout] syncFastSchedule failed:', e); }
   }, []);
 
   // Handle notification taps — navigate to timer tab and reschedule
@@ -100,9 +100,9 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    initRevenueCat();
-    initPostHog();
-    trackAppLaunched();
+    try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
+    try { initPostHog(); } catch (e) { console.warn('[RootLayout] PostHog init failed:', e); }
+    try { trackAppLaunched(); } catch (e) { /* silent */ }
 
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {

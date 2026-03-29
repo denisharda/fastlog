@@ -1,4 +1,3 @@
-import Purchases, { LOG_LEVEL, PurchasesPackage } from 'react-native-purchases';
 import { Platform } from 'react-native';
 
 export const PRO_ENTITLEMENT = 'FastBuddy Pro';
@@ -8,11 +7,33 @@ export const PRODUCT_IDS = {
   annual: 'yearly',
 } as const;
 
+// Lazy-load Purchases only on iOS to avoid crash on Android/Huawei without GMS
+function getPurchases() {
+  if (Platform.OS !== 'ios') return null;
+  try {
+    return require('react-native-purchases').default;
+  } catch {
+    return null;
+  }
+}
+
+function getLogLevel() {
+  try {
+    return require('react-native-purchases').LOG_LEVEL;
+  } catch {
+    return null;
+  }
+}
+
+// Re-export the type for paywall usage
+export type { PurchasesPackage } from 'react-native-purchases';
+
 /**
  * Initialize RevenueCat SDK. Call once at app startup (before auth).
  */
 export function initRevenueCat(): void {
-  if (Platform.OS !== 'ios') return;
+  const Purchases = getPurchases();
+  if (!Purchases) return;
 
   const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
   if (!apiKey) {
@@ -21,7 +42,8 @@ export function initRevenueCat(): void {
   }
 
   if (__DEV__) {
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    const LOG_LEVEL = getLogLevel();
+    if (LOG_LEVEL) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
   }
 
   Purchases.configure({ apiKey });
@@ -31,6 +53,8 @@ export function initRevenueCat(): void {
  * Identify the current user to RevenueCat after sign-in.
  */
 export async function identifyRevenueCatUser(userId: string): Promise<void> {
+  const Purchases = getPurchases();
+  if (!Purchases) return;
   try {
     await Purchases.logIn(userId);
   } catch (error) {
@@ -42,6 +66,8 @@ export async function identifyRevenueCatUser(userId: string): Promise<void> {
  * Reset RevenueCat user on sign-out.
  */
 export async function resetRevenueCatUser(): Promise<void> {
+  const Purchases = getPurchases();
+  if (!Purchases) return;
   try {
     await Purchases.logOut();
   } catch (error) {
@@ -51,14 +77,13 @@ export async function resetRevenueCatUser(): Promise<void> {
 
 /**
  * Check if the current user has an active Pro entitlement.
- * Always reads from RevenueCat — never cache in Supabase.
  */
 export async function getIsProUser(): Promise<boolean> {
+  const Purchases = getPurchases();
+  if (!Purchases) return false;
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    return (
-      customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined
-    );
+    return customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined;
   } catch (error) {
     console.error('[RevenueCat] Failed to get customer info:', error);
     return false;
@@ -68,7 +93,9 @@ export async function getIsProUser(): Promise<boolean> {
 /**
  * Fetch available packages from RevenueCat.
  */
-export async function getOfferings(): Promise<PurchasesPackage[]> {
+export async function getOfferings(): Promise<any[]> {
+  const Purchases = getPurchases();
+  if (!Purchases) return [];
   try {
     const offerings = await Purchases.getOfferings();
     if (__DEV__) {
@@ -85,14 +112,15 @@ export async function getOfferings(): Promise<PurchasesPackage[]> {
  * Purchase a package and return whether the user is now Pro.
  */
 export async function purchasePackage(
-  pkg: PurchasesPackage
+  pkg: any
 ): Promise<{ success: boolean; isPro: boolean }> {
+  const Purchases = getPurchases();
+  if (!Purchases) return { success: false, isPro: false };
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     const isPro = customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined;
     return { success: true, isPro };
   } catch (error: unknown) {
-    // User cancelled — not a real error
     if (
       typeof error === 'object' &&
       error !== null &&
@@ -110,6 +138,8 @@ export async function purchasePackage(
  * Restore previous purchases and return whether the user is now Pro.
  */
 export async function restorePurchases(): Promise<boolean> {
+  const Purchases = getPurchases();
+  if (!Purchases) return false;
   try {
     const customerInfo = await Purchases.restorePurchases();
     return customerInfo.entitlements.active[PRO_ENTITLEMENT] !== undefined;
