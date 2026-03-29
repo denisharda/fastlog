@@ -99,7 +99,7 @@ export default function WelcomeScreen() {
                   className="w-20 h-20 rounded-2xl"
                 />
               </View>
-              <Text className="text-3xl font-bold text-white mb-2">FastAI</Text>
+              <Text className="text-3xl font-bold text-white mb-2">FastBuddy</Text>
               <Text className="text-center text-base" style={{ color: 'rgba(255,255,255,0.7)' }}>
                 Intermittent fasting{'\n'}made simple
               </Text>

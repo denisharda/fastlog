@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "FastAI",
-    "slug": "fastai",
+    "name": "FastBuddy",
+    "slug": "fastbuddy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "fastai",
+    "scheme": "fastbuddy",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fastai.app",
+      "bundleIdentifier": "com.fastbuddy.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0A"
       },
-      "package": "com.fastai.app"
+      "package": "com.fastbuddy.app"
     },
     "web": {
       "bundler": "metro",

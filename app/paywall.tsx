@@ -152,7 +152,7 @@ export default function PaywallScreen() {
         {/* Hero section */}
         <View className="items-center mb-8">
           <Text className="text-text-primary text-4xl font-bold text-center mb-2">
-            FastAI Pro
+            FastBuddy Pro
           </Text>
           <Text className="text-text-muted text-center text-base">
             Unlock your full fasting potential
@@ -311,10 +311,10 @@ export default function PaywallScreen() {
             Subscription renews automatically. Cancel anytime.
           </Text>
           <View className="flex-row justify-center gap-4 mt-1">
-            <Pressable onPress={() => Linking.openURL('https://fastai.app/terms')}>
+            <Pressable onPress={() => Linking.openURL('https://fastbuddy.app/terms')}>
               <Text className="text-text-muted text-xs underline">Terms of Service</Text>
             </Pressable>
-            <Pressable onPress={() => Linking.openURL('https://fastai.app/privacy')}>
+            <Pressable onPress={() => Linking.openURL('https://fastbuddy.app/privacy')}>
               <Text className="text-text-muted text-xs underline">Privacy Policy</Text>
             </Pressable>
           </View>

@@ -33,7 +33,7 @@ export async function shareSession(session: FastingSession, waterMl?: number): P
   }
 
   const lines = [
-    `FastAI — ${session.protocol} Fast ${session.completed ? 'Complete!' : 'Done'}`,
+    `FastBuddy — ${session.protocol} Fast ${session.completed ? 'Complete!' : 'Done'}`,
     `Duration: ${duration}`,
     `Phase: ${phaseStr}`,
   ];

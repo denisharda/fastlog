@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-const APP_GROUP = 'group.com.fastai.app';
+const APP_GROUP = 'group.com.fastbuddy.app';
 const SHARED_KEY = 'fastingState';
 
 export interface SharedFastingState {

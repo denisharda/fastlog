@@ -2,12 +2,12 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'FastAI',
-  slug: 'fastai',
+  name: 'FastBuddy',
+  slug: 'fastbuddy',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  scheme: 'fastai',
+  scheme: 'fastbuddy',
   userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash.png',
@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.fastai.app',
+    bundleIdentifier: 'com.fastbuddy.app',
     infoPlist: {
       UIBackgroundModes: ['fetch', 'remote-notification'],
       NSSupportsLiveActivities: true,
@@ -27,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#F2F2F7',
     },
-    package: 'com.fastai.app',
+    package: 'com.fastbuddy.app',
   },
   web: {
     bundler: 'metro',
@@ -47,8 +47,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-widgets',
       {
-        bundleIdentifier: 'com.fastai.app.widgets',
-        groupIdentifier: 'group.com.fastai.app',
+        bundleIdentifier: 'com.fastbuddy.app.widgets',
+        groupIdentifier: 'group.com.fastbuddy.app',
         enablePushNotifications: true,
         widgets: [
           {

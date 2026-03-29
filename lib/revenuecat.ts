@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 export const PRO_ENTITLEMENT = 'pro';
 
 export const PRODUCT_IDS = {
-  monthly: 'fastai_pro_monthly',
-  annual: 'fastai_pro_annual',
+  monthly: 'fastbuddy_pro_monthly',
+  annual: 'fastbuddy_pro_annual',
 } as const;
 
 /**
