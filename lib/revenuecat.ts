@@ -1,7 +1,7 @@
 import Purchases, { LOG_LEVEL, PurchasesPackage } from 'react-native-purchases';
 import { Platform } from 'react-native';
 
-export const PRO_ENTITLEMENT = 'pro';
+export const PRO_ENTITLEMENT = 'FastBuddy Pro';
 
 export const PRODUCT_IDS = {
   monthly: 'monthly',
