@@ -169,8 +169,8 @@ Triggered when a fast starts, scheduled for hours 4, 8, and 12 of the fast:
 - Cancel all scheduled notifications when fast is stopped early
 
 ## RevenueCat products
-- `fastbuddy_pro_monthly` — $4.99/month
-- `fastbuddy_pro_annual` — $34.99/year
+- `monthly` — monthly subscription
+- `yearly` — annual subscription
 Entitlement name: `pro`
 
 ## Code conventions
