@@ -74,7 +74,7 @@ export default function WaterScreen() {
   return (
     <SafeAreaView edges={{ top: true, bottom: true }} style={{ flex: 1 }} className="bg-background">
       <View className="flex-1 px-6 pb-2">
-        {/* Header */}
+        {/* Header — top left */}
         <View className="pt-2">
           <Text className="text-text-primary text-2xl font-bold">Hydration</Text>
           {phaseTip && (
@@ -82,8 +82,9 @@ export default function WaterScreen() {
           )}
         </View>
 
-        {/* Hero circle */}
-        <View className="items-center justify-center mt-4">
+        {/* Centered content */}
+        <View className="flex-1 justify-center items-center">
+          {/* Hero circle */}
           <WaterFillCircle
             progressRatio={progressRatio}
             todayTotalMl={todayTotalMl}
@@ -91,43 +92,40 @@ export default function WaterScreen() {
             remainingMl={remainingMl}
             lastLoggedAt={lastLoggedAt}
           />
-        </View>
 
-        {/* Today's log */}
-        {todayLogs.length > 0 && (
-          <View className="flex-1 mt-4" style={{ maxHeight: 160 }}>
-            <Text className="text-text-muted text-xs font-medium mb-2">Today</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {[...todayLogs].reverse().map((log) => (
-                <View
-                  key={log.id}
-                  className="flex-row items-center justify-between py-2 border-b border-gray-100"
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-text-primary text-sm font-semibold">
-                      +{log.amount_ml}ml
-                    </Text>
-                    <Text className="text-text-muted text-xs">
-                      {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => removeLog(log.id)}
-                    className="px-2 py-1"
-                    hitSlop={8}
+          {/* Today's log */}
+          {todayLogs.length > 0 && (
+            <View className="w-full mt-4" style={{ maxHeight: 160 }}>
+              <Text className="text-text-muted text-xs font-medium mb-2">Today</Text>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {[...todayLogs].reverse().map((log) => (
+                  <View
+                    key={log.id}
+                    className="flex-row items-center justify-between py-2 border-b border-gray-100"
                   >
-                    <Text className="text-red-400 text-xs font-medium">Delete</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-text-primary text-sm font-semibold">
+                        +{log.amount_ml}ml
+                      </Text>
+                      <Text className="text-text-muted text-xs">
+                        {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => removeLog(log.id)}
+                      className="px-2 py-1"
+                      hitSlop={8}
+                    >
+                      <Text className="text-red-400 text-xs font-medium">Delete</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
-        {/* Bottom section */}
-        <View className="items-center">
           {/* Snackbar */}
-          <View className="h-6 mb-3 justify-center">
+          <View className="h-6 mt-4 mb-3 justify-center">
             {snackbar.visible ? (
               <View className="flex-row items-center justify-center">
                 <Text className="text-accent text-sm font-medium">{snackbar.message}</Text>

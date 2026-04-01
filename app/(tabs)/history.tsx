@@ -117,7 +117,7 @@ export default function HistoryScreen() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <Text className="text-text-primary text-2xl font-bold pt-4">History</Text>
-      <Text className="text-text-muted text-xs mb-3">{isPro ? 'Last 28 days' : 'Last 7 days'}</Text>
+      <Text className="text-primary/80 text-xs font-medium mt-1 mb-3">{isPro ? 'Last 28 days' : 'Last 7 days'}</Text>
 
       {isEmpty ? (
         <View className="items-center justify-center px-6 py-20">

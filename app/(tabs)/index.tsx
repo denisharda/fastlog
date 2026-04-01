@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useFasting } from '../../hooks/useFasting';
@@ -27,6 +28,7 @@ function formatDuration(seconds: number): string {
 
 export default function TimerScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
   const hasSeenSuccessPaywall = useUserStore(s => s.hasSeenSuccessPaywall);
@@ -120,23 +122,21 @@ export default function TimerScreen() {
 
   return (
     <>
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
-        contentInsetAdjustmentBehavior="automatic"
-        showsVerticalScrollIndicator={false}
-      >
+      <View className="flex-1 bg-background" style={{ paddingHorizontal: 24, paddingBottom: 40, paddingTop: insets.top }}>
         {/* Header */}
         <View className="w-full">
           <Text className="text-text-primary text-2xl font-bold">
             {isActive ? 'Fasting' : 'Ready to Fast'}
           </Text>
           {isActive && (
-            <Text className="text-text-muted text-sm mt-1">
+            <Text className="text-primary/80 text-xs font-medium mt-1">
               Goal: {targetHours}h fast
             </Text>
           )}
         </View>
+
+        {/* Centered content */}
+        <View className="flex-1 justify-center items-center">
 
         {/* Ring + phase */}
         <View className="items-center my-6">
@@ -198,48 +198,46 @@ export default function TimerScreen() {
         ) : (
           <View className="w-full gap-4">
             {!isActive && (
-              <View className="gap-2">
+              <View className="gap-2 items-center">
                 <Text className="text-text-muted text-sm font-medium">Select duration</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View className="flex-row gap-2">
-                    {FASTING_OPTIONS.map((option) => {
-                      const isSelected = !isCustom && selectedHours === option.hours;
-                      return (
-                        <Pressable
-                          key={option.hours}
-                          className={`px-5 py-3 rounded-xl ${
-                            isSelected ? 'bg-primary' : 'bg-white border border-gray-200'
-                          }`}
-                          style={!isSelected ? CARD_SHADOW : undefined}
-                          onPress={() => handleProtocolSelect(option.hours)}
-                        >
-                          <Text
-                            className={`font-semibold text-base ${
-                              isSelected ? 'text-white' : 'text-text-primary'
-                            }`}
-                          >
-                            {option.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                    <Pressable
-                      className={`px-5 py-3 rounded-xl ${
-                        isCustom ? 'bg-primary' : 'bg-white border border-gray-200'
-                      }`}
-                      style={!isCustom ? CARD_SHADOW : undefined}
-                      onPress={handleCustomPress}
-                    >
-                      <Text
-                        className={`font-semibold text-base ${
-                          isCustom ? 'text-white' : 'text-text-primary'
+                <View className="flex-row flex-wrap gap-2 justify-center">
+                  {FASTING_OPTIONS.map((option) => {
+                    const isSelected = !isCustom && selectedHours === option.hours;
+                    return (
+                      <Pressable
+                        key={option.hours}
+                        className={`px-5 py-3 rounded-xl ${
+                          isSelected ? 'bg-primary' : 'bg-white border border-gray-200'
                         }`}
+                        style={!isSelected ? CARD_SHADOW : undefined}
+                        onPress={() => handleProtocolSelect(option.hours)}
                       >
-                        {isPro ? 'Custom' : 'Custom (Pro)'}
-                      </Text>
-                    </Pressable>
-                  </View>
-                </ScrollView>
+                        <Text
+                          className={`font-semibold text-base ${
+                            isSelected ? 'text-white' : 'text-text-primary'
+                          }`}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable
+                    className={`px-5 py-3 rounded-xl ${
+                      isCustom ? 'bg-primary' : 'bg-white border border-gray-200'
+                    }`}
+                    style={!isCustom ? CARD_SHADOW : undefined}
+                    onPress={handleCustomPress}
+                  >
+                    <Text
+                      className={`font-semibold text-base ${
+                        isCustom ? 'text-white' : 'text-text-primary'
+                      }`}
+                    >
+                      {isPro ? 'Custom' : 'Custom (Pro)'}
+                    </Text>
+                  </Pressable>
+                </View>
                 {isCustom && (
                   <View className="flex-row items-center justify-center gap-4 mt-2">
                     <Pressable
@@ -271,7 +269,8 @@ export default function TimerScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+        </View>
+      </View>
       <PhasesDrawer
         visible={showPhases}
         onClose={() => setShowPhases(false)}
