@@ -28,6 +28,15 @@ function getLogLevel() {
 // Re-export the type for paywall usage
 export type { PurchasesPackage } from 'react-native-purchases';
 
+let configured = false;
+
+/**
+ * Whether RevenueCat has been configured. Guards calls that require the singleton.
+ */
+export function isRevenueCatConfigured(): boolean {
+  return configured;
+}
+
 /**
  * Initialize RevenueCat SDK. Call once at app startup (before auth).
  */
@@ -47,6 +56,7 @@ export function initRevenueCat(): void {
   }
 
   Purchases.configure({ apiKey });
+  configured = true;
 }
 
 /**
@@ -79,6 +89,7 @@ export async function resetRevenueCatUser(): Promise<void> {
  * Check if the current user has an active Pro entitlement.
  */
 export async function getIsProUser(): Promise<boolean> {
+  if (!configured) return false;
   const Purchases = getPurchases();
   if (!Purchases) return false;
   try {
@@ -94,6 +105,7 @@ export async function getIsProUser(): Promise<boolean> {
  * Fetch available packages from RevenueCat.
  */
 export async function getOfferings(): Promise<any[]> {
+  if (!configured) return [];
   const Purchases = getPurchases();
   if (!Purchases) return [];
   try {

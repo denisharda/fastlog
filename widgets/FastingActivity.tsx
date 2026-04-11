@@ -1,5 +1,5 @@
 /**
- * Live Activity / Dynamic Island for FastBuddy
+ * Live Activity / Dynamic Island for FastLog
  *
  * Uses expo-widgets createLiveActivity API with @expo/ui modifiers-based API.
  * Shows fasting timer and current phase in the Dynamic Island.

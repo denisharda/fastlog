@@ -1,4 +1,4 @@
-# FastBuddy — Project Intelligence
+# FastLog — Project Intelligence
 
 ## What this project is
 A React Native (Expo) intermittent fasting tracker with AI-powered check-ins.

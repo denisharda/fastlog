@@ -50,9 +50,10 @@ export async function startLiveActivity(state: LiveActivityState): Promise<void>
   if (!f) return;
 
   try {
-    activityInstance = f.start(state);
+    activityInstance = await f.start(state);
+    if (__DEV__) console.log('[liveActivity] started successfully');
   } catch (e) {
-    console.warn('[liveActivity] start failed:', e);
+    console.error('[liveActivity] start failed:', e);
   }
 }
 

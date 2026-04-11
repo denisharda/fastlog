@@ -25,6 +25,6 @@ export async function exportHistoryCSV(sessions: FastingSession[]): Promise<void
 
   await Share.share({
     message: csv,
-    title: 'FastBuddy History Export',
+    title: 'FastLog History Export',
   });
 }

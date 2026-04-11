@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-screens/experimental';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useHydration } from '../../hooks/useHydration';

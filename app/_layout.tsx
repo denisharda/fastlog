@@ -17,6 +17,7 @@ import { syncFastSchedule } from '../lib/fastScheduler';
 import * as Notifications from 'expo-notifications';
 
 try { validateEnv(); } catch (e) { console.warn('[RootLayout] validateEnv failed:', e); }
+try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,7 +101,6 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
     try { initPostHog(); } catch (e) { console.warn('[RootLayout] PostHog init failed:', e); }
     try { trackAppLaunched(); } catch (e) { /* silent */ }
 

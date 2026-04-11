@@ -2,12 +2,12 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'FastBuddy',
-  slug: 'fastbuddy',
+  name: 'FastLog',
+  slug: 'fastlog',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  scheme: 'fastbuddy',
+  scheme: 'fastlog',
   userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash.png',
@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.fastbuddy.app',
+    bundleIdentifier: 'com.fastlog.app',
     infoPlist: {
       UIBackgroundModes: ['fetch', 'remote-notification'],
       NSSupportsLiveActivities: true,
@@ -27,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#F2F2F7',
     },
-    package: 'com.fastbuddy.app',
+    package: 'com.fastlog.app',
   },
   web: {
     bundler: 'metro',
@@ -47,8 +47,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-widgets',
       {
-        bundleIdentifier: 'com.fastbuddy.app.widgets',
-        groupIdentifier: 'group.com.fastbuddy.app',
+        bundleIdentifier: 'com.fastlog.app.widgets',
+        groupIdentifier: 'group.com.fastlog.app',
         enablePushNotifications: true,
         widgets: [
           {
@@ -56,6 +56,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             displayName: 'Fasting Timer',
             description: 'Track your fasting progress',
             supportedFamilies: ['systemSmall', 'systemMedium'],
+          },
+        ],
+        liveActivities: [
+          {
+            name: 'FastingActivity',
           },
         ],
       },

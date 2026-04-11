@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "FastBuddy",
-    "slug": "fastbuddy",
+    "name": "FastLog",
+    "slug": "fastlog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "fastbuddy",
+    "scheme": "fastlog",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fastbuddy.app",
+      "bundleIdentifier": "com.fastlog.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0A"
       },
-      "package": "com.fastbuddy.app"
+      "package": "com.fastlog.app"
     },
     "web": {
       "bundler": "metro",
@@ -48,6 +48,29 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.fastlog.app.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.fastlog.app"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "fa29c793-f61f-4d1a-af10-64fb576a2825"
+      }
     }
   }
 }

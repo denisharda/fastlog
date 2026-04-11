@@ -1,5 +1,5 @@
 /**
- * Home Screen Widget for FastBuddy
+ * Home Screen Widget for FastLog
  *
  * Uses the official expo-widgets API with @expo/ui/swift-ui components.
  * Reads fasting state from App Groups shared UserDefaults.
@@ -50,7 +50,7 @@ function SmallWidget({ state }: { state: FastingState }) {
         modifiers={[
           background(COLORS.background),
           padding({ all: 16 }),
-          widgetURL('fastbuddy://start'),
+          widgetURL('fastlog://start'),
         ]}
       >
         <Text
@@ -83,7 +83,7 @@ function SmallWidget({ state }: { state: FastingState }) {
       modifiers={[
         background(COLORS.background),
         padding({ all: 16 }),
-        widgetURL('fastbuddy://timer'),
+        widgetURL('fastlog://timer'),
       ]}
     >
       <Text
@@ -123,7 +123,7 @@ function MediumWidget({ state }: { state: FastingState }) {
         modifiers={[
           background(COLORS.background),
           padding({ all: 16 }),
-          widgetURL('fastbuddy://start'),
+          widgetURL('fastlog://start'),
         ]}
       >
         <VStack>
@@ -133,7 +133,7 @@ function MediumWidget({ state }: { state: FastingState }) {
               font({ size: 16, weight: 'bold' }),
             ]}
           >
-            FastBuddy
+            FastLog
           </Text>
           <Text
             modifiers={[
@@ -167,7 +167,7 @@ function MediumWidget({ state }: { state: FastingState }) {
       modifiers={[
         background(COLORS.background),
         padding({ all: 16 }),
-        widgetURL('fastbuddy://timer'),
+        widgetURL('fastlog://timer'),
       ]}
     >
       {/* Left: Timer */}
