@@ -5,13 +5,10 @@
  * Reads fasting state from App Groups shared UserDefaults.
  *
  * Sizes:
- * - Small: progress indicator + timer + phase name
- * - Medium: ring left, phase details right
+ * - Small: timer + phase name + progress text
+ * - Medium: timer left, phase + protocol right
  *
- * Inactive state: "No Active Fast — Tap to start" with deep link
- *
- * NOTE: This file is compiled by the expo-widgets plugin into native
- * WidgetKit Swift code. The JSX-like API maps to SwiftUI views.
+ * Inactive state: app branding + protocol + "Tap to start"
  */
 
 import { createWidget, WidgetEnvironment } from 'expo-widgets';
@@ -24,15 +21,32 @@ import {
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 
-// Colors from design system
+// Light theme — matches the app's design system
 const COLORS = {
-  background: '#0A0A0A',
-  surface: '#1A1A1A',
+  background: '#F2F2F7',
+  surface: '#FFFFFF',
   primary: '#2D6A4F',
   accent: '#40916C',
-  textPrimary: '#F5F5F5',
-  textMuted: '#9CA3AF',
+  textPrimary: '#1A1A1A',
+  textMuted: '#6B7280',
 };
+
+// Phase thresholds matching constants/phases.ts
+const PHASE_THRESHOLDS = [
+  { name: 'Fed State', min: 0, max: 4 },
+  { name: 'Early Fasting', min: 4, max: 8 },
+  { name: 'Fat Burning Begins', min: 8, max: 12 },
+  { name: 'Fat Burning Peak', min: 12, max: 16 },
+  { name: 'Autophagy Zone', min: 16, max: 18 },
+  { name: 'Deep Fast', min: 18, max: Infinity },
+];
+
+function computePhase(elapsedHours: number): string {
+  const phase = PHASE_THRESHOLDS.find(
+    (p) => elapsedHours >= p.min && elapsedHours < p.max
+  );
+  return phase?.name ?? 'Deep Fast';
+}
 
 interface FastingState {
   isActive: boolean;
@@ -44,7 +58,7 @@ interface FastingState {
 }
 
 function SmallWidget({ state }: { state: FastingState }) {
-  if (!state.isActive) {
+  if (!state.isActive || !state.startedAt) {
     return (
       <VStack
         modifiers={[
@@ -55,13 +69,21 @@ function SmallWidget({ state }: { state: FastingState }) {
       >
         <Text
           modifiers={[
+            foregroundStyle(COLORS.primary),
+            font({ size: 14, weight: 'bold' }),
+          ]}
+        >
+          FastLog
+        </Text>
+        <Spacer />
+        <Text
+          modifiers={[
             foregroundStyle(COLORS.textMuted),
             font({ size: 12 }),
           ]}
         >
-          No Active Fast
+          {state.protocol} ready
         </Text>
-        <Spacer />
         <Text
           modifiers={[
             foregroundStyle(COLORS.accent),
@@ -74,9 +96,12 @@ function SmallWidget({ state }: { state: FastingState }) {
     );
   }
 
-  const elapsed = state.startedAt
-    ? (Date.now() - new Date(state.startedAt).getTime()) / 3600000
-    : state.elapsedHours;
+  // Compute phase locally from startedAt for freshness
+  const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 3600000;
+  const phase = computePhase(elapsed);
+  const progress = state.targetHours > 0
+    ? Math.min(Math.round((elapsed / state.targetHours) * 100), 100)
+    : 0;
 
   return (
     <VStack
@@ -92,12 +117,11 @@ function SmallWidget({ state }: { state: FastingState }) {
           font({ size: 12, weight: 'medium' }),
         ]}
       >
-        {state.phase}
+        {phase}
       </Text>
       <Spacer />
-      {/* SwiftUI relative date text provides live countdown without refreshes */}
       <Text
-        date={new Date(state.startedAt!)}
+        date={new Date(state.startedAt)}
         dateStyle="timer"
         modifiers={[
           foregroundStyle(COLORS.textPrimary),
@@ -107,17 +131,17 @@ function SmallWidget({ state }: { state: FastingState }) {
       <Text
         modifiers={[
           foregroundStyle(COLORS.textMuted),
-          font({ size: 11 }),
+          font({ size: 12 }),
         ]}
       >
-        {elapsed.toFixed(1)}h / {state.targetHours}h
+        {progress}% of {state.targetHours}h goal
       </Text>
     </VStack>
   );
 }
 
 function MediumWidget({ state }: { state: FastingState }) {
-  if (!state.isActive) {
+  if (!state.isActive || !state.startedAt) {
     return (
       <HStack
         modifiers={[
@@ -129,21 +153,21 @@ function MediumWidget({ state }: { state: FastingState }) {
         <VStack>
           <Text
             modifiers={[
-              foregroundStyle(COLORS.textPrimary),
+              foregroundStyle(COLORS.primary),
               font({ size: 16, weight: 'bold' }),
             ]}
           >
             FastLog
           </Text>
+          <Spacer />
           <Text
             modifiers={[
               foregroundStyle(COLORS.textMuted),
               font({ size: 13 }),
             ]}
           >
-            No active fast
+            {state.protocol} protocol ready
           </Text>
-          <Spacer />
           <Text
             modifiers={[
               foregroundStyle(COLORS.accent),
@@ -154,13 +178,33 @@ function MediumWidget({ state }: { state: FastingState }) {
           </Text>
         </VStack>
         <Spacer />
+        <VStack alignment="trailing">
+          <Text
+            modifiers={[
+              foregroundStyle(COLORS.primary),
+              font({ size: 36, weight: 'bold' }),
+            ]}
+          >
+            {state.targetHours > 0 ? `${state.targetHours}h` : '16h'}
+          </Text>
+          <Text
+            modifiers={[
+              foregroundStyle(COLORS.textMuted),
+              font({ size: 11 }),
+            ]}
+          >
+            fast duration
+          </Text>
+        </VStack>
       </HStack>
     );
   }
 
-  const elapsed = state.startedAt
-    ? (Date.now() - new Date(state.startedAt).getTime()) / 3600000
-    : state.elapsedHours;
+  const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 3600000;
+  const phase = computePhase(elapsed);
+  const progress = state.targetHours > 0
+    ? Math.min(Math.round((elapsed / state.targetHours) * 100), 100)
+    : 0;
 
   return (
     <HStack
@@ -173,7 +217,7 @@ function MediumWidget({ state }: { state: FastingState }) {
       {/* Left: Timer */}
       <VStack>
         <Text
-          date={new Date(state.startedAt!)}
+          date={new Date(state.startedAt)}
           dateStyle="timer"
           modifiers={[
             foregroundStyle(COLORS.textPrimary),
@@ -186,7 +230,7 @@ function MediumWidget({ state }: { state: FastingState }) {
             font({ size: 12 }),
           ]}
         >
-          {elapsed.toFixed(1)}h / {state.targetHours}h ({state.protocol})
+          {progress}% of {state.targetHours}h ({state.protocol})
         </Text>
       </VStack>
       <Spacer />
@@ -198,15 +242,15 @@ function MediumWidget({ state }: { state: FastingState }) {
             font({ size: 14, weight: 'semibold' }),
           ]}
         >
-          {state.phase}
+          {phase}
         </Text>
         <Text
           modifiers={[
             foregroundStyle(COLORS.textMuted),
-            font({ size: 11 }),
+            font({ size: 12 }),
           ]}
         >
-          Goal: {state.targetHours}h
+          {state.protocol}
         </Text>
       </VStack>
     </HStack>
