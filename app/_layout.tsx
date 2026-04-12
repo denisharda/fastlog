@@ -15,6 +15,7 @@ import { initPostHog, trackAppLaunched } from '../lib/posthog';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
 import * as Notifications from 'expo-notifications';
+import * as Linking from 'expo-linking';
 
 try { validateEnv(); } catch (e) { console.warn('[RootLayout] validateEnv failed:', e); }
 try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
@@ -98,6 +99,25 @@ export default function RootLayout() {
       }
     });
     return () => subscription.remove();
+  }, []);
+
+  // Handle deep links from widget
+  useEffect(() => {
+    function handleURL(event: { url: string }) {
+      const { hostname } = Linking.parse(event.url);
+      if (hostname === 'timer' || hostname === 'start') {
+        router.push('/(tabs)');
+      }
+    }
+
+    // Handle URL that launched the app
+    Linking.getInitialURL().then((url) => {
+      if (url) handleURL({ url });
+    });
+
+    // Handle URLs while app is running
+    const sub = Linking.addEventListener('url', handleURL);
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
