@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFastingStore } from '../stores/fastingStore';
 import { useUserStore } from '../stores/userStore';
@@ -19,7 +20,13 @@ import {
   trackFastAbandoned,
 } from '../lib/posthog';
 import { writeSharedState } from '../lib/sharedState';
-import { startLiveActivity, updateLiveActivity, endLiveActivity } from '../lib/liveActivity';
+import {
+  startLiveActivity,
+  updateLiveActivity,
+  endLiveActivity,
+  restoreLiveActivity,
+  hasLiveActivity,
+} from '../lib/liveActivity';
 import { FastingProtocol } from '../types';
 
 const TICK_INTERVAL_MS = 1000;
@@ -76,6 +83,42 @@ export function useFasting(): UseFastingReturn {
     };
   }, [activeFast]);
 
+  // Restore live activity on mount if fast is active but instance was lost (app restart)
+  useEffect(() => {
+    if (activeFast && !hasLiveActivity()) {
+      const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+      const phase = getCurrentPhase(elapsed);
+      restoreLiveActivity({
+        startedAt: activeFast.startedAt,
+        targetHours: activeFast.targetHours,
+        phase: phase.name,
+        phaseDescription: phase.description,
+        protocol: activeFast.protocol,
+      });
+    }
+  }, [activeFast]);
+
+  // Re-sync shared state when app returns to foreground
+  useEffect(() => {
+    function handleAppState(nextState: AppStateStatus) {
+      if (nextState === 'active' && activeFast) {
+        const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+        const phase = getCurrentPhase(elapsed);
+        writeSharedState({
+          isActive: true,
+          startedAt: activeFast.startedAt,
+          targetHours: activeFast.targetHours,
+          phase: phase.name,
+          protocol: activeFast.protocol,
+          elapsedHours: elapsed,
+        });
+      }
+    }
+
+    const sub = AppState.addEventListener('change', handleAppState);
+    return () => sub.remove();
+  }, [activeFast]);
+
   // Derived values — memoized to avoid unnecessary recalculations
   const elapsedHours = elapsedSeconds / 3600;
   const targetHours = activeFast?.targetHours ?? 0;
@@ -106,10 +149,16 @@ export function useFasting(): UseFastingReturn {
       });
 
       // Update Live Activity
-      updateLiveActivity({
-        phase: currentPhase.name,
-        phaseDescription: currentPhase.description,
-      });
+      updateLiveActivity(
+        { phase: currentPhase.name, phaseDescription: currentPhase.description },
+        {
+          startedAt: activeFast.startedAt,
+          targetHours: activeFast.targetHours,
+          phase: currentPhase.name,
+          phaseDescription: currentPhase.description,
+          protocol: activeFast.protocol,
+        }
+      );
     }
   }, [activeFast, currentPhase.name]);
 
@@ -169,7 +218,7 @@ export function useFasting(): UseFastingReturn {
 
         // Start Live Activity (iOS only, no-op if native module unavailable)
         const phase = getCurrentPhase(0);
-        startLiveActivity({
+        await startLiveActivity({
           startedAt,
           targetHours: hours,
           phase: phase.name,
@@ -197,7 +246,7 @@ export function useFasting(): UseFastingReturn {
 
         storeStop();
         await cancelAllNotifications();
-        endLiveActivity();
+        await endLiveActivity();
 
         if (completed) {
           trackFastCompleted({
