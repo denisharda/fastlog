@@ -12,6 +12,7 @@ import { fetchProfile } from '../lib/auth';
 import { useUserStore } from '../stores/userStore';
 import { initRevenueCat, identifyRevenueCatUser } from '../lib/revenuecat';
 import { initPostHog, trackAppLaunched } from '../lib/posthog';
+import { registerForPushNotifications } from '../lib/notifications';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
 import * as Notifications from 'expo-notifications';
@@ -52,7 +53,7 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
             coach_personality: profile.coach_personality,
             preferred_protocol: profile.preferred_protocol,
             daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
-            push_token: null,
+            push_token: profile.push_token ?? null,
             created_at: profile.created_at,
           });
           router.replace('/(tabs)');
@@ -79,6 +80,27 @@ export default function RootLayout() {
     if (profile?.id) {
       try { identifyRevenueCatUser(profile.id); } catch (e) { console.warn('[RootLayout] RC identify failed:', e); }
     }
+  }, [profile?.id]);
+
+  // Register for push notifications once we have a profile
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    registerForPushNotifications().then((token) => {
+      if (token && token !== profile.push_token) {
+        // Save token to local store and Supabase
+        useUserStore.getState().updateProfile({ push_token: token });
+        supabase
+          .from('profiles')
+          .update({ push_token: token })
+          .eq('id', profile.id)
+          .then(({ error }) => {
+            if (error) console.warn('[RootLayout] Failed to save push token:', error);
+          });
+      }
+    }).catch((e) => {
+      console.warn('[RootLayout] Push registration failed:', e);
+    });
   }, [profile?.id]);
 
   // Sync the recurring fast schedule notification on app launch
