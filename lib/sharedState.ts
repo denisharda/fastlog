@@ -22,6 +22,21 @@ const defaultState: SharedFastingState = {
 };
 
 /**
+ * Force WidgetKit to reload all widget timelines.
+ * Call after writing shared state so the widget picks up changes immediately.
+ */
+function reloadWidgetTimelines(): void {
+  if (Platform.OS !== 'ios') return;
+
+  try {
+    const { reloadAllTimelines } = require('expo-widgets');
+    reloadAllTimelines();
+  } catch {
+    // expo-widgets not available (Expo Go or missing module)
+  }
+}
+
+/**
  * Write fasting state to App Groups shared UserDefaults.
  * Used by iOS widgets and Live Activities to read current state.
  * Falls back silently on Android or if the native module is unavailable.
@@ -32,6 +47,7 @@ export async function writeSharedState(state: SharedFastingState): Promise<void>
   try {
     const SharedGroupPreferences = require('react-native-shared-group-preferences').default;
     await SharedGroupPreferences.setItem(SHARED_KEY, JSON.stringify(state), APP_GROUP);
+    reloadWidgetTimelines();
   } catch (error) {
     // Silently fail — widget will show stale data but app continues working
     console.warn('[sharedState] Failed to write shared state:', error);
