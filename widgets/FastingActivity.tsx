@@ -5,30 +5,22 @@
  * Shows fasting timer and current phase in the Dynamic Island.
  *
  * Layouts:
- * - compactLeading: green timer icon
- * - compactTrailing: elapsed time text
- * - minimal: small green progress indicator
- * - banner (expanded): phase name + timer
- * - expandedLeading: phase icon + name
- * - expandedTrailing: timer + target hours
- * - expandedBottom: current phase description
- *
- * Constraints:
- * - Data must stay under 4KB (ActivityKit limit)
- * - No marketing content (Apple prohibits ads in Live Activities)
- * - iOS 8h auto-dismiss limit — widget continues working
+ * - compactLeading: protocol label
+ * - compactTrailing: elapsed time
+ * - minimal: abbreviated timer
+ * - banner: phase name + timer + target + description
+ * - expandedLeading: phase name + protocol
+ * - expandedTrailing: timer + target
+ * - expandedBottom: phase description
  */
 
 import { createLiveActivity } from 'expo-widgets';
-import type { LiveActivityLayout } from 'expo-widgets';
-// LiveActivityEnvironment is not re-exported from expo-widgets index, import from types
-import type { LiveActivityEnvironment } from 'expo-widgets/build/Widgets.types';
+import type { LiveActivityLayout, LiveActivityEnvironment } from 'expo-widgets';
 import { Text, VStack, HStack } from '@expo/ui/swift-ui';
 import {
   foregroundStyle,
   font,
   padding,
-  bold,
   monospacedDigit,
 } from '@expo/ui/swift-ui/modifiers';
 
@@ -48,18 +40,20 @@ function FastingActivityComponent(
 
   return {
     /**
-     * Banner view — shown in notification-style banner
+     * Banner view — shown in notification-style banner on lock screen
      */
     banner: (
       <VStack modifiers={[padding({ all: 16 })]}>
-        <Text
-          modifiers={[
-            foregroundStyle('#40916C'),
-            font({ size: 13, weight: 'semibold' }),
-          ]}
-        >
-          {props.phase}
-        </Text>
+        <HStack>
+          <Text
+            modifiers={[
+              foregroundStyle('#40916C'),
+              font({ size: 13, weight: 'semibold' }),
+            ]}
+          >
+            {props.phase}
+          </Text>
+        </HStack>
         <HStack>
           <Text
             date={new Date(props.startedAt)}
@@ -79,14 +73,30 @@ function FastingActivityComponent(
             {' '}/ {props.targetHours}h
           </Text>
         </HStack>
+        <Text
+          modifiers={[
+            foregroundStyle('#6B7280'),
+            font({ size: 11 }),
+          ]}
+        >
+          {props.phaseDescription}
+        </Text>
       </VStack>
     ),
 
     /**
      * Compact leading — left side of Dynamic Island pill
+     * Show protocol label for context
      */
     compactLeading: (
-      <Text modifiers={[font({ size: 16 })]}>🟢</Text>
+      <Text
+        modifiers={[
+          foregroundStyle('#40916C'),
+          font({ size: 12, weight: 'semibold' }),
+        ]}
+      >
+        {props.protocol}
+      </Text>
     ),
 
     /**
@@ -106,9 +116,18 @@ function FastingActivityComponent(
 
     /**
      * Minimal — smallest Dynamic Island representation
+     * Show abbreviated timer instead of emoji
      */
     minimal: (
-      <Text modifiers={[font({ size: 12 })]}>🟢</Text>
+      <Text
+        date={new Date(props.startedAt)}
+        dateStyle="timer"
+        modifiers={[
+          foregroundStyle('#F5F5F5'),
+          font({ size: 10, weight: 'medium' }),
+          monospacedDigit(),
+        ]}
+      />
     ),
 
     /**
@@ -130,7 +149,7 @@ function FastingActivityComponent(
             font({ size: 11 }),
           ]}
         >
-          {props.protocol}
+          {props.protocol} fast
         </Text>
       </VStack>
     ),
@@ -155,7 +174,7 @@ function FastingActivityComponent(
             font({ size: 11 }),
           ]}
         >
-          Goal: {props.targetHours}h
+          of {props.targetHours}h
         </Text>
       </VStack>
     ),
