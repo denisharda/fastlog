@@ -15,7 +15,8 @@
  */
 
 import { createLiveActivity } from 'expo-widgets';
-import type { LiveActivityLayout, LiveActivityEnvironment } from 'expo-widgets';
+import type { LiveActivityLayout } from 'expo-widgets';
+import type { LiveActivityEnvironment } from 'expo-widgets/build/Widgets.types';
 import { Text, VStack, HStack } from '@expo/ui/swift-ui';
 import {
   foregroundStyle,
