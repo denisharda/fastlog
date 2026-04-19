@@ -5,3 +5,4 @@
 {"source":"user-event","type":"click","text":"+ 250ml\n        + 500ml\n      \n      Long-press either button for custom amount\n    \n    \n      A: Two Pill Buttons\n      Just 250ml and 500ml as pills. Long-press opens a number input for custom amounts. Covers 95% of use cases. No \"Custom\" button cluttering the UI.","choice":"a","id":null,"timestamp":1774617290092}
 {"source":"user-event","type":"click","text":"+ 250ml\n        + 500ml\n      \n      Long-press either button for custom amount\n    \n    \n      A: Two Pill Buttons\n      Just 250ml and 500ml as pills. Long-press opens a number input for custom amounts. Covers 95% of use cases. No \"Custom\" button cluttering the UI.","choice":"a","id":null,"timestamp":1774617293431}
 {"type":"screen-added","file":"/Users/denisharda/Sites/fastai/.superpowers/brainstorm/51082-1774616580/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}
