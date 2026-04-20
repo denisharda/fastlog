@@ -1,112 +1,85 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import type { LiveActivity as LiveActivityInstance } from 'expo-widgets';
+import FastingActivityFactory, { type FastingActivityState } from '../widgets/FastingActivity';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-export interface LiveActivityState {
-  startedAt: string;
-  targetHours: number;
-  phase: string;
-  phaseDescription: string;
-  protocol: string;
-}
+export type { FastingActivityState } from '../widgets/FastingActivity';
+// Legacy alias — some callers reference the old name.
+export type LiveActivityState = FastingActivityState;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let factory: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let activityInstance: any = null;
+let activity: LiveActivityInstance<FastingActivityState> | null = null;
 
-function getFactory(): any {
-  if (Platform.OS !== 'ios' || isExpoGo) return null;
-  if (factory) return factory;
-
-  try {
-    const mod = require('expo-widgets');
-    factory = mod.createLiveActivity(
-      'FastingActivity',
-      (() => ({ banner: null })) as any
-    );
-    return factory;
-  } catch {
-    return null;
-  }
+function available(): boolean {
+  return Platform.OS === 'ios' && !isExpoGo;
 }
 
 /**
- * End any currently running live activity. Safe to call even if no activity
- * is running — silently no-ops.
+ * Start a new Live Activity. Ends any existing instance first.
  */
-export async function endLiveActivity(): Promise<void> {
-  if (!activityInstance) return;
+export async function startLiveActivity(state: FastingActivityState): Promise<void> {
+  if (!available()) return;
 
-  try {
-    await activityInstance.end('default');
-  } catch (e) {
-    console.warn('[liveActivity] end failed:', e);
-  } finally {
-    activityInstance = null;
-  }
-}
-
-/**
- * Start a new live activity. Ends any existing activity first to avoid orphans.
- */
-export async function startLiveActivity(state: LiveActivityState): Promise<void> {
-  const f = getFactory();
-  if (!f) return;
-
-  // End any existing activity before starting a new one
   await endLiveActivity();
 
   try {
-    activityInstance = await f.start(state);
-    if (__DEV__) console.log('[liveActivity] started successfully');
+    activity = FastingActivityFactory.start(state, 'fastlog://timer');
+    if (__DEV__) console.log('[liveActivity] started');
   } catch (e) {
     console.error('[liveActivity] start failed:', e);
-    activityInstance = null;
+    activity = null;
   }
 }
 
 /**
- * Update the running live activity with new state.
- * Sends a full state object to avoid partial/undefined fields on the native side.
+ * Update the current Live Activity's content. No-op if none running.
  */
-export async function updateLiveActivity(
-  partial: Partial<LiveActivityState>,
-  currentFull: LiveActivityState
-): Promise<void> {
-  if (!activityInstance) return;
-
+export async function updateLiveActivity(state: FastingActivityState): Promise<void> {
+  if (!activity) return;
   try {
-    // Merge partial into full state to avoid sending undefined fields
-    const merged: LiveActivityState = { ...currentFull, ...partial };
-    await activityInstance.update(merged);
+    await activity.update(state);
   } catch (e) {
     console.warn('[liveActivity] update failed:', e);
   }
 }
 
 /**
- * Attempt to reconnect to an existing live activity after app restart.
- * Since expo-widgets doesn't expose activity querying, start a fresh one.
- * iOS will dismiss the old one if we start a new one for the same activity type.
+ * End the current Live Activity with the default dismissal policy.
  */
-export async function restoreLiveActivity(state: LiveActivityState): Promise<void> {
-  const f = getFactory();
-  if (!f) return;
-
+export async function endLiveActivity(): Promise<void> {
+  if (!activity) return;
   try {
-    activityInstance = await f.start(state);
-    if (__DEV__) console.log('[liveActivity] restored successfully');
+    await activity.end('default');
   } catch (e) {
-    console.warn('[liveActivity] restore failed:', e);
-    activityInstance = null;
+    console.warn('[liveActivity] end failed:', e);
+  } finally {
+    activity = null;
   }
 }
 
 /**
- * Whether a live activity instance is currently held in memory.
+ * Reattach to an existing Live Activity on app cold start, or start a
+ * new one if none are running.
  */
+export async function restoreLiveActivity(state: FastingActivityState): Promise<void> {
+  if (!available()) return;
+
+  try {
+    const existing = FastingActivityFactory.getInstances();
+    if (existing.length > 0) {
+      activity = existing[0];
+      await updateLiveActivity(state);
+      if (__DEV__) console.log('[liveActivity] reattached');
+      return;
+    }
+  } catch (e) {
+    console.warn('[liveActivity] getInstances failed:', e);
+  }
+
+  await startLiveActivity(state);
+}
+
 export function hasLiveActivity(): boolean {
-  return activityInstance !== null;
+  return activity !== null;
 }
