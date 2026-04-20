@@ -10,16 +10,20 @@ import {
   scheduleStartNotification,
   scheduleCompletionNotification,
   schedulePhaseNotifications,
-  // scheduleCheckinNotifications, // Hidden: AI coach
   scheduleWaterReminders,
   cancelAllNotifications,
 } from '../lib/notifications';
+import { useUserStore as useUserStoreForPrefs } from '../stores/userStore';
 import {
   trackFastStarted,
   trackFastCompleted,
   trackFastAbandoned,
 } from '../lib/posthog';
-import { writeSharedState } from '../lib/sharedState';
+import {
+  pushWidgetSnapshot,
+  scheduleWidgetTimeline,
+  clearWidgetSnapshot,
+} from '../lib/widget';
 import {
   startLiveActivity,
   updateLiveActivity,
@@ -104,13 +108,12 @@ export function useFasting(): UseFastingReturn {
       if (nextState === 'active' && activeFast) {
         const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
         const phase = getCurrentPhase(elapsed);
-        writeSharedState({
+        pushWidgetSnapshot({
           isActive: true,
           startedAt: activeFast.startedAt,
           targetHours: activeFast.targetHours,
           phase: phase.name,
           protocol: activeFast.protocol,
-          elapsedHours: elapsed,
         });
       }
     }
@@ -135,30 +138,21 @@ export function useFasting(): UseFastingReturn {
     if (prevPhaseRef.current !== currentPhase.name) {
       prevPhaseRef.current = currentPhase.name;
 
-      // Compute fresh elapsed hours to avoid stale value in dependency
-      const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
-
-      // Update shared state for widget
-      writeSharedState({
+      pushWidgetSnapshot({
         isActive: true,
         startedAt: activeFast.startedAt,
         targetHours: activeFast.targetHours,
         phase: currentPhase.name,
         protocol: activeFast.protocol,
-        elapsedHours: elapsed,
       });
 
-      // Update Live Activity
-      updateLiveActivity(
-        { phase: currentPhase.name, phaseDescription: currentPhase.description },
-        {
-          startedAt: activeFast.startedAt,
-          targetHours: activeFast.targetHours,
-          phase: currentPhase.name,
-          phaseDescription: currentPhase.description,
-          protocol: activeFast.protocol,
-        }
-      );
+      updateLiveActivity({
+        startedAt: activeFast.startedAt,
+        targetHours: activeFast.targetHours,
+        phase: currentPhase.name,
+        phaseDescription: currentPhase.description,
+        protocol: activeFast.protocol,
+      });
     }
   }, [activeFast, currentPhase.name]);
 
@@ -199,25 +193,33 @@ export function useFasting(): UseFastingReturn {
             });
         }
 
-        // Schedule notifications
+        // Schedule notifications — respect user prefs from onboarding
+        const prefs = useUserStoreForPrefs.getState().notificationPrefs;
         const start = new Date(startedAt);
         const endTime = new Date(start.getTime() + hours * 3600 * 1000);
 
-        // AI coach check-in notifications hidden — re-enable when AI features return
-        const proNotifPromise = Promise.resolve([] as string[]);
-
-        const [startId, phaseIds, completionId, waterIds, checkinIds] = await Promise.all([
+        const [startId, phaseIds, completionId, waterIds] = await Promise.all([
           scheduleStartNotification(),
-          schedulePhaseNotifications(start, hours),
-          scheduleCompletionNotification(endTime),
-          scheduleWaterReminders(start, hours),
-          proNotifPromise,
+          prefs.phaseTransitions ? schedulePhaseNotifications(start, hours) : Promise.resolve([] as string[]),
+          prefs.complete ? scheduleCompletionNotification(endTime) : Promise.resolve(''),
+          prefs.hydration ? scheduleWaterReminders(start, hours) : Promise.resolve([] as string[]),
         ] as const);
 
-        setNotificationIds([startId, ...phaseIds, completionId, ...waterIds, ...checkinIds]);
+        const ids = [startId, ...phaseIds, ...(completionId ? [completionId] : []), ...waterIds];
+        setNotificationIds(ids);
 
-        // Start Live Activity (iOS only, no-op if native module unavailable)
+        // Start Live Activity + widget updates (iOS only, no-op elsewhere)
         const phase = getCurrentPhase(0);
+
+        scheduleWidgetTimeline({ startedAt, targetHours: hours, protocol });
+        pushWidgetSnapshot({
+          isActive: true,
+          startedAt,
+          targetHours: hours,
+          phase: phase.name,
+          protocol,
+        });
+
         await startLiveActivity({
           startedAt,
           targetHours: hours,
@@ -244,9 +246,11 @@ export function useFasting(): UseFastingReturn {
         const endedAt = new Date().toISOString();
         const actualHours = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
 
+        const lastProtocol = activeFast.protocol;
         storeStop();
         await cancelAllNotifications();
         await endLiveActivity();
+        clearWidgetSnapshot(lastProtocol);
 
         if (completed) {
           trackFastCompleted({
