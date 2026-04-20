@@ -63,11 +63,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             description: 'Track your fasting progress',
             supportedFamilies: ['systemSmall', 'systemMedium'],
           },
-          {
-            name: 'FastingActivity',
-            displayName: 'Fasting Live Activity',
-            description: 'Shows your fasting progress on the Dynamic Island and lock screen',
-          },
         ],
       },
     ],
