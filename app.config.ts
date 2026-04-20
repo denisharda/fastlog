@@ -51,19 +51,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
-      'expo-widgets',
+      './plugins/withFastLogWidget/app.plugin.js',
       {
         bundleIdentifier: 'com.fastlog.app.widgets',
-        groupIdentifier: 'group.com.fastlog.app',
-        enablePushNotifications: true,
-        widgets: [
-          {
-            name: 'FastingWidget',
-            displayName: 'Fasting Timer',
-            description: 'Track your fasting progress',
-            supportedFamilies: ['systemSmall', 'systemMedium'],
-          },
-        ],
       },
     ],
   ],

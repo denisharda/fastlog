@@ -1,54 +1,62 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import type { LiveActivity as LiveActivityInstance } from 'expo-widgets';
-import FastingActivityFactory, { type FastingActivityState } from '../widgets/FastingActivity';
+import {
+  startFastingActivity,
+  updateFastingActivity,
+  endFastingActivity,
+  endAllFastingActivities,
+  getActiveFastingActivity,
+  type LiveActivityStatePayload,
+} from 'fast-log-widget-bridge';
 
-const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-export type { FastingActivityState } from '../widgets/FastingActivity';
+export type FastingActivityState = LiveActivityStatePayload;
 export type LiveActivityState = FastingActivityState;
 
-let activity: LiveActivityInstance<FastingActivityState> | null = null;
+let activeActivityId: string | null = null;
 
 function available(): boolean {
   return Platform.OS === 'ios' && !isExpoGo;
 }
 
 /**
- * Start a new Live Activity. Ends any existing instance first.
+ * Start a new Live Activity. Ends any existing instance first so the
+ * Dynamic Island never duplicates.
  */
 export async function startLiveActivity(state: FastingActivityState): Promise<void> {
   if (!available()) return;
 
   await endLiveActivity();
 
-  try {
-    activity = FastingActivityFactory.start(state, 'fastlog://timer');
-    if (__DEV__) console.log('[liveActivity] started with state:', state);
-  } catch (e) {
-    console.error('[liveActivity] start failed:', e);
-    activity = null;
+  const id = await startFastingActivity(state);
+  if (id) {
+    activeActivityId = id;
+    if (__DEV__) console.log('[liveActivity] started', id);
   }
 }
 
 export async function updateLiveActivity(state: FastingActivityState): Promise<void> {
-  if (!activity) return;
-  try {
-    await activity.update(state);
-  } catch (e) {
-    console.warn('[liveActivity] update failed:', e);
+  if (!available()) return;
+  if (!activeActivityId) {
+    // If we lost track of the id (app restart), try to reattach first.
+    const existing = await getActiveFastingActivity();
+    if (!existing) return;
+    activeActivityId = existing;
   }
+  await updateFastingActivity(activeActivityId, state);
 }
 
 export async function endLiveActivity(): Promise<void> {
-  if (!activity) return;
-  try {
-    await activity.end('default');
-  } catch (e) {
-    console.warn('[liveActivity] end failed:', e);
-  } finally {
-    activity = null;
+  if (!available()) return;
+  if (activeActivityId) {
+    await endFastingActivity(activeActivityId);
+    activeActivityId = null;
+    return;
   }
+  // Nothing tracked locally — end everything to recover from stale state.
+  await endAllFastingActivities();
 }
 
 /**
@@ -58,21 +66,17 @@ export async function endLiveActivity(): Promise<void> {
 export async function restoreLiveActivity(state: FastingActivityState): Promise<void> {
   if (!available()) return;
 
-  try {
-    const existing = FastingActivityFactory.getInstances();
-    if (existing.length > 0) {
-      activity = existing[0];
-      await updateLiveActivity(state);
-      if (__DEV__) console.log('[liveActivity] reattached');
-      return;
-    }
-  } catch (e) {
-    console.warn('[liveActivity] getInstances failed:', e);
+  const existing = await getActiveFastingActivity();
+  if (existing) {
+    activeActivityId = existing;
+    await updateFastingActivity(existing, state);
+    if (__DEV__) console.log('[liveActivity] reattached', existing);
+    return;
   }
 
   await startLiveActivity(state);
 }
 
 export function hasLiveActivity(): boolean {
-  return activity !== null;
+  return activeActivityId !== null;
 }
