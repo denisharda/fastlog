@@ -1,9 +1,14 @@
 /**
- * Live Activity / Dynamic Island — Timer Forward design.
+ * Live Activity / Dynamic Island for FastLog.
  *
- * Uses only Text / VStack / HStack because the widget extension target
- * doesn't link the native ExpoUI module that backs Gauge / Circle /
- * Rectangle.
+ * IMPORTANT: The function below carries the 'widget' directive, which
+ * causes babel-preset-expo's widgetsPlugin to serialize the function
+ * into a string at build time. That string is stored in App Groups
+ * and evaluated later inside the widget extension's JS runtime. Only
+ * React, @expo/ui/swift-ui primitives, and the function's own
+ * parameters are available — top-level helpers, constants, and
+ * imports from other files are NOT. Keep every identifier referenced
+ * below defined inside the function body.
  */
 
 import { createLiveActivity } from 'expo-widgets';
@@ -32,8 +37,17 @@ function FastingActivityComponent(
   'widget';
 
   const start = new Date(props.startedAt);
-  const endAt = new Date(start.getTime() + props.targetHours * 3600000);
-  const endLabel = endAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const targetHours = props.targetHours > 0 ? props.targetHours : 16;
+  const protocolLabel = props.protocol || '16:8';
+  const phaseLabel = (props.phase || 'Fed State').toUpperCase();
+  const description = props.phaseDescription || '';
+
+  const endAt = new Date(start.getTime() + targetHours * 3600000);
+  const endH = endAt.getHours();
+  const endM = endAt.getMinutes();
+  const hh = endH === 0 ? 12 : endH > 12 ? endH - 12 : endH;
+  const suffix = endH >= 12 ? 'PM' : 'AM';
+  const endLabel = `${hh}:${endM < 10 ? '0' : ''}${endM} ${suffix}`;
 
   return {
     compactLeading: (
@@ -43,7 +57,7 @@ function FastingActivityComponent(
           font({ size: 12, weight: 'bold' }),
         ]}
       >
-        {props.protocol}
+        {protocolLabel}
       </Text>
     ),
 
@@ -79,7 +93,7 @@ function FastingActivityComponent(
             font({ size: 13, weight: 'bold' }),
           ]}
         >
-          {props.phase.toUpperCase()}
+          {phaseLabel}
         </Text>
         <Text
           modifiers={[
@@ -87,7 +101,7 @@ function FastingActivityComponent(
             font({ size: 11 }),
           ]}
         >
-          {props.protocol} fast
+          {protocolLabel} fast
         </Text>
       </VStack>
     ),
@@ -112,7 +126,7 @@ function FastingActivityComponent(
             font({ size: 11 }),
           ]}
         >
-          of {props.targetHours}h
+          of {targetHours}h
         </Text>
       </VStack>
     ),
@@ -125,7 +139,7 @@ function FastingActivityComponent(
           padding({ leading: 16, trailing: 16, bottom: 8 }),
         ]}
       >
-        {props.phaseDescription} · ends {endLabel}
+        {description} · ends {endLabel}
       </Text>
     ),
 
@@ -138,7 +152,7 @@ function FastingActivityComponent(
               font({ size: 12, weight: 'bold' }),
             ]}
           >
-            {props.phase.toUpperCase()}
+            {phaseLabel}
           </Text>
         </HStack>
         <HStack>
@@ -157,7 +171,7 @@ function FastingActivityComponent(
               font({ size: 15 }),
             ]}
           >
-            {' '}/ {props.targetHours}h
+            {' '}/ {targetHours}h
           </Text>
         </HStack>
         <Text
@@ -166,7 +180,7 @@ function FastingActivityComponent(
             font({ size: 11 }),
           ]}
         >
-          {props.phaseDescription} · ends {endLabel}
+          {description} · ends {endLabel}
         </Text>
       </VStack>
     ),
