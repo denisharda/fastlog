@@ -17,6 +17,9 @@ import { initPostHog, trackAppLaunched } from '../lib/posthog';
 import { registerForPushNotifications } from '../lib/notifications';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
+import { pushWidgetSnapshot } from '../lib/widget';
+import { useFastingStore } from '../stores/fastingStore';
+import { getCurrentPhase } from '../constants/phases';
 import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
 
@@ -141,6 +144,33 @@ export default function RootLayout() {
     // Handle URLs while app is running
     const sub = Linking.addEventListener('url', handleURL);
     return () => sub.remove();
+  }, []);
+
+  // Push an initial widget snapshot on launch so the home-screen widget
+  // has something to render before a fast is started.
+  useEffect(() => {
+    const activeFast = useFastingStore.getState().activeFast;
+    const profile = useUserStore.getState().profile;
+    const protocolLabel = profile?.preferred_protocol ?? '16:8';
+    if (activeFast) {
+      const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+      const phase = getCurrentPhase(elapsed);
+      pushWidgetSnapshot({
+        isActive: true,
+        startedAt: activeFast.startedAt,
+        targetHours: activeFast.targetHours,
+        phase: phase.name,
+        protocol: activeFast.protocol,
+      });
+    } else {
+      pushWidgetSnapshot({
+        isActive: false,
+        startedAt: null,
+        targetHours: 16,
+        phase: 'Fed State',
+        protocol: protocolLabel,
+      });
+    }
   }, []);
 
   useEffect(() => {

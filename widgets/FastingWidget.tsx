@@ -10,7 +10,7 @@
  */
 
 import { createWidget, WidgetEnvironment } from 'expo-widgets';
-import { Text, VStack, HStack, ZStack, Spacer, Gauge, Circle } from '@expo/ui/swift-ui';
+import { Text, VStack, HStack, ZStack, Spacer, Gauge, Circle, Rectangle } from '@expo/ui/swift-ui';
 import {
   foregroundStyle,
   font,
@@ -95,6 +95,17 @@ export interface FastingState {
   protocol: string;
 }
 
+function WidgetBackground({ color }: { color: string }) {
+  return (
+    <Rectangle
+      modifiers={[
+        foregroundStyle(color),
+        frame({ minWidth: 0, maxWidth: 3000, minHeight: 0, maxHeight: 3000 }),
+      ]}
+    />
+  );
+}
+
 function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetPalette }) {
   if (!state.isActive || !state.startedAt) {
     return <SmallInactive state={state} palette={palette} />;
@@ -110,13 +121,9 @@ function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetP
   const phase = phaseName(idx);
 
   return (
-    <VStack
-      modifiers={[
-        padding({ all: 14 }),
-        background(palette.bg),
-        widgetURL('fastlog://timer'),
-      ]}
-    >
+    <ZStack modifiers={[widgetURL('fastlog://timer')]}>
+      <WidgetBackground color={palette.bg} />
+      <VStack modifiers={[padding({ all: 14 })]}>
       <HStack>
         <Text
           modifiers={[
@@ -172,19 +179,16 @@ function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetP
       >
         {percent}% · {state.protocol}
       </Text>
-    </VStack>
+      </VStack>
+    </ZStack>
   );
 }
 
 function SmallInactive({ state, palette }: { state: FastingState; palette: WidgetPalette }) {
   return (
-    <VStack
-      modifiers={[
-        padding({ all: 14 }),
-        background(palette.bg),
-        widgetURL('fastlog://start'),
-      ]}
-    >
+    <ZStack modifiers={[widgetURL('fastlog://start')]}>
+      <WidgetBackground color={palette.bg} />
+      <VStack modifiers={[padding({ all: 14 })]}>
       <HStack>
         <Text
           modifiers={[
@@ -243,7 +247,8 @@ function SmallInactive({ state, palette }: { state: FastingState; palette: Widge
         </Text>
         <Spacer />
       </HStack>
-    </VStack>
+      </VStack>
+    </ZStack>
   );
 }
 
@@ -264,13 +269,9 @@ function MediumWidget({ state, palette }: { state: FastingState; palette: Widget
   const phase = phaseName(idx);
 
   return (
-    <HStack
-      modifiers={[
-        padding({ all: 16 }),
-        background(palette.bg),
-        widgetURL('fastlog://timer'),
-      ]}
-    >
+    <ZStack modifiers={[widgetURL('fastlog://timer')]}>
+      <WidgetBackground color={palette.bg} />
+      <HStack modifiers={[padding({ all: 16 })]}>
       <Gauge
         value={progress}
         min={0}
@@ -339,7 +340,8 @@ function MediumWidget({ state, palette }: { state: FastingState; palette: Widget
           {endLabel}
         </Text>
       </VStack>
-    </HStack>
+      </HStack>
+    </ZStack>
   );
 }
 
@@ -348,13 +350,9 @@ function MediumInactive({ state, palette }: { state: FastingState; palette: Widg
   const protocolLabel = state.protocol || '16:8';
 
   return (
-    <HStack
-      modifiers={[
-        padding({ all: 16 }),
-        background(palette.bg),
-        widgetURL('fastlog://start'),
-      ]}
-    >
+    <ZStack modifiers={[widgetURL('fastlog://start')]}>
+      <WidgetBackground color={palette.bg} />
+      <HStack modifiers={[padding({ all: 16 })]}>
       <ZStack modifiers={[frame({ width: 120, height: 120 })]}>
         <Circle
           modifiers={[
@@ -422,7 +420,8 @@ function MediumInactive({ state, palette }: { state: FastingState; palette: Widg
           Tap to start
         </Text>
       </VStack>
-    </HStack>
+      </HStack>
+    </ZStack>
   );
 }
 
