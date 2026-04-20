@@ -6,6 +6,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { fetchProfile } from '../lib/auth';
@@ -50,7 +52,6 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
           setProfile({
             id: profile.id,
             name: profile.name,
-            coach_personality: profile.coach_personality,
             preferred_protocol: profile.preferred_protocol,
             daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
             push_token: profile.push_token ?? null,
@@ -166,31 +167,49 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#2D6A4F" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#FBF6EE', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#C8621B" size="large" />
       </View>
     );
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <View style={{ flex: 1 }}>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-            <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-            <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen
-              name="paywall"
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-          </Stack>
-        </View>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <BottomSheetModalProvider>
+            <View style={{ flex: 1 }}>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+                <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen
+                  name="paywall"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="fast-complete"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="edit-profile"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+              </Stack>
+            </View>
+          </BottomSheetModalProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
