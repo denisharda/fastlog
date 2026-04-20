@@ -8,16 +8,19 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
-    "postinstall": "node scripts/fix-jcenter.js && node scripts/fix-expo-ui-either.js",
-    "typecheck": "tsc --noEmit"
+    "postinstall": "node scripts/fix-expo-ui-either.js",
+    "typecheck": "tsc --noEmit",
+    "brand:assets": "node scripts/generate-brand-assets.js"
   },
   "dependencies": {
     "@expo/ui": "~55.0.11",
+    "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.43.5",
     "@tanstack/react-query": "^5.40.0",
     "expo": "^55.0.6",
     "expo-apple-authentication": "~55.0.8",
+    "expo-blur": "~55.0.14",
     "expo-build-properties": "~55.0.9",
     "expo-constants": "~55.0.7",
     "expo-crypto": "~55.0.9",
@@ -35,10 +38,11 @@
     "react": "^19.2.0",
     "react-dom": "19.2.0",
     "react-native": "^0.83.2",
+    "react-native-gesture-handler": "~2.30.0",
     "react-native-purchases": "^8.1.2",
+    "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
-    "react-native-shared-group-preferences": "^1.1.23",
     "react-native-svg": "^15.15.3",
     "react-native-url-polyfill": "^2.0.0",
     "tailwindcss": "^3.4.3",
@@ -48,6 +52,7 @@
     "@babel/core": "^7.24.0",
     "@types/react": "~19.2.10",
     "@types/react-native": "~0.73.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.3.3"
   },
   "private": true
