@@ -1,46 +1,13 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import FastingWidget, { type FastingState } from '../widgets/FastingWidget';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-/**
- * Widget state shape pushed via updateSnapshot / updateTimeline.
- * MUST mirror `FastingState` in widgets/FastingWidget.tsx — the widget
- * extension is a separate bundle and Metro blocks imports across the
- * boundary, so we duplicate the type here.
- */
-export interface FastingState {
-  isActive: boolean;
-  startedAt: string | null;
-  targetHours: number;
-  phase: string;
-  protocol: string;
-}
+export type { FastingState } from '../widgets/FastingWidget';
 
 function available(): boolean {
   return Platform.OS === 'ios' && !isExpoGo;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let widget: any = null;
-
-function getWidget(): any {
-  if (!available()) return null;
-  if (widget) return widget;
-  try {
-    const mod = require('expo-widgets');
-    // The layout function is ignored in the main-app bundle — the real
-    // SwiftUI is compiled into the widget extension. We pass a noop
-    // to satisfy the constructor signature.
-    widget = mod.createWidget(
-      'FastingWidget',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((() => null) as any)
-    );
-    return widget;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -48,10 +15,9 @@ function getWidget(): any {
  * (phase transitions, app foreground, fast start/stop).
  */
 export function pushWidgetSnapshot(state: FastingState): void {
-  const w = getWidget();
-  if (!w) return;
+  if (!available()) return;
   try {
-    w.updateSnapshot(state);
+    FastingWidget.updateSnapshot(state);
   } catch (e) {
     console.warn('[widget] updateSnapshot failed:', e);
   }
@@ -66,8 +32,7 @@ export function scheduleWidgetTimeline(args: {
   targetHours: number;
   protocol: string;
 }): void {
-  const w = getWidget();
-  if (!w) return;
+  if (!available()) return;
   const { startedAt, targetHours, protocol } = args;
   try {
     const start = new Date(startedAt);
@@ -85,7 +50,7 @@ export function scheduleWidgetTimeline(args: {
         },
       });
     }
-    w.updateTimeline(entries);
+    FastingWidget.updateTimeline(entries);
   } catch (e) {
     console.warn('[widget] updateTimeline failed:', e);
   }
@@ -95,10 +60,9 @@ export function scheduleWidgetTimeline(args: {
  * Clear the widget back to the inactive layout.
  */
 export function clearWidgetSnapshot(lastProtocol: string): void {
-  const w = getWidget();
-  if (!w) return;
+  if (!available()) return;
   try {
-    w.updateSnapshot({
+    FastingWidget.updateSnapshot({
       isActive: false,
       startedAt: null,
       targetHours: 0,

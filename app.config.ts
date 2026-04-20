@@ -8,11 +8,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'fastlog',
-  userInterfaceStyle: 'light',
+  userInterfaceStyle: 'automatic',
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FBF6EE',
+    dark: {
+      image: './assets/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#17110A',
+    },
   },
   ios: {
     supportsTablet: false,
@@ -20,12 +25,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       UIBackgroundModes: ['fetch', 'remote-notification'],
       NSSupportsLiveActivities: true,
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#F2F2F7',
+      backgroundColor: '#FBF6EE',
     },
     package: 'com.fastlog.app',
   },
@@ -57,10 +63,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             description: 'Track your fasting progress',
             supportedFamilies: ['systemSmall', 'systemMedium'],
           },
-        ],
-        liveActivities: [
           {
             name: 'FastingActivity',
+            displayName: 'Fasting Live Activity',
+            description: 'Shows your fasting progress on the Dynamic Island and lock screen',
           },
         ],
       },
