@@ -1,79 +1,65 @@
 /**
- * Home Screen Widget for FastLog — Phase Ring Forward design.
+ * Home Screen Widget for FastLog — Timer Forward design.
  *
- * Renders a phase-tinted circular progress gauge with the timer in the
- * center. Small (158×158) and medium (338×158) families. Adapts to
- * system appearance (light/dark).
+ * Renders phase eyebrow, big timer, and a progress line. Uses only
+ * Text / VStack / HStack / Spacer because the widget extension target
+ * doesn't link the native ExpoUI module that backs Gauge / Circle /
+ * Rectangle. Adapts to system appearance (light/dark).
  *
  * Colour palette is mirrored from constants/theme.ts — keep in sync.
- * The 'widget' directive below isolates this tree from RN runtime APIs.
  */
 
 import { createWidget, WidgetEnvironment } from 'expo-widgets';
-import { Text, VStack, HStack, ZStack, Spacer, Gauge, Circle, Rectangle } from '@expo/ui/swift-ui';
+import { Text, VStack, HStack, Spacer } from '@expo/ui/swift-ui';
 import {
   foregroundStyle,
   font,
   padding,
-  frame,
-  opacity,
   widgetURL,
-  gaugeStyle,
-  tint,
   background,
 } from '@expo/ui/swift-ui/modifiers';
 
 interface WidgetPalette {
   bg: string;
-  surface: string;
   surface2: string;
   text: string;
   textMuted: string;
   textFaint: string;
   primary: string;
-  primarySoft: string;
   accent: string;
-  trackEmpty: string;
   phases: readonly [string, string, string, string, string, string];
 }
 
 const WIDGET_COLORS: { light: WidgetPalette; dark: WidgetPalette } = {
   light: {
     bg: '#FBF6EE',
-    surface: '#FFFFFF',
     surface2: '#F5EEE2',
     text: '#2A1F14',
     textMuted: '#6B5A44',
     textFaint: '#A8957A',
     primary: '#C8621B',
-    primarySoft: '#E89B5C',
     accent: '#D89B2B',
-    trackEmpty: '#F0E3CA',
     phases: ['#E8C89A', '#E6A86B', '#D88845', '#C8621B', '#A04418', '#6B2A12'],
   },
   dark: {
     bg: '#17110A',
-    surface: '#221A10',
     surface2: '#2B2115',
     text: '#FBF3E3',
     textMuted: '#C9B590',
     textFaint: '#7A6B54',
     primary: '#E89B5C',
-    primarySoft: '#C8621B',
     accent: '#EDBC52',
-    trackEmpty: '#2B2115',
     phases: ['#6B5232', '#9C7341', '#C8894A', '#E89B5C', '#F0B878', '#F8D9A8'],
   },
 };
 
-// Phase thresholds — MUST mirror constants/phases.ts ordering.
 const PHASE_THRESHOLDS = [
-  { name: 'Fed State', min: 0, max: 4 },
-  { name: 'Early Fasting', min: 4, max: 8 },
-  { name: 'Fat Burning Begins', min: 8, max: 12 },
-  { name: 'Fat Burning Peak', min: 12, max: 16 },
-  { name: 'Autophagy Zone', min: 16, max: 18 },
-  { name: 'Deep Fast', min: 18, max: Infinity },
+  { name: 'Fed State', min: 0 },
+  { name: 'Early Fasting', min: 4 },
+  { name: 'Fat Burning Begins', min: 8 },
+  { name: 'Fat Burning Peak', min: 12 },
+  { name: 'Autophagy Zone', min: 16 },
+  { name: 'Deep Fast', min: 18 },
 ] as const;
 
 function phaseIndex(elapsedHours: number): number {
@@ -95,17 +81,6 @@ export interface FastingState {
   protocol: string;
 }
 
-function WidgetBackground({ color }: { color: string }) {
-  return (
-    <Rectangle
-      modifiers={[
-        foregroundStyle(color),
-        frame({ minWidth: 0, maxWidth: 3000, minHeight: 0, maxHeight: 3000 }),
-      ]}
-    />
-  );
-}
-
 function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetPalette }) {
   if (!state.isActive || !state.startedAt) {
     return <SmallInactive state={state} palette={palette} />;
@@ -113,7 +88,7 @@ function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetP
 
   const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 3600000;
   const idx = phaseIndex(elapsed);
-  const ringColor = palette.phases[idx];
+  const phaseColor = palette.phases[idx];
   const progress = state.targetHours > 0
     ? Math.min(Math.max(elapsed / state.targetHours, 0), 1)
     : 0;
@@ -121,134 +96,98 @@ function SmallWidget({ state, palette }: { state: FastingState; palette: WidgetP
   const phase = phaseName(idx);
 
   return (
-    <ZStack modifiers={[widgetURL('fastlog://timer')]}>
-      <WidgetBackground color={palette.bg} />
-      <VStack modifiers={[padding({ all: 14 })]}>
-      <HStack>
-        <Text
-          modifiers={[
-            foregroundStyle(palette.accent),
-            font({ size: 10, weight: 'bold' }),
-          ]}
-        >
-          {phase.toUpperCase()}
-        </Text>
-        <Spacer />
-      </HStack>
-
-      <Spacer />
-
-      <Gauge
-        value={progress}
-        min={0}
-        max={1}
+    <VStack
+      modifiers={[
+        background(palette.bg),
+        padding({ all: 14 }),
+        widgetURL('fastlog://timer'),
+      ]}
+    >
+      <Text
         modifiers={[
-          gaugeStyle('circularCapacity'),
-          tint(ringColor),
-          frame({ width: 84, height: 84 }),
+          foregroundStyle(phaseColor),
+          font({ size: 10, weight: 'bold' }),
         ]}
-        currentValueLabel={
-          <VStack>
-            <Text
-              date={new Date(state.startedAt)}
-              dateStyle="timer"
-              modifiers={[
-                foregroundStyle(palette.text),
-                font({ size: 16, weight: 'bold', design: 'monospaced' }),
-              ]}
-            />
-            <Text
-              modifiers={[
-                foregroundStyle(palette.textMuted),
-                font({ size: 9 }),
-              ]}
-            >
-              of {state.targetHours}h
-            </Text>
-          </VStack>
-        }
-      />
-
+      >
+        {phase.toUpperCase()}
+      </Text>
       <Spacer />
-
+      <Text
+        date={new Date(state.startedAt)}
+        dateStyle="timer"
+        modifiers={[
+          foregroundStyle(palette.text),
+          font({ size: 26, weight: 'bold', design: 'monospaced' }),
+        ]}
+      />
       <Text
         modifiers={[
           foregroundStyle(palette.textMuted),
           font({ size: 11 }),
         ]}
       >
+        of {state.targetHours}h
+      </Text>
+      <Spacer />
+      <Text
+        modifiers={[
+          foregroundStyle(palette.textFaint),
+          font({ size: 11 }),
+        ]}
+      >
         {percent}% · {state.protocol}
       </Text>
-      </VStack>
-    </ZStack>
+    </VStack>
   );
 }
 
 function SmallInactive({ state, palette }: { state: FastingState; palette: WidgetPalette }) {
+  const targetHours = state.targetHours > 0 ? state.targetHours : 16;
+  const protocolLabel = state.protocol || '16:8';
+
   return (
-    <ZStack modifiers={[widgetURL('fastlog://start')]}>
-      <WidgetBackground color={palette.bg} />
-      <VStack modifiers={[padding({ all: 14 })]}>
-      <HStack>
-        <Text
-          modifiers={[
-            foregroundStyle(palette.accent),
-            font({ size: 10, weight: 'bold' }),
-          ]}
-        >
-          READY
-        </Text>
-        <Spacer />
-      </HStack>
-
+    <VStack
+      modifiers={[
+        background(palette.bg),
+        padding({ all: 14 }),
+        widgetURL('fastlog://start'),
+      ]}
+    >
+      <Text
+        modifiers={[
+          foregroundStyle(palette.accent),
+          font({ size: 10, weight: 'bold' }),
+        ]}
+      >
+        FASTLOG
+      </Text>
       <Spacer />
-
-      <ZStack modifiers={[frame({ width: 84, height: 84 })]}>
-        <Circle
-          modifiers={[
-            foregroundStyle(palette.trackEmpty),
-            opacity(0.6),
-            frame({ width: 84, height: 84 }),
-          ]}
-        />
-        <VStack>
-          <Text
-            modifiers={[
-              foregroundStyle(palette.primary),
-              font({ size: 22, weight: 'bold' }),
-            ]}
-          >
-            {state.targetHours > 0 ? `${state.targetHours}h` : '16h'}
-          </Text>
-          <Text
-            modifiers={[
-              foregroundStyle(palette.textMuted),
-              font({ size: 9 }),
-            ]}
-          >
-            protocol
-          </Text>
-        </VStack>
-      </ZStack>
-
+      <Text
+        modifiers={[
+          foregroundStyle(palette.primary),
+          font({ size: 34, weight: 'bold' }),
+        ]}
+      >
+        {targetHours}h
+      </Text>
+      <Text
+        modifiers={[
+          foregroundStyle(palette.textMuted),
+          font({ size: 12 }),
+        ]}
+      >
+        {protocolLabel} protocol
+      </Text>
       <Spacer />
-
-      <HStack>
-        <Spacer />
-        <Text
-          modifiers={[
-            foregroundStyle('#FFFFFF'),
-            font({ size: 10, weight: 'semibold' }),
-            padding({ horizontal: 10, vertical: 5 }),
-            background(palette.primary),
-          ]}
-        >
-          Tap to start
-        </Text>
-        <Spacer />
-      </HStack>
-      </VStack>
-    </ZStack>
+      <Text
+        modifiers={[
+          foregroundStyle(palette.accent),
+          font({ size: 12, weight: 'semibold' }),
+        ]}
+      >
+        Tap to start
+      </Text>
+    </VStack>
   );
 }
 
@@ -259,7 +198,7 @@ function MediumWidget({ state, palette }: { state: FastingState; palette: Widget
 
   const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 3600000;
   const idx = phaseIndex(elapsed);
-  const ringColor = palette.phases[idx];
+  const phaseColor = palette.phases[idx];
   const progress = state.targetHours > 0
     ? Math.min(Math.max(elapsed / state.targetHours, 0), 1)
     : 0;
@@ -269,64 +208,46 @@ function MediumWidget({ state, palette }: { state: FastingState; palette: Widget
   const phase = phaseName(idx);
 
   return (
-    <ZStack modifiers={[widgetURL('fastlog://timer')]}>
-      <WidgetBackground color={palette.bg} />
-      <HStack modifiers={[padding({ all: 16 })]}>
-      <Gauge
-        value={progress}
-        min={0}
-        max={1}
-        modifiers={[
-          gaugeStyle('circularCapacity'),
-          tint(ringColor),
-          frame({ width: 120, height: 120 }),
-        ]}
-        currentValueLabel={
-          <VStack>
-            <Text
-              date={new Date(state.startedAt)}
-              dateStyle="timer"
-              modifiers={[
-                foregroundStyle(palette.text),
-                font({ size: 24, weight: 'bold', design: 'monospaced' }),
-              ]}
-            />
-            <Text
-              modifiers={[
-                foregroundStyle(palette.textMuted),
-                font({ size: 10 }),
-              ]}
-            >
-              of {state.targetHours}h
-            </Text>
-          </VStack>
-        }
-      />
-
-      <Spacer />
-
+    <HStack
+      modifiers={[
+        background(palette.bg),
+        padding({ all: 16 }),
+        widgetURL('fastlog://timer'),
+      ]}
+    >
       <VStack>
         <Text
           modifiers={[
-            foregroundStyle(palette.accent),
+            foregroundStyle(phaseColor),
             font({ size: 10, weight: 'bold' }),
           ]}
         >
           {phase.toUpperCase()}
         </Text>
+        <Spacer />
         <Text
+          date={new Date(state.startedAt)}
+          dateStyle="timer"
           modifiers={[
             foregroundStyle(palette.text),
-            font({ size: 13, weight: 'semibold' }),
+            font({ size: 34, weight: 'bold', design: 'monospaced' }),
+          ]}
+        />
+        <Text
+          modifiers={[
+            foregroundStyle(palette.textMuted),
+            font({ size: 12 }),
           ]}
         >
-          {percent}% · {state.protocol}
+          {percent}% of {state.targetHours}h · {state.protocol}
         </Text>
-        <Spacer />
+      </VStack>
+      <Spacer />
+      <VStack alignment="trailing">
         <Text
           modifiers={[
             foregroundStyle(palette.textFaint),
-            font({ size: 10 }),
+            font({ size: 10, weight: 'semibold' }),
           ]}
         >
           ENDS AT
@@ -334,14 +255,13 @@ function MediumWidget({ state, palette }: { state: FastingState; palette: Widget
         <Text
           modifiers={[
             foregroundStyle(palette.text),
-            font({ size: 14, weight: 'semibold' }),
+            font({ size: 18, weight: 'bold' }),
           ]}
         >
           {endLabel}
         </Text>
       </VStack>
-      </HStack>
-    </ZStack>
+    </HStack>
   );
 }
 
@@ -350,39 +270,13 @@ function MediumInactive({ state, palette }: { state: FastingState; palette: Widg
   const protocolLabel = state.protocol || '16:8';
 
   return (
-    <ZStack modifiers={[widgetURL('fastlog://start')]}>
-      <WidgetBackground color={palette.bg} />
-      <HStack modifiers={[padding({ all: 16 })]}>
-      <ZStack modifiers={[frame({ width: 120, height: 120 })]}>
-        <Circle
-          modifiers={[
-            foregroundStyle(palette.trackEmpty),
-            opacity(0.6),
-            frame({ width: 120, height: 120 }),
-          ]}
-        />
-        <VStack>
-          <Text
-            modifiers={[
-              foregroundStyle(palette.primary),
-              font({ size: 28, weight: 'bold' }),
-            ]}
-          >
-            {targetHours}h
-          </Text>
-          <Text
-            modifiers={[
-              foregroundStyle(palette.textMuted),
-              font({ size: 10 }),
-            ]}
-          >
-            protocol
-          </Text>
-        </VStack>
-      </ZStack>
-
-      <Spacer />
-
+    <HStack
+      modifiers={[
+        background(palette.bg),
+        padding({ all: 16 }),
+        widgetURL('fastlog://start'),
+      ]}
+    >
       <VStack>
         <Text
           modifiers={[
@@ -392,10 +286,11 @@ function MediumInactive({ state, palette }: { state: FastingState; palette: Widg
         >
           FASTLOG
         </Text>
+        <Spacer />
         <Text
           modifiers={[
             foregroundStyle(palette.text),
-            font({ size: 15, weight: 'semibold' }),
+            font({ size: 20, weight: 'semibold' }),
           ]}
         >
           Ready when you are
@@ -403,25 +298,32 @@ function MediumInactive({ state, palette }: { state: FastingState; palette: Widg
         <Text
           modifiers={[
             foregroundStyle(palette.textMuted),
-            font({ size: 11 }),
+            font({ size: 12 }),
           ]}
         >
           {protocolLabel} · tap to start
         </Text>
-        <Spacer />
+      </VStack>
+      <Spacer />
+      <VStack alignment="trailing">
         <Text
           modifiers={[
-            foregroundStyle('#FFFFFF'),
-            font({ size: 10, weight: 'semibold' }),
-            padding({ horizontal: 10, vertical: 5 }),
-            background(palette.primary),
+            foregroundStyle(palette.primary),
+            font({ size: 48, weight: 'bold' }),
           ]}
         >
-          Tap to start
+          {targetHours}h
+        </Text>
+        <Text
+          modifiers={[
+            foregroundStyle(palette.textMuted),
+            font({ size: 11 }),
+          ]}
+        >
+          duration
         </Text>
       </VStack>
-      </HStack>
-    </ZStack>
+    </HStack>
   );
 }
 
