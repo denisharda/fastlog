@@ -61,13 +61,6 @@ export function trackProPurchased(props: {
   posthogInstance?.capture('pro_purchased', props);
 }
 
-export function trackCheckinReceived(props: {
-  fastingHour: number;
-  personality: string;
-}): void {
-  posthogInstance?.capture('checkin_received', props);
-}
-
 export function trackWaterLogged(props: {
   amount_ml: number;
   total_today_ml: number;
@@ -101,10 +94,11 @@ export function trackProtocolChanged(params: { old_protocol: string; new_protoco
   posthogInstance?.capture('protocol_changed', params);
 }
 
-export function trackShareSession(): void {
-  posthogInstance?.capture('share_session');
-}
-
-export function trackHistoryExported(): void {
-  posthogInstance?.capture('history_exported');
+export function trackShareSession(props: {
+  source: 'history' | 'fast_complete';
+  protocol: string;
+  completed: boolean;
+  duration_h: number;
+}): void {
+  posthogInstance?.capture('share_session', props);
 }
