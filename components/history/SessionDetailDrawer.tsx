@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { FastingSession } from '../../types';
 import { getCurrentPhase } from '../../constants/phases';
-import { CARD_SHADOW } from '../../constants/styles';
+import { cardShadow, hexAlpha } from '../../constants/theme';
 import { useNow } from '../../hooks/useNow';
 import { useDailyHydration } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
 import { trackPaywallViewed, trackShareSession } from '../../lib/posthog';
 import { shareSession } from '../../lib/shareSession';
+import { useTheme } from '../../hooks/useTheme';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -43,14 +50,20 @@ function formatDuration(ms: number): string {
 
 export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, date, isPro }: SessionDetailDrawerProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const sheetRef = useRef<BottomSheetModal>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [phaseExpanded, setPhaseExpanded] = useState(false);
 
-  // Reset selection when sessions change
   useEffect(() => {
     setSelectedIndex(0);
     setPhaseExpanded(false);
   }, [sessions]);
+
+  useEffect(() => {
+    if (visible) sheetRef.current?.present();
+    else sheetRef.current?.dismiss();
+  }, [visible]);
 
   const session = sessions[selectedIndex];
   const isInProgress = session && !session.ended_at;
@@ -61,6 +74,22 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   const { dailyGoalMl } = useHydration();
 
   const hasSessions = sessions.length > 0 && !!session;
+
+  const snapPoints = useMemo(() => ['85%', '95%'], []);
+
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) onClose();
+    },
+    [onClose],
+  );
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
+    ),
+    [],
+  );
 
   if (!hasSessions && !date) return null;
 
@@ -81,251 +110,289 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
     setPhaseExpanded(false);
   }
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-6 pt-6 pb-4">
-          <Text className="text-text-primary text-xl font-bold">
-            {hasSessions ? 'Session Details' : 'Daily Summary'}
-          </Text>
-          <Pressable
-            onPress={onClose}
-            className="p-2"
-            accessibilityRole="button"
-            accessibilityLabel="Close session details"
-          >
-            <Text className="text-text-muted text-lg">Done</Text>
-          </Pressable>
-        </View>
+  const cardStyle = { backgroundColor: theme.surface, ...cardShadow(theme) };
+  const trackStyle = { backgroundColor: theme.surface2 };
 
-        <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 40 }}>
-          {hasSessions && (
-            <>
-              {/* Multi-session picker */}
-              {sessions.length > 1 && (
-                <View className="flex-row gap-2 mb-4">
-                  {sessions.map((s, i) => (
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      snapPoints={snapPoints}
+      onChange={handleSheetChange}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{
+        backgroundColor: theme.bg,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.hairline, width: 40, height: 4 }}
+    >
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-6 pt-2 pb-4">
+        <Text className="text-xl font-bold" style={{ color: theme.text }}>
+          {hasSessions ? 'Session Details' : 'Daily Summary'}
+        </Text>
+        <Pressable
+          onPress={onClose}
+          className="p-2"
+          accessibilityRole="button"
+          accessibilityLabel="Close session details"
+        >
+          <Text className="text-lg" style={{ color: theme.textMuted }}>Done</Text>
+        </Pressable>
+      </View>
+
+      <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+        {hasSessions && (
+          <>
+            {/* Multi-session picker — horizontally scrollable when many sessions */}
+            {sessions.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingRight: 24 }}
+                style={{ marginHorizontal: -24, paddingLeft: 24, marginBottom: 16 }}
+              >
+                {sessions.map((s, i) => {
+                  const isSelected = i === selectedIndex;
+                  return (
                     <Pressable
                       key={s.id}
-                      className={`px-4 py-2 rounded-full ${
-                        i === selectedIndex ? 'bg-primary' : 'bg-white border border-gray-200'
-                      }`}
+                      className="px-4 py-2 rounded-full"
+                      style={{
+                        backgroundColor: isSelected ? theme.primary : theme.surface,
+                        borderWidth: isSelected ? 0 : 1,
+                        borderColor: theme.hairline,
+                      }}
                       onPress={() => handleSessionSwitch(i)}
                     >
                       <Text
-                        className={`text-sm font-medium ${
-                          i === selectedIndex ? 'text-white' : 'text-text-primary'
-                        }`}
+                        className="text-sm font-medium"
+                        style={{ color: isSelected ? '#FFFFFF' : theme.text }}
                       >
                         Session {i + 1}
                       </Text>
                     </Pressable>
-                  ))}
-                </View>
-              )}
+                  );
+                })}
+              </ScrollView>
+            )}
 
-              {/* Date + Status */}
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-text-primary font-semibold text-lg">
-                  {formatDate(session!.started_at)}
-                </Text>
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-text-muted text-sm">{session!.protocol}</Text>
-                  {session!.completed ? (
-                    <View className="bg-primary px-2 py-0.5 rounded-full">
-                      <Text className="text-white text-xs">Complete</Text>
-                    </View>
-                  ) : isInProgress ? (
-                    <View className="bg-accent/20 px-2 py-0.5 rounded-full">
-                      <Text className="text-accent text-xs font-medium">Live</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-
-              {/* Duration */}
-              <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-                <Text className="text-accent font-bold text-3xl text-center mb-2">
-                  {formatDuration(elapsedMs)}
-                </Text>
-                {/* Progress bar */}
-                <View className="w-full h-2 bg-background rounded-full overflow-hidden mb-2">
-                  <View
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${Math.round(progress * 100)}%` }}
-                  />
-                </View>
-                <Text className="text-text-muted text-xs text-center">
-                  {Math.round(progress * 100)}% of {session!.target_hours}h goal
-                </Text>
-              </View>
-
-              {/* Time details */}
-              <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-                <View className="flex-row justify-between">
-                  <View>
-                    <Text className="text-text-muted text-xs mb-1">Started</Text>
-                    <Text className="text-text-primary text-base font-medium">
-                      {formatTime(session!.started_at)}
-                    </Text>
+            {/* Date + Status */}
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="font-semibold text-lg" style={{ color: theme.text }}>
+                {formatDate(session!.started_at)}
+              </Text>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm" style={{ color: theme.textMuted }}>{session!.protocol}</Text>
+                {session!.completed ? (
+                  <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: theme.primary }}>
+                    <Text className="text-white text-xs">Complete</Text>
                   </View>
-                  <View className="items-end">
-                    <Text className="text-text-muted text-xs mb-1">Ended</Text>
-                    <Text className="text-text-primary text-base font-medium">
-                      {isInProgress ? 'In progress' : formatTime(session!.ended_at!)}
-                    </Text>
+                ) : isInProgress ? (
+                  <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: hexAlpha(theme.accent, 51) }}>
+                    <Text className="text-xs font-medium" style={{ color: theme.accent }}>Live</Text>
                   </View>
+                ) : null}
+              </View>
+            </View>
+
+            {/* Duration */}
+            <View className="rounded-2xl p-4 mb-3" style={cardStyle}>
+              <Text className="font-bold text-3xl text-center mb-2" style={{ color: theme.accent }}>
+                {formatDuration(elapsedMs)}
+              </Text>
+              <View className="w-full h-2 rounded-full overflow-hidden mb-2" style={trackStyle}>
+                <View
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.round(progress * 100)}%`, backgroundColor: theme.primary }}
+                />
+              </View>
+              <Text className="text-xs text-center" style={{ color: theme.textMuted }}>
+                {Math.round(progress * 100)}% of {session!.target_hours}h goal
+              </Text>
+            </View>
+
+            {/* Time details */}
+            <View className="rounded-2xl p-4 mb-3" style={cardStyle}>
+              <View className="flex-row justify-between">
+                <View>
+                  <Text className="text-xs mb-1" style={{ color: theme.textMuted }}>Started</Text>
+                  <Text className="text-base font-medium" style={{ color: theme.text }}>
+                    {formatTime(session!.started_at)}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-xs mb-1" style={{ color: theme.textMuted }}>Ended</Text>
+                  <Text className="text-base font-medium" style={{ color: theme.text }}>
+                    {isInProgress ? 'In progress' : formatTime(session!.ended_at!)}
+                  </Text>
                 </View>
               </View>
-            </>
-          )}
+            </View>
+          </>
+        )}
 
-          {/* Hydration — only shown for calendar day taps */}
-          {date && <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-            <Text className="text-text-muted text-xs mb-2">
+        {/* Hydration — only shown for calendar day taps */}
+        {date && (
+          <View className="rounded-2xl p-4 mb-3" style={cardStyle}>
+            <Text className="text-xs mb-2" style={{ color: theme.textMuted }}>
               {hydrationDateLabel ? `Hydration — ${hydrationDateLabel}` : 'Hydration'}
             </Text>
             {waterLoading ? (
-              <ActivityIndicator color="#2D6A4F" size="small" />
+              <ActivityIndicator color={theme.water} size="small" />
             ) : (
               <>
                 <View className="flex-row items-baseline gap-1 mb-2">
-                  <Text className="text-text-primary text-2xl font-bold">
+                  <Text className="text-2xl font-bold" style={{ color: theme.text }}>
                     {dayWaterMl.toLocaleString()}ml
                   </Text>
-                  <Text className="text-text-muted text-xs">
+                  <Text className="text-xs" style={{ color: theme.textMuted }}>
                     / {dailyGoalMl.toLocaleString()}ml goal
                     {waterLogCount > 0 ? ` · ${waterLogCount} ${waterLogCount === 1 ? 'entry' : 'entries'}` : ''}
                   </Text>
                 </View>
                 {isPro && (
                   <>
-                    {/* Progress bar */}
-                    <View className="w-full h-2 bg-background rounded-full overflow-hidden mb-2">
+                    <View className="w-full h-2 rounded-full overflow-hidden mb-2" style={trackStyle}>
                       <View
-                        className="h-full bg-primary rounded-full"
-                        style={{ width: `${Math.round(hydrationProgress * 100)}%` }}
+                        className="h-full rounded-full"
+                        style={{ width: `${Math.round(hydrationProgress * 100)}%`, backgroundColor: theme.primary }}
                       />
                     </View>
                     {hydrationLogs.length > 0 ? (
-                      hydrationLogs.map((log) => (
-                        <View key={log.id} className="flex-row items-center justify-between py-1.5 border-b border-gray-50">
-                          <Text className="text-text-primary text-sm">+{log.amount_ml}ml</Text>
-                          <Text className="text-text-muted text-xs">
-                            {new Date(log.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      hydrationLogs.map(log => (
+                        <View
+                          key={log.id}
+                          className="flex-row items-center justify-between py-1.5"
+                          style={{ borderBottomWidth: 1, borderBottomColor: theme.hairline }}
+                        >
+                          <Text className="text-sm" style={{ color: theme.text }}>+{log.amount_ml}ml</Text>
+                          <Text className="text-xs" style={{ color: theme.textMuted }}>
+                            {new Date(log.logged_at).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
                           </Text>
                         </View>
                       ))
                     ) : (
-                      <Text className="text-text-muted text-sm">No water logged this day</Text>
+                      <Text className="text-sm" style={{ color: theme.textMuted }}>No water logged this day</Text>
                     )}
                   </>
                 )}
               </>
             )}
-          </View>}
+          </View>
+        )}
 
-          {hasSessions && (
-            <>
-              {/* Phase */}
-              <Pressable
-                className="bg-white rounded-2xl p-4 mb-3"
-                style={CARD_SHADOW}
-                onPress={() => setPhaseExpanded((p) => !p)}
-              >
-                <View className="flex-row items-center justify-between">
-                  <View>
-                    <Text className="text-text-muted text-xs mb-1">
-                      {isInProgress ? 'Current Phase' : 'Phase Reached'}
-                    </Text>
-                    <Text className="text-accent text-base font-semibold">{phase.name}</Text>
-                    <Text className="text-text-muted text-xs mt-0.5">{phase.description}</Text>
-                  </View>
-                  <Text className="text-text-muted text-base">{phaseExpanded ? '▾' : '▸'}</Text>
+        {hasSessions && (
+          <>
+            {/* Phase */}
+            <Pressable
+              className="rounded-2xl p-4 mb-3"
+              style={cardStyle}
+              onPress={() => setPhaseExpanded(p => !p)}
+            >
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-xs mb-1" style={{ color: theme.textMuted }}>
+                    {isInProgress ? 'Current Phase' : 'Phase Reached'}
+                  </Text>
+                  <Text className="text-base font-semibold" style={{ color: theme.accent }}>{phase.name}</Text>
+                  <Text className="text-xs mt-0.5" style={{ color: theme.textMuted }}>{phase.description}</Text>
                 </View>
+                <Text className="text-base" style={{ color: theme.textMuted }}>{phaseExpanded ? '▾' : '▸'}</Text>
+              </View>
 
-                {phaseExpanded && (
-                  <View className="mt-3 pt-3 border-t border-gray-100">
-                    <Text className="text-text-muted text-xs uppercase tracking-wider mb-2">Science</Text>
-                    <Text className="text-text-primary text-sm mb-3">{phase.science}</Text>
+              {phaseExpanded && (
+                <View className="mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: theme.hairline }}>
+                  <Text className="text-xs uppercase tracking-wider mb-2" style={{ color: theme.textMuted }}>Science</Text>
+                  <Text className="text-sm mb-3" style={{ color: theme.text }}>{phase.science}</Text>
 
-                    <Text className="text-text-muted text-xs uppercase tracking-wider mb-2">Tips</Text>
-                    {phase.tips.map((tip, i) => (
-                      <Text key={i} className="text-text-primary text-sm mb-1">• {tip}</Text>
-                    ))}
+                  <Text className="text-xs uppercase tracking-wider mb-2" style={{ color: theme.textMuted }}>Tips</Text>
+                  {phase.tips.map((tip, i) => (
+                    <Text key={i} className="text-sm mb-1" style={{ color: theme.text }}>
+                      • {tip}
+                    </Text>
+                  ))}
 
-                    <Text className="text-text-muted text-xs uppercase tracking-wider mt-3 mb-2">Metabolic Markers</Text>
-                    <Text className="text-text-primary text-sm">{phase.metabolicMarkers}</Text>
-                  </View>
-                )}
-              </Pressable>
-
-              {/* Notes */}
-              {session!.notes && (
-                <View className="bg-white rounded-2xl p-4 mb-3" style={CARD_SHADOW}>
-                  <Text className="text-text-muted text-xs mb-1">Notes</Text>
-                  <Text className="text-text-primary text-sm italic">{session!.notes}</Text>
+                  <Text className="text-xs uppercase tracking-wider mt-3 mb-2" style={{ color: theme.textMuted }}>
+                    Metabolic Markers
+                  </Text>
+                  <Text className="text-sm" style={{ color: theme.text }}>{phase.metabolicMarkers}</Text>
                 </View>
               )}
+            </Pressable>
 
-              {/* Share */}
+            {/* Notes */}
+            {session!.notes && (
+              <View className="rounded-2xl p-4 mb-3" style={cardStyle}>
+                <Text className="text-xs mb-1" style={{ color: theme.textMuted }}>Notes</Text>
+                <Text className="text-sm italic" style={{ color: theme.text }}>{session!.notes}</Text>
+              </View>
+            )}
+
+            {/* Share */}
+            <Pressable
+              className="rounded-2xl py-4 items-center mt-2"
+              style={{ backgroundColor: isPro ? theme.primary : theme.surface2 }}
+              onPress={() => {
+                if (!isPro) {
+                  trackPaywallViewed('share_session');
+                  router.push('/paywall');
+                  return;
+                }
+                trackShareSession();
+                shareSession(session!, dayWaterMl > 0 ? dayWaterMl : undefined);
+              }}
+            >
+              <View className="flex-row items-center gap-2">
+                {!isPro && <Text className="text-xs font-medium" style={{ color: theme.primary }}>Pro</Text>}
+                <Text
+                  className="font-bold text-base"
+                  style={{ color: isPro ? '#FFFFFF' : theme.textFaint }}
+                >
+                  Share Session
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* End fast button for in-progress sessions */}
+            {isInProgress && onEndSession && (
               <Pressable
-                className={`rounded-2xl py-4 items-center mt-2 ${isPro ? 'bg-primary' : 'bg-gray-200'}`}
+                className="rounded-2xl py-4 items-center active:scale-[0.98] mt-2"
+                style={{
+                  backgroundColor: theme.surface,
+                  borderWidth: 1,
+                  borderColor: hexAlpha(theme.danger, 102),
+                  ...cardShadow(theme),
+                }}
                 onPress={() => {
-                  if (!isPro) {
-                    trackPaywallViewed('share_session');
-                    router.push('/paywall');
-                    return;
-                  }
-                  trackShareSession();
-                  shareSession(session!, dayWaterMl > 0 ? dayWaterMl : undefined);
+                  Alert.alert(
+                    'End Fast?',
+                    'Are you sure you want to end your fast?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'End Fast',
+                        style: 'destructive',
+                        onPress: () => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          onEndSession(session!.id, progress >= 0.9);
+                          onClose();
+                        },
+                      },
+                    ],
+                  );
                 }}
               >
-                <View className="flex-row items-center gap-2">
-                  {!isPro && <Text className="text-primary text-xs font-medium">Pro</Text>}
-                  <Text className={`font-bold text-base ${isPro ? 'text-white' : 'text-gray-400'}`}>
-                    Share Session
-                  </Text>
-                </View>
+                <Text className="font-semibold text-base" style={{ color: theme.danger }}>End Fast</Text>
               </Pressable>
-
-              {/* End fast button for in-progress sessions */}
-              {isInProgress && onEndSession && (
-                <Pressable
-                  className="bg-white border border-red-300 rounded-2xl py-4 items-center active:scale-[0.98] mt-2"
-                  style={CARD_SHADOW}
-                  onPress={() => {
-                    Alert.alert(
-                      'End Fast?',
-                      'Are you sure you want to end your fast?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'End Fast',
-                          style: 'destructive',
-                          onPress: () => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                            onEndSession(session!.id, progress >= 0.9);
-                            onClose();
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                >
-                  <Text className="text-red-500 font-semibold text-base">End Fast</Text>
-                </Pressable>
-              )}
-            </>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+            )}
+          </>
+        )}
+      </BottomSheetScrollView>
+    </BottomSheetModal>
   );
 }
