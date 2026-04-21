@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +19,8 @@ import {
   trackProtocolChanged,
 } from '../../lib/posthog';
 import { syncFastSchedule } from '../../lib/fastScheduler';
+import { formatScheduleSubtitle } from '../../lib/scheduleFormat';
+import { FastScheduleSheet, FastScheduleSheetRef } from '../../components/profile/FastScheduleSheet';
 import { PROTOCOL_LIST } from '../../constants/protocols';
 import {
   MIN_DAILY_WATER_GOAL_ML,
@@ -46,6 +48,7 @@ export default function ProfileScreen() {
 
   const { dailyGoalMl, setDailyGoal } = useHydration();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
+  const scheduleSheetRef = useRef<FastScheduleSheetRef>(null);
 
   const { data: fastsLogged = 0 } = useQuery({
     queryKey: ['fasting_sessions_count', profile?.id],
@@ -137,16 +140,20 @@ export default function ProfileScreen() {
       return;
     }
     if (on) {
-      setSchedule({
-        enabled: true,
-        days: [1, 2, 3, 4, 5],
-        hour: 20,
-        protocol: profile?.preferred_protocol ?? '16:8',
-      });
+      scheduleSheetRef.current?.present();
     } else {
       setSchedule(null);
+      syncFastSchedule();
     }
-    syncFastSchedule();
+  }
+
+  function openScheduleSheet() {
+    if (!isPro) {
+      trackPaywallViewed('fast_schedule');
+      router.push('/paywall');
+      return;
+    }
+    scheduleSheetRef.current?.present();
   }
 
   return (
@@ -351,7 +358,8 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <View
+          <Pressable
+            onPress={openScheduleSheet}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -366,22 +374,24 @@ export default function ProfileScreen() {
                 Fast schedule
               </Text>
               <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
-                Auto-start at 8:00 PM weekdays
+                {formatScheduleSubtitle(schedule)}
               </Text>
             </View>
-            <View
-              style={{
-                paddingHorizontal: 7,
-                paddingVertical: 3,
-                borderRadius: 5,
-                backgroundColor: hexAlpha(theme.accent, 0x22),
-                marginRight: 10,
-              }}
-            >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: theme.accent, letterSpacing: 0.5 }}>PRO</Text>
-            </View>
+            {!isPro && (
+              <View
+                style={{
+                  paddingHorizontal: 7,
+                  paddingVertical: 3,
+                  borderRadius: 5,
+                  backgroundColor: hexAlpha(theme.accent, 0x22),
+                  marginRight: 10,
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: '700', color: theme.accent, letterSpacing: 0.5 }}>PRO</Text>
+              </View>
+            )}
             <Toggle theme={theme} on={!!schedule?.enabled} onChange={toggleSchedule} />
-          </View>
+          </Pressable>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, paddingHorizontal: 16 }}>
             <View style={{ flex: 1 }}>
@@ -503,6 +513,7 @@ export default function ProfileScreen() {
           FastLog · v2.4.0
         </Text>
       </ScrollView>
+      <FastScheduleSheet ref={scheduleSheetRef} />
     </View>
   );
 }
