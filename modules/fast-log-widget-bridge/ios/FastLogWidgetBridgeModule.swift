@@ -24,6 +24,55 @@ private let widgetKind = "FastingWidget"
 // Strong references so the swift activity stays alive across calls.
 private var liveActivities: [String: Any] = [:]
 
+// Serializes Live Activity start/end/update operations so concurrent JS
+// calls (e.g. multiple mounted hooks firing the same restore effect in
+// parallel) cannot each observe "no existing activities" and each then
+// call Activity.request, which is what produced the stacked duplicate
+// banners on the lock screen.
+@available(iOS 16.2, *)
+private actor LiveActivityCoordinator {
+    static let shared = LiveActivityCoordinator()
+
+    func endAll() async {
+        for activity in Activity<FastingActivityAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+        liveActivities.removeAll()
+    }
+
+    func startFresh(contentState: FastingActivityAttributes.ContentState) async throws -> String {
+        // End any existing fasting activities (tracked or orphaned) under
+        // the actor's serial context before requesting a new one.
+        await endAll()
+
+        let id = UUID().uuidString
+        let attributes = FastingActivityAttributes(id: id)
+        let content = ActivityContent(state: contentState, staleDate: nil)
+        let activity = try Activity.request(
+            attributes: attributes,
+            content: content,
+            pushType: nil
+        )
+        liveActivities[id] = activity
+        return id
+    }
+
+    func end(id: String) async {
+        if let cached = liveActivities[id] as? Activity<FastingActivityAttributes> {
+            await cached.end(nil, dismissalPolicy: .immediate)
+            liveActivities.removeValue(forKey: id)
+        } else if let found = Activity<FastingActivityAttributes>.activities.first(where: { $0.attributes.id == id }) {
+            await found.end(nil, dismissalPolicy: .immediate)
+        }
+        // Also dismiss any orphan activities so nothing stale lingers on
+        // the lock screen after the user stops a fast.
+        for orphan in Activity<FastingActivityAttributes>.activities {
+            await orphan.end(nil, dismissalPolicy: .immediate)
+        }
+        liveActivities.removeAll()
+    }
+}
+
 public class FastLogWidgetBridgeModule: Module {
     public func definition() -> ModuleDefinition {
         Name("FastLogWidgetBridge")
@@ -64,27 +113,26 @@ public class FastLogWidgetBridgeModule: Module {
 
         AsyncFunction("startFastingActivity") { (state: [String: Any], promise: Promise) in
             if #available(iOS 16.2, *) {
-                do {
-                    let contentState = try Self.parseContentState(from: state)
-                    let info = ActivityAuthorizationInfo()
-                    guard info.areActivitiesEnabled else {
-                        promise.reject("ERR_ACTIVITIES_DISABLED", "Live Activities are disabled")
-                        return
+                Task {
+                    do {
+                        let contentState = try Self.parseContentState(from: state)
+                        let info = ActivityAuthorizationInfo()
+                        guard info.areActivitiesEnabled else {
+                            promise.reject("ERR_ACTIVITIES_DISABLED", "Live Activities are disabled")
+                            return
+                        }
+
+                        // Delegate to the serial actor so parallel JS callers
+                        // (e.g. multiple mounted hooks) cannot each race past
+                        // the "end existing" step and each create a new
+                        // activity — which was the duplicate-banner bug.
+                        let id = try await LiveActivityCoordinator.shared.startFresh(contentState: contentState)
+                        bridgeLog.log("startFastingActivity: started id=\(id, privacy: .public)")
+                        promise.resolve(id)
+                    } catch {
+                        bridgeLog.error("startFastingActivity failed: \(String(describing: error), privacy: .public)")
+                        promise.reject("ERR_LIVE_ACTIVITY_START", String(describing: error))
                     }
-                    let id = UUID().uuidString
-                    let attributes = FastingActivityAttributes(id: id)
-                    let content = ActivityContent(state: contentState, staleDate: nil)
-                    let activity = try Activity.request(
-                        attributes: attributes,
-                        content: content,
-                        pushType: nil
-                    )
-                    liveActivities[id] = activity
-                    bridgeLog.log("startFastingActivity: started id=\(id, privacy: .public)")
-                    promise.resolve(id)
-                } catch {
-                    bridgeLog.error("startFastingActivity failed: \(String(describing: error), privacy: .public)")
-                    promise.reject("ERR_LIVE_ACTIVITY_START", String(describing: error))
                 }
             } else {
                 promise.reject("ERR_UNSUPPORTED_OS", "Live Activities require iOS 16.2+")
@@ -115,13 +163,10 @@ public class FastLogWidgetBridgeModule: Module {
         AsyncFunction("endFastingActivity") { (id: String, promise: Promise) in
             if #available(iOS 16.2, *) {
                 Task {
-                    guard let activity = Self.findActivity(id: id) else {
-                        // Treat missing as success so the JS side can always call end.
-                        promise.resolve(nil)
-                        return
-                    }
-                    await activity.end(nil, dismissalPolicy: .default)
-                    liveActivities.removeValue(forKey: id)
+                    // End via the actor so end/start can't interleave. The
+                    // actor also dismisses any orphan activities so nothing
+                    // stale lingers on the lock screen after stop.
+                    await LiveActivityCoordinator.shared.end(id: id)
                     promise.resolve(nil)
                 }
             } else {
@@ -132,10 +177,7 @@ public class FastLogWidgetBridgeModule: Module {
         AsyncFunction("endAllFastingActivities") { (promise: Promise) in
             if #available(iOS 16.2, *) {
                 Task {
-                    for activity in Activity<FastingActivityAttributes>.activities {
-                        await activity.end(nil, dismissalPolicy: .default)
-                    }
-                    liveActivities.removeAll()
+                    await LiveActivityCoordinator.shared.endAll()
                     promise.resolve(nil)
                 }
             } else {

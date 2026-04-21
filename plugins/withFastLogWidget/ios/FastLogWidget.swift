@@ -90,6 +90,39 @@ struct FastLogWidgetView: View {
     }
 }
 
+// MARK: - Shared phase ring
+
+struct PhaseRing<Label: View>: View {
+    let progress: Double
+    let color: Color
+    let trackColor: Color
+    let lineWidth: CGFloat
+    let size: CGFloat
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(trackColor, lineWidth: lineWidth)
+                .frame(width: size, height: size)
+            Circle()
+                .trim(from: 0, to: max(0.001, min(progress, 1)))
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .frame(width: size, height: size)
+            // Constrain the label to the ring's interior so text that is
+            // wider than the ring's inner diameter scales down instead of
+            // bleeding outside the circle. Keeping the label's frame equal
+            // to the ring's frame guarantees perfect geometric centering
+            // inside the ZStack.
+            label()
+                .multilineTextAlignment(.center)
+                .frame(width: size - lineWidth * 2, height: size - lineWidth * 2)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 // MARK: - Small
 
 struct FastLogSmallView: View {
@@ -107,89 +140,79 @@ struct FastLogSmallView: View {
     private func activeView(start: Date, end: Date) -> some View {
         let phaseColor = palette.phaseColor(derived.phase)
         return VStack(alignment: .leading, spacing: 6) {
-            Text(derived.phase.name.uppercased())
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1.2)
-                .foregroundColor(phaseColor)
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-            ZStack {
-                Gauge(
-                    value: derived.progress,
-                    in: 0...1
-                ) {
-                    EmptyView()
-                } currentValueLabel: {
-                    VStack(spacing: 0) {
-                        Text(timerInterval: start...end, countsDown: false)
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundColor(palette.text)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                        Text("of \(derived.targetHours)h")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(palette.textMuted)
-                    }
-                }
-                .gaugeStyle(.accessoryCircularCapacity)
-                .tint(phaseColor)
-                .scaleEffect(1.35)
+            HStack {
+                Text(derived.phase.name.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundColor(palette.primary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(derived.protocolLabel)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(palette.textMuted)
+                    .lineLimit(1)
             }
-            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 0)
 
-            Text("\(derived.percent)%  ·  \(derived.protocolLabel)")
+            PhaseRing(
+                progress: derived.progress,
+                color: phaseColor,
+                trackColor: phaseColor.opacity(0.18),
+                lineWidth: 6,
+                size: 88
+            ) {
+                Text(timerInterval: start...end, countsDown: false)
+                    .font(.system(size: 21, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundColor(palette.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            Spacer(minLength: 0)
+
+            Text("\(derived.percent)%  ·  of \(derived.targetHours)h")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(palette.textFaint)
                 .lineLimit(1)
         }
-        .padding(.vertical, 4)
     }
 
     private var inactiveView: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("READY")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1.4)
-                .foregroundColor(palette.accent)
+                .foregroundColor(palette.primary)
 
             Spacer(minLength: 0)
 
-            ZStack {
-                Circle()
-                    .strokeBorder(
-                        palette.primary.opacity(0.55),
-                        style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [4, 6])
-                    )
-                    .frame(width: 84, height: 84)
-
-                VStack(spacing: 0) {
-                    Text("\(derived.targetHours)h")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundColor(palette.primary)
-                    Text(derived.protocolLabel)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(palette.textMuted)
-                }
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(derived.targetHours)")
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundColor(palette.primary)
+                Text("h")
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .foregroundColor(palette.primary.opacity(0.7))
             }
-            .frame(maxWidth: .infinity)
+
+            Text("\(derived.protocolLabel) fasting window")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(palette.textMuted)
+                .lineLimit(1)
 
             Spacer(minLength: 0)
 
             Text("Tap to start")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(palette.accent))
-                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(palette.primary))
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -209,13 +232,17 @@ struct FastLogMediumView: View {
 
     private func activeView(start: Date, end: Date) -> some View {
         let phaseColor = palette.phaseColor(derived.phase)
-        return HStack(alignment: .center, spacing: 14) {
-            Gauge(value: derived.progress, in: 0...1) {
-                EmptyView()
-            } currentValueLabel: {
-                VStack(spacing: 0) {
+        return HStack(alignment: .center, spacing: 16) {
+            PhaseRing(
+                progress: derived.progress,
+                color: phaseColor,
+                trackColor: phaseColor.opacity(0.18),
+                lineWidth: 8,
+                size: 118
+            ) {
+                VStack(spacing: 2) {
                     Text(timerInterval: start...end, countsDown: false)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 19, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(palette.text)
                         .lineLimit(1)
@@ -225,16 +252,12 @@ struct FastLogMediumView: View {
                         .foregroundColor(palette.textMuted)
                 }
             }
-            .gaugeStyle(.accessoryCircularCapacity)
-            .tint(phaseColor)
-            .scaleEffect(1.55)
-            .frame(width: 110, height: 110)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(derived.phase.name.uppercased())
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1.4)
-                    .foregroundColor(palette.accent)
+                    .foregroundColor(palette.primary)
                     .lineLimit(1)
                 Text(derived.phase.description)
                     .font(.system(size: 14, weight: .semibold))
@@ -263,18 +286,18 @@ struct FastLogMediumView: View {
     }
 
     private var inactiveView: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             ZStack {
                 Circle()
                     .strokeBorder(
                         palette.primary.opacity(0.55),
                         style: StrokeStyle(lineWidth: 5, lineCap: .round, dash: [4, 6])
                     )
-                    .frame(width: 110, height: 110)
+                    .frame(width: 118, height: 118)
 
                 VStack(spacing: 0) {
                     Text("\(derived.targetHours)h")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(palette.primary)
                     Text(derived.protocolLabel)
@@ -287,7 +310,7 @@ struct FastLogMediumView: View {
                 Text("FASTLOG")
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1.6)
-                    .foregroundColor(palette.accent)
+                    .foregroundColor(palette.primary)
                 Text("Ready when you are")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(palette.text)
@@ -303,7 +326,7 @@ struct FastLogMediumView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Capsule().fill(palette.accent))
+                    .background(Capsule().fill(palette.primary))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

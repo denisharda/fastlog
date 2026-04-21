@@ -87,20 +87,25 @@ export function useFasting(): UseFastingReturn {
     };
   }, [activeFast]);
 
-  // Restore live activity on mount if fast is active but instance was lost (app restart)
+  // Restore live activity on mount if fast is active but instance was lost (app restart).
+  // Key only on sessionId so a new object reference (from Zustand rehydration) doesn't
+  // re-fire this and duplicate the activity. restoreLiveActivity itself is idempotent
+  // and coalesces concurrent calls from parallel hook consumers (Timer + Water tabs).
+  const sessionId = activeFast?.sessionId ?? null;
   useEffect(() => {
-    if (activeFast && !hasLiveActivity()) {
-      const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
-      const phase = getCurrentPhase(elapsed);
-      restoreLiveActivity({
-        startedAt: activeFast.startedAt,
-        targetHours: activeFast.targetHours,
-        phase: phase.name,
-        phaseDescription: phase.description,
-        protocol: activeFast.protocol,
-      });
-    }
-  }, [activeFast]);
+    if (!activeFast) return;
+    if (hasLiveActivity()) return;
+    const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
+    const phase = getCurrentPhase(elapsed);
+    restoreLiveActivity({
+      startedAt: activeFast.startedAt,
+      targetHours: activeFast.targetHours,
+      phase: phase.name,
+      phaseDescription: phase.description,
+      protocol: activeFast.protocol,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   // Re-sync shared state when app returns to foreground
   useEffect(() => {

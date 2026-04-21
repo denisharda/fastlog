@@ -10,6 +10,39 @@ import os.log
 
 private let activityLog = Logger(subsystem: "com.fastlog.app.widgets", category: "FastLogLiveActivity")
 
+// MARK: - Local phase ring for Live Activity / Dynamic Island
+//
+// We can't reference the widget's PhaseRing across types because SwiftUI
+// ViewBuilder generics make it awkward; duplicating the primitive here
+// keeps the Live Activity self-contained and lets us guarantee the
+// label is centered inside the ring regardless of text width.
+
+private struct ActivityPhaseRing<Label: View>: View {
+    let progress: Double
+    let color: Color
+    let trackColor: Color
+    let lineWidth: CGFloat
+    let size: CGFloat
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(trackColor, lineWidth: lineWidth)
+                .frame(width: size, height: size)
+            Circle()
+                .trim(from: 0, to: max(0.001, min(progress, 1)))
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .frame(width: size, height: size)
+            label()
+                .multilineTextAlignment(.center)
+                .frame(width: size - lineWidth * 2, height: size - lineWidth * 2)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 // MARK: - Helpers shared across Live Activity layouts
 
 private struct ActivityContext {
@@ -78,8 +111,15 @@ struct FastLogLiveActivity: Widget {
                     ExpandedBottom(ctx: ctx)
                 }
             } compactLeading: {
-                MiniGauge(progress: ctx.progress, tint: activityPhaseColor(ctx.phase))
-                    .frame(width: 22, height: 22)
+                ActivityPhaseRing(
+                    progress: ctx.progress,
+                    color: activityPhaseColor(ctx.phase),
+                    trackColor: Color.white.opacity(0.25),
+                    lineWidth: 2.5,
+                    size: 20
+                ) {
+                    EmptyView()
+                }
             } compactTrailing: {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
                     .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -87,8 +127,15 @@ struct FastLogLiveActivity: Widget {
                     .foregroundColor(lockText)
                     .frame(maxWidth: 56)
             } minimal: {
-                MiniGauge(progress: ctx.progress, tint: activityPhaseColor(ctx.phase))
-                    .frame(width: 22, height: 22)
+                ActivityPhaseRing(
+                    progress: ctx.progress,
+                    color: activityPhaseColor(ctx.phase),
+                    trackColor: Color.white.opacity(0.25),
+                    lineWidth: 2.5,
+                    size: 20
+                ) {
+                    EmptyView()
+                }
             }
             .widgetURL(URL(string: "fastlog://timer"))
             .keylineTint(activityPhaseColor(ctx.phase))
@@ -98,41 +145,30 @@ struct FastLogLiveActivity: Widget {
 
 // MARK: - Dynamic Island regions
 
-private struct MiniGauge: View {
-    let progress: Double
-    let tint: Color
-
-    var body: some View {
-        Gauge(value: progress, in: 0...1) {
-            EmptyView()
-        }
-        .gaugeStyle(.accessoryCircularCapacity)
-        .tint(tint)
-    }
-}
-
 private struct ExpandedLeading: View {
     let ctx: ActivityContext
 
     var body: some View {
-        Gauge(value: ctx.progress, in: 0...1) {
-            EmptyView()
-        } currentValueLabel: {
-            VStack(spacing: 0) {
+        ActivityPhaseRing(
+            progress: ctx.progress,
+            color: activityPhaseColor(ctx.phase),
+            trackColor: Color.white.opacity(0.16),
+            lineWidth: 5,
+            size: 64
+        ) {
+            VStack(spacing: 1) {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(lockText)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    .minimumScaleFactor(0.5)
                 Text("of \(ctx.targetHours)h")
                     .font(.system(size: 8, weight: .medium))
                     .foregroundColor(lockFaint)
+                    .lineLimit(1)
             }
         }
-        .gaugeStyle(.accessoryCircularCapacity)
-        .tint(activityPhaseColor(ctx.phase))
-        .frame(width: 60, height: 60)
         .padding(.leading, 6)
     }
 }
@@ -191,52 +227,55 @@ private struct LockScreenBanner: View {
         let endLabel = endLabelFormatter.string(from: ctx.end)
         let desc = ctx.phaseDescription.isEmpty ? ctx.phase.description : ctx.phaseDescription
 
+        let phaseColor = activityPhaseColor(ctx.phase)
+        let percent = Int((ctx.progress * 100).rounded())
+
+        // Ring is the visual focal element: bigger (88pt) with the live
+        // timer centered inside it, so the eye lands on progress + time
+        // together instead of a tiny "0%" puck next to a floating number.
         HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "#C8621B"), Color(hex: "#6B2A12")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 48, height: 48)
-
-                Gauge(value: ctx.progress, in: 0...1) {
-                    EmptyView()
-                }
-                .gaugeStyle(.accessoryCircularCapacity)
-                .tint(Color.white)
-                .frame(width: 28, height: 28)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ctx.phaseName.uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(1.3)
-                    .foregroundColor(lockAccent)
-
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
+            ActivityPhaseRing(
+                progress: ctx.progress,
+                color: phaseColor,
+                trackColor: Color.white.opacity(0.16),
+                lineWidth: 6,
+                size: 88
+            ) {
+                VStack(spacing: 1) {
                     Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(lockText)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                    Text("/ \(ctx.targetHours)h")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(lockMuted)
+                        .minimumScaleFactor(0.55)
+                    Text("\(percent)%")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(lockFaint)
+                        .lineLimit(1)
                 }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(ctx.phaseName.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1.3)
+                    .foregroundColor(phaseColor)
+                    .lineLimit(1)
+
+                Text("\(ctx.protocolLabel) fast · of \(ctx.targetHours)h")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(lockText)
+                    .lineLimit(1)
 
                 Text("\(desc) · ends \(endLabel)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(lockMuted)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
