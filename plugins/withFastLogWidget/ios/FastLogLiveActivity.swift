@@ -26,15 +26,15 @@ private struct ActivityPhaseRing<Label: View>: View {
     @ViewBuilder let label: () -> Label
 
     var body: some View {
+        let inset = lineWidth / 2
         ZStack {
             Circle()
-                .stroke(trackColor, lineWidth: lineWidth)
-                .frame(width: size, height: size)
+                .strokeBorder(trackColor, lineWidth: lineWidth)
             Circle()
+                .inset(by: inset)
                 .trim(from: 0, to: max(0.001, min(progress, 1)))
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .frame(width: size, height: size)
             label()
                 .multilineTextAlignment(.center)
                 .frame(width: size - lineWidth * 2, height: size - lineWidth * 2)
@@ -122,7 +122,7 @@ struct FastLogLiveActivity: Widget {
                 }
             } compactTrailing: {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(lockText)
                     .frame(maxWidth: 56)
@@ -158,7 +158,7 @@ private struct ExpandedLeading: View {
         ) {
             VStack(spacing: 1) {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(lockText)
                     .lineLimit(1)
@@ -243,7 +243,7 @@ private struct LockScreenBanner: View {
             ) {
                 VStack(spacing: 1) {
                     Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(lockText)
                         .lineLimit(1)

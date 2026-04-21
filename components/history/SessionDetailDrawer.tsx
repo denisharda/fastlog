@@ -14,9 +14,9 @@ import { cardShadow, hexAlpha } from '../../constants/theme';
 import { useNow } from '../../hooks/useNow';
 import { useDailyHydration } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
-import { trackPaywallViewed, trackShareSession } from '../../lib/posthog';
-import { shareSession } from '../../lib/shareSession';
+import { trackPaywallViewed } from '../../lib/posthog';
 import { useTheme } from '../../hooks/useTheme';
+import { ShareCardPreviewSheet, ShareCardPreviewSheetRef } from '../share/ShareCardPreviewSheet';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -52,6 +52,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   const router = useRouter();
   const theme = useTheme();
   const sheetRef = useRef<BottomSheetModal>(null);
+  const shareSheetRef = useRef<ShareCardPreviewSheetRef>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [phaseExpanded, setPhaseExpanded] = useState(false);
 
@@ -114,6 +115,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   const trackStyle = { backgroundColor: theme.surface2 };
 
   return (
+    <>
     <BottomSheetModal
       ref={sheetRef}
       snapPoints={snapPoints}
@@ -343,8 +345,11 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                   router.push('/paywall');
                   return;
                 }
-                trackShareSession();
-                shareSession(session!, dayWaterMl > 0 ? dayWaterMl : undefined);
+                shareSheetRef.current?.present({
+                  session: session!,
+                  waterMl: dayWaterMl > 0 ? dayWaterMl : undefined,
+                  source: 'history',
+                });
               }}
             >
               <View className="flex-row items-center gap-2">
@@ -394,5 +399,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
         )}
       </BottomSheetScrollView>
     </BottomSheetModal>
+    <ShareCardPreviewSheet ref={shareSheetRef} />
+    </>
   );
 }
