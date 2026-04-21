@@ -18,12 +18,11 @@ import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawe
 import { useFastingStore } from '../../stores/fastingStore';
 import { useNow } from '../../hooks/useNow';
 import { cancelAllNotifications } from '../../lib/notifications';
-import { trackPaywallViewed, trackHistoryExported } from '../../lib/posthog';
-import { exportHistoryCSV } from '../../lib/exportHistory';
+import { trackPaywallViewed } from '../../lib/posthog';
 import { useDailyHydrationTotals } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
 import { useTheme } from '../../hooks/useTheme';
-import { Card, CircleIcon, ScreenHeader } from '../../components/ui';
+import { Card, ScreenHeader, CircleIcon } from '../../components/ui';
 import { TABULAR, hexAlpha } from '../../constants/theme';
 import { TAB_BAR_HEIGHT } from '../../components/ui/TabBar';
 
@@ -243,17 +242,6 @@ export default function HistoryScreen() {
     queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
   }
 
-  function handleExport() {
-    if (!isPro) {
-      trackPaywallViewed('export_history');
-      router.push('/paywall');
-      return;
-    }
-    if (allSessions.length > 0) {
-      exportHistoryCSV(allSessions).then(() => trackHistoryExported());
-    }
-  }
-
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -287,23 +275,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScreenHeader
-        theme={theme}
-        title="History"
-        trailing={
-          <CircleIcon theme={theme} size={36} onPress={handleExport}>
-            <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-              <Path
-                d="M7 2v7M4 6l3 3 3-3M3 11h8"
-                stroke={theme.textMuted}
-                strokeWidth={1.6}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </CircleIcon>
-        }
-      />
+      <ScreenHeader theme={theme} title="History" />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_HEIGHT + 40 }} showsVerticalScrollIndicator={false}>
         {allSessions.length === 0 ? (
@@ -554,11 +526,6 @@ export default function HistoryScreen() {
               >
                 Recent Fasts
               </Text>
-              <Pressable onPress={handleExport}>
-                <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600', letterSpacing: -0.1 }}>
-                  Export
-                </Text>
-              </Pressable>
             </View>
 
             <Card theme={theme} padding={0}>
