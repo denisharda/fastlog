@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CoachPersonality, FastingProtocol, Profile } from '../types';
-import { DEFAULT_COACH } from '../constants/coaches';
+import { FastingProtocol, Profile } from '../types';
 import { DEFAULT_PROTOCOL } from '../constants/protocols';
 
 export interface FastSchedule {
@@ -12,21 +11,39 @@ export interface FastSchedule {
   protocol: string;
 }
 
+/** Preferences for which push notifications to schedule. */
+export interface NotificationPrefs {
+  phaseTransitions: boolean;
+  hydration: boolean;
+  halfway: boolean;
+  complete: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  phaseTransitions: true,
+  hydration: true,
+  halfway: false,
+  complete: true,
+};
+
 interface UserState {
   profile: Profile | null;
   isPro: boolean;
   isProLoading: boolean;
   hasSeenSuccessPaywall: boolean;
+  hasSeenIntro: boolean;
   fastSchedule: FastSchedule | null;
+  notificationPrefs: NotificationPrefs;
   // Actions
   setProfile: (profile: Profile | null) => void;
   updateProfile: (updates: Partial<Profile>) => void;
   setIsPro: (isPro: boolean) => void;
   setIsProLoading: (loading: boolean) => void;
   setHasSeenSuccessPaywall: (val: boolean) => void;
+  setHasSeenIntro: (val: boolean) => void;
   setFastSchedule: (schedule: FastSchedule | null) => void;
-  setCoachPersonality: (personality: CoachPersonality) => void;
   setPreferredProtocol: (protocol: FastingProtocol) => void;
+  setNotificationPrefs: (prefs: Partial<NotificationPrefs>) => void;
   reset: () => void;
 }
 
@@ -35,7 +52,9 @@ const initialState = {
   isPro: false,
   isProLoading: true,
   hasSeenSuccessPaywall: false,
+  hasSeenIntro: false,
   fastSchedule: null as FastSchedule | null,
+  notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
 };
 
 export const useUserStore = create<UserState>()(
@@ -56,20 +75,20 @@ export const useUserStore = create<UserState>()(
 
       setHasSeenSuccessPaywall: (val) => set({ hasSeenSuccessPaywall: val }),
 
-      setFastSchedule: (schedule) => set({ fastSchedule: schedule }),
+      setHasSeenIntro: (val) => set({ hasSeenIntro: val }),
 
-      setCoachPersonality: (personality) =>
-        set((state) => ({
-          profile: state.profile
-            ? { ...state.profile, coach_personality: personality }
-            : null,
-        })),
+      setFastSchedule: (schedule) => set({ fastSchedule: schedule }),
 
       setPreferredProtocol: (protocol) =>
         set((state) => ({
           profile: state.profile
             ? { ...state.profile, preferred_protocol: protocol }
             : null,
+        })),
+
+      setNotificationPrefs: (prefs) =>
+        set((state) => ({
+          notificationPrefs: { ...state.notificationPrefs, ...prefs },
         })),
 
       reset: () => set(initialState),
@@ -82,10 +101,12 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => ({
         profile: state.profile,
         hasSeenSuccessPaywall: state.hasSeenSuccessPaywall,
+        hasSeenIntro: state.hasSeenIntro,
         fastSchedule: state.fastSchedule,
+        notificationPrefs: state.notificationPrefs,
       }),
     }
   )
 );
 
-export { DEFAULT_COACH, DEFAULT_PROTOCOL };
+export { DEFAULT_PROTOCOL };

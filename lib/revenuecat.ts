@@ -102,6 +102,23 @@ export async function getIsProUser(): Promise<boolean> {
 }
 
 /**
+ * ISO date when the Pro entitlement renews/expires, or null if not subscribed.
+ */
+export async function getProRenewalDate(): Promise<string | null> {
+  if (!configured) return null;
+  const Purchases = getPurchases();
+  if (!Purchases) return null;
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const entitlement = customerInfo.entitlements.active[PRO_ENTITLEMENT];
+    return entitlement?.expirationDate ?? null;
+  } catch (error) {
+    console.error('[RevenueCat] Failed to get renewal date:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch available packages from RevenueCat.
  */
 export async function getOfferings(): Promise<any[]> {

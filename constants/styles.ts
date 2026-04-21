@@ -1,22 +1,26 @@
-import { ViewStyle } from 'react-native';
+/**
+ * Legacy style re-exports. Prefer `useTheme()` and the helpers in ./theme
+ * (cardShadow, buttonShadow, elevatedShadow) in new code.
+ */
+export {
+  CARD_SHADOW,
+  cardShadow,
+  buttonShadow,
+  elevatedShadow,
+  hexAlpha,
+  RADII,
+  SPACING,
+  TABULAR,
+} from './theme';
 
-/** Standard card shadow used across the app */
-export const CARD_SHADOW: ViewStyle = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
-  elevation: 3,
-};
-
-/** Design system colors matching tailwind.config.js */
+/** @deprecated Use `useTheme()` + `theme.*` tokens instead. */
 export const COLORS = {
-  primary: '#2D6A4F',
-  accent: '#40916C',
-  background: '#F2F2F7',
+  primary: '#C8621B',
+  accent: '#D89B2B',
+  background: '#FBF6EE',
   surface: '#FFFFFF',
-  textPrimary: '#1A1A1A',
-  textMuted: '#6B7280',
-  border: '#E5E7EB',
-  borderLight: '#D1D5DB',
+  textPrimary: '#2A1F14',
+  textMuted: '#6B5A44',
+  border: 'rgba(42,31,20,0.08)',
+  borderLight: 'rgba(42,31,20,0.12)',
 } as const;

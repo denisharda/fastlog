@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { FASTING_PHASES, getCheckinHoursForTarget } from '../constants/phases';
+import { FASTING_PHASES } from '../constants/phases';
 import { WATER_REMINDER_INTERVAL_HOURS } from '../constants/hydration';
 
 Notifications.setNotificationHandler({
@@ -42,7 +42,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#2D6A4F',
+      lightColor: '#C8621B',
     });
   }
 
@@ -138,43 +138,6 @@ export async function schedulePhaseNotifications(
         content: {
           title: msg.title,
           body: msg.body,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: triggerDate,
-        },
-      })
-    );
-  }
-
-  return Promise.all(promises);
-}
-
-// ─── Pro-only notifications (AI coach check-ins) ────────────────────────────
-
-/**
- * Schedule AI coach check-in notifications at dynamic hours based on target.
- * Includes base hours (4, 8, 12) plus phase-transition hours (16, 18) for longer fasts.
- * Pro only — these prompt the user to open the app for their AI message.
- * Uses Promise.all to schedule all notifications in parallel.
- */
-export async function scheduleCheckinNotifications(
-  fastStartTime: Date,
-  targetHours: number
-): Promise<string[]> {
-  const promises: Promise<string>[] = [];
-  const checkinHours = getCheckinHoursForTarget(targetHours);
-
-  for (const hour of checkinHours) {
-    const triggerDate = new Date(fastStartTime.getTime() + hour * 60 * 60 * 1000);
-    if (triggerDate <= new Date()) continue;
-
-    promises.push(
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'AI Coach Check-in',
-          body: `You're ${hour} hours in — tap for your personalized AI message.`,
-          data: { fastingHour: hour },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,

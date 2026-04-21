@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, Keyboard } from 'react-native';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import { MIN_ADD_AMOUNT_ML, MAX_ADD_AMOUNT_ML } from '../../constants/hydration';
+import { useTheme } from '../../hooks/useTheme';
 
 interface CustomAmountSheetProps {
   visible: boolean;
@@ -9,13 +16,18 @@ interface CustomAmountSheetProps {
 }
 
 export function CustomAmountSheet({ visible, onAdd, onClose }: CustomAmountSheetProps) {
+  const theme = useTheme();
+  const sheetRef = useRef<BottomSheetModal>(null);
   const [text, setText] = useState('');
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
       setText('');
-      setTimeout(() => inputRef.current?.focus(), 200);
+      sheetRef.current?.present();
+      setTimeout(() => inputRef.current?.focus(), 300);
+    } else {
+      sheetRef.current?.dismiss();
     }
   }, [visible]);
 
@@ -25,59 +37,121 @@ export function CustomAmountSheet({ visible, onAdd, onClose }: CustomAmountSheet
   function handleAdd() {
     if (!isValid) return;
     onAdd(parsed);
+    Keyboard.dismiss();
     onClose();
   }
 
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) onClose();
+    },
+    [onClose],
+  );
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} />
+    ),
+    [],
+  );
+
+  const snapPoints = useMemo(() => ['30%'], []);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={onClose}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <BottomSheetModal
+      ref={sheetRef}
+      snapPoints={snapPoints}
+      onChange={handleSheetChange}
+      enablePanDownToClose
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{
+        backgroundColor: theme.surface,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.hairline, width: 40, height: 4 }}
+    >
+      <BottomSheetView style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32 }}>
+        <Text
+          style={{
+            fontSize: 19,
+            fontWeight: '700',
+            color: theme.text,
+            letterSpacing: -0.3,
+            marginBottom: 14,
+          }}
         >
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-            className="bg-white rounded-t-3xl px-6 pt-6 pb-10"
+          Custom amount
+        </Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View
             style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 20,
-              elevation: 10,
+              flex: 1,
+              height: 54,
+              borderRadius: 16,
+              backgroundColor: theme.surface2,
+              borderWidth: 1.5,
+              borderColor: isValid ? theme.primary : theme.hairline,
+              paddingHorizontal: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
             }}
           >
-            <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
-            <Text className="text-text-primary text-lg font-bold mb-4">Custom Amount</Text>
-
-            <View className="flex-row items-center gap-3">
-              <TextInput
-                ref={inputRef}
-                className="flex-1 h-12 bg-background rounded-xl px-4 text-text-primary text-lg font-bold"
-                placeholder={`${MIN_ADD_AMOUNT_ML}–${MAX_ADD_AMOUNT_ML}`}
-                placeholderTextColor="#9CA3AF"
-                keyboardType="number-pad"
-                value={text}
-                onChangeText={setText}
-                onSubmitEditing={handleAdd}
-                returnKeyType="done"
-                maxLength={4}
-                accessibilityLabel="Custom water amount in milliliters"
-              />
-              <Text className="text-text-muted text-sm font-medium">ml</Text>
-              <Pressable
-                className={`h-12 px-6 rounded-full items-center justify-center ${
-                  isValid ? 'bg-primary' : 'bg-gray-200'
-                }`}
-                onPress={handleAdd}
-                disabled={!isValid}
-              >
-                <Text className={`font-bold text-sm ${isValid ? 'text-white' : 'text-gray-400'}`}>
-                  Add
-                </Text>
-              </Pressable>
-            </View>
+            <TextInput
+              ref={inputRef}
+              placeholder={`${MIN_ADD_AMOUNT_ML}–${MAX_ADD_AMOUNT_ML}`}
+              placeholderTextColor={theme.textFaint}
+              keyboardType="number-pad"
+              value={text}
+              onChangeText={setText}
+              onSubmitEditing={handleAdd}
+              returnKeyType="done"
+              maxLength={4}
+              accessibilityLabel="Custom water amount in milliliters"
+              style={{
+                flex: 1,
+                fontSize: 17,
+                fontWeight: '600',
+                color: theme.text,
+                letterSpacing: -0.2,
+                paddingVertical: 0,
+              }}
+            />
+            <Text style={{ color: theme.textFaint, fontSize: 14, fontWeight: '500' }}>ml</Text>
+          </View>
+          <Pressable
+            onPress={handleAdd}
+            disabled={!isValid}
+            style={{
+              height: 54,
+              paddingHorizontal: 22,
+              borderRadius: 16,
+              backgroundColor: isValid ? theme.water : theme.surface2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: isValid ? 1 : 0.6,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '600',
+                color: isValid ? '#FFFFFF' : theme.textFaint,
+                letterSpacing: -0.1,
+              }}
+            >
+              Add
+            </Text>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
+        </View>
+
+        <Text style={{ fontSize: 12, color: theme.textFaint, marginTop: 10, paddingLeft: 4 }}>
+          Between {MIN_ADD_AMOUNT_ML} and {MAX_ADD_AMOUNT_ML} ml.
+        </Text>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }

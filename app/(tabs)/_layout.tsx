@@ -1,24 +1,19 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Tabs } from 'expo-router';
+import { GlassTabBar } from '../../components/ui/TabBar';
 
 export default function TabsLayout() {
   return (
-    <NativeTabs minimizeBehavior="onScrollDown">
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Timer</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="timer" md="timer" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="water" disableAutomaticContentInsets>
-        <NativeTabs.Trigger.Label>Water</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="drop.fill" md="water_drop" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="history">
-        <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="arrow.counterclockwise" md="history" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="person.fill" md="person" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+      }}
+      tabBar={(props) => <GlassTabBar {...props} />}
+    >
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="water" />
+      <Tabs.Screen name="history" />
+      <Tabs.Screen name="profile" />
+    </Tabs>
   );
 }

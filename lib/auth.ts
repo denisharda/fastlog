@@ -75,6 +75,37 @@ export async function signUpWithEmail(email: string, password: string, name: str
 }
 
 /**
+ * Send a 6-digit password reset code via email.
+ * The Supabase "Reset Password" template must render `{{ .Token }}`.
+ */
+export async function requestPasswordOtp(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+  if (error) throw error;
+}
+
+/**
+ * Exchange the emailed code for a recovery session.
+ * After this succeeds, call `updatePassword` to set the new password.
+ */
+export async function verifyPasswordOtp(email: string, token: string): Promise<void> {
+  const { error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'recovery',
+  });
+  if (error) throw error;
+}
+
+/**
+ * Update the signed-in user's password. Requires an active session
+ * (including the recovery session produced by `verifyPasswordOtp`).
+ */
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+/**
  * Sign out the current user.
  */
 export async function signOut(): Promise<void> {
