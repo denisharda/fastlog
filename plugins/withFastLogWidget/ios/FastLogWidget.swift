@@ -163,7 +163,7 @@ struct FastLogSmallView: View {
                 size: 88
             ) {
                 Text(timerInterval: start...end, countsDown: false)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(palette.text)
                     .lineLimit(1)
@@ -242,7 +242,7 @@ struct FastLogMediumView: View {
             ) {
                 VStack(spacing: 2) {
                     Text(timerInterval: start...end, countsDown: false)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(palette.text)
                         .lineLimit(1)
