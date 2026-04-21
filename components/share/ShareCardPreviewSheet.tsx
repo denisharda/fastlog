@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState, RefObject } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import {
   BottomSheetModal,
@@ -53,7 +53,7 @@ export const ShareCardPreviewSheet = forwardRef<ShareCardPreviewSheetRef, object
       if (!args || isSharing) return;
       setIsSharing(true);
       try {
-        await captureAndShare({ ref: cardRef as RefObject<View>, session: args.session, source: args.source });
+        await captureAndShare({ ref: cardRef, session: args.session, source: args.source });
       } finally {
         setIsSharing(false);
       }
