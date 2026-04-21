@@ -122,7 +122,7 @@ struct FastLogLiveActivity: Widget {
                 }
             } compactTrailing: {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(lockText)
                     .frame(maxWidth: 56)
@@ -158,7 +158,7 @@ private struct ExpandedLeading: View {
         ) {
             VStack(spacing: 1) {
                 Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(lockText)
                     .lineLimit(1)
@@ -243,7 +243,7 @@ private struct LockScreenBanner: View {
             ) {
                 VStack(spacing: 1) {
                     Text(timerInterval: ctx.start...ctx.end, countsDown: false)
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundColor(lockText)
                         .lineLimit(1)
