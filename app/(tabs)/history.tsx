@@ -18,6 +18,7 @@ import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawe
 import { useFastingStore } from '../../stores/fastingStore';
 import { useNow } from '../../hooks/useNow';
 import { endActiveFast } from '../../lib/endFast';
+import { getDeviceId } from '../../lib/deviceId';
 import {
   trackPaywallViewed,
   trackHistoryViewed,
@@ -253,9 +254,14 @@ export default function HistoryScreen() {
   }
 
   async function handleEndSession(sessionId: string, completed: boolean) {
+    const deviceId = await getDeviceId();
     const { error: dbError } = await supabase
       .from('fasting_sessions')
-      .update({ ended_at: new Date().toISOString(), completed })
+      .update({
+        ended_at: new Date().toISOString(),
+        completed,
+        last_modified_by_device: deviceId,
+      })
       .eq('id', sessionId);
     if (dbError) return;
     if (activeFast?.sessionId === sessionId) {

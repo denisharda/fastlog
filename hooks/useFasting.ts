@@ -20,6 +20,7 @@ import {
 } from '../lib/liveActivity';
 import { endActiveFast, syncWithRemote } from '../lib/endFast';
 import { applyActiveSession } from '../lib/sessionAdoption';
+import { getDeviceId } from '../lib/deviceId';
 import { FastingProtocol } from '../types';
 
 const TICK_INTERVAL_MS = 1000;
@@ -183,6 +184,9 @@ export function useFasting(): UseFastingReturn {
         const sessionId = Crypto.randomUUID();
         const startedAt = new Date().toISOString();
 
+        // Resolve the device id once so all DB writes + analytics can tag their origin.
+        const deviceId = await getDeviceId();
+
         // Analytics first so we track the intent even if bring-up fails partway.
         trackFastStarted({ protocol, targetHours: hours });
 
@@ -196,6 +200,7 @@ export function useFasting(): UseFastingReturn {
               protocol,
               target_hours: hours,
               started_at: startedAt,
+              last_modified_by_device: deviceId,
             })
             .then(({ error: dbError }) => {
               if (dbError) console.error('[useFasting] DB insert error:', dbError);
@@ -246,9 +251,10 @@ export function useFasting(): UseFastingReturn {
         }
 
         if (profile) {
+          const deviceId = await getDeviceId();
           const { error: dbError } = await supabase
             .from('fasting_sessions')
-            .update({ ended_at: endedAt, completed })
+            .update({ ended_at: endedAt, completed, last_modified_by_device: deviceId })
             .eq('id', activeFast.sessionId);
 
           if (dbError) {
