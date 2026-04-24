@@ -203,8 +203,21 @@ export function useFasting(): UseFastingReturn {
               last_modified_by_device: deviceId,
             })
             .then(({ error: dbError }) => {
-              if (dbError) console.error('[useFasting] DB insert error:', dbError);
-              else queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
+              if (!dbError) {
+                queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
+                return;
+              }
+              // 23505 = unique_violation on the "one active fast per user"
+              // partial index. Another device beat us to it. Roll back the
+              // local state we optimistically applied, then adopt theirs.
+              if (dbError.code === '23505') {
+                console.warn('[useFasting] active fast exists elsewhere — adopting');
+                endActiveFast()
+                  .then(() => syncWithRemote())
+                  .catch((e) => console.error('[useFasting] adoption failed:', e));
+              } else {
+                console.error('[useFasting] DB insert error:', dbError);
+              }
             });
         }
 
