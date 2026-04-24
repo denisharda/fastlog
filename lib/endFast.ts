@@ -160,6 +160,20 @@ async function attemptEndWrite(p: {
  * pendingEnd entry stays in the outbox for the next attempt.
  */
 export async function flushPendingEnd(): Promise<boolean> {
+  // Wait for persist rehydration to complete so we see any pendingEnd
+  // persisted from a previous session that died mid-retry. Without this
+  // gate, a cold launch would run before AsyncStorage finished loading,
+  // see pendingEnd: null, and let syncWithRemote re-adopt a fast the
+  // user already stopped (timer resurrection).
+  if (!useFastingStore.persist.hasHydrated()) {
+    await new Promise<void>((resolve) => {
+      const unsub = useFastingStore.persist.onFinishHydration(() => {
+        unsub();
+        resolve();
+      });
+    });
+  }
+
   const { pendingEnd, setPendingEnd, incrementPendingEndAttempts } =
     useFastingStore.getState();
   if (!pendingEnd) return true;

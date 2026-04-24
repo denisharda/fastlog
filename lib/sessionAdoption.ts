@@ -11,6 +11,7 @@ import {
   scheduleHalfwayNotification,
   cancelAllNotifications,
 } from './notifications';
+import { syncFastSchedule } from './fastScheduler';
 import type { FastingProtocol } from '../types';
 
 export interface AdoptableSession {
@@ -66,6 +67,9 @@ export async function applyActiveSession(
   // scheduling new ones so the OS doesn't show duplicates.
   if (!opts.isFreshStart) {
     await cancelAllNotifications();
+    // Re-arm the recurring fast-schedule reminder that cancelAllNotifications
+    // just killed (same reason endActiveFast does it).
+    await syncFastSchedule();
   }
 
   // 2. Notifications — schedulers self-skip past triggers, so adoption
