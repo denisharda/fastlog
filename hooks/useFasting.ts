@@ -7,30 +7,19 @@ import { getCurrentPhase, FastingPhase } from '../constants/phases';
 import { supabase } from '../lib/supabase';
 import * as Crypto from 'expo-crypto';
 import {
-  scheduleStartNotification,
-  scheduleCompletionNotification,
-  schedulePhaseNotifications,
-  scheduleWaterReminders,
-  scheduleHalfwayNotification,
-} from '../lib/notifications';
-import { useUserStore as useUserStoreForPrefs } from '../stores/userStore';
-import {
   trackFastStarted,
   trackFastCompleted,
   trackFastAbandoned,
   trackFastPhaseEntered,
 } from '../lib/posthog';
+import { pushWidgetSnapshot } from '../lib/widget';
 import {
-  pushWidgetSnapshot,
-  scheduleWidgetTimeline,
-} from '../lib/widget';
-import {
-  startLiveActivity,
   updateLiveActivity,
   restoreLiveActivity,
   hasLiveActivity,
 } from '../lib/liveActivity';
 import { endActiveFast, reconcileActiveFast } from '../lib/endFast';
+import { applyActiveSession } from '../lib/sessionAdoption';
 import { FastingProtocol } from '../types';
 
 const TICK_INTERVAL_MS = 1000;
@@ -54,7 +43,7 @@ interface UseFastingReturn {
  */
 export function useFasting(): UseFastingReturn {
   const queryClient = useQueryClient();
-  const { activeFast, startFast: storeStart, setNotificationIds } = useFastingStore();
+  const { activeFast } = useFastingStore();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
 
@@ -194,15 +183,7 @@ export function useFasting(): UseFastingReturn {
         const sessionId = Crypto.randomUUID();
         const startedAt = new Date().toISOString();
 
-        // Optimistically update local state first — timer starts immediately
-        storeStart({
-          sessionId,
-          protocol,
-          targetHours: hours,
-          startedAt,
-          scheduledNotificationIds: [],
-        });
-
+        // Analytics first so we track the intent even if bring-up fails partway.
         trackFastStarted({ protocol, targetHours: hours });
 
         // Background: write to Supabase (only if signed in)
@@ -222,47 +203,13 @@ export function useFasting(): UseFastingReturn {
             });
         }
 
-        // Schedule notifications — respect user prefs from onboarding
-        const prefs = useUserStoreForPrefs.getState().notificationPrefs;
-        const start = new Date(startedAt);
-        const endTime = new Date(start.getTime() + hours * 3600 * 1000);
-
-        const [startId, phaseIds, completionId, waterIds, halfwayId] = await Promise.all([
-          scheduleStartNotification(),
-          prefs.phaseTransitions ? schedulePhaseNotifications(start, hours) : Promise.resolve([] as string[]),
-          prefs.complete ? scheduleCompletionNotification(endTime) : Promise.resolve(''),
-          prefs.hydration ? scheduleWaterReminders(start, hours) : Promise.resolve([] as string[]),
-          prefs.halfway ? scheduleHalfwayNotification(start, hours) : Promise.resolve(''),
-        ] as const);
-
-        const ids = [
-          startId,
-          ...phaseIds,
-          ...(completionId ? [completionId] : []),
-          ...waterIds,
-          ...(halfwayId ? [halfwayId] : []),
-        ];
-        setNotificationIds(ids);
-
-        // Start Live Activity + widget updates (iOS only, no-op elsewhere)
-        const phase = getCurrentPhase(0);
-
-        scheduleWidgetTimeline({ startedAt, targetHours: hours, protocol });
-        pushWidgetSnapshot({
-          isActive: true,
-          startedAt,
-          targetHours: hours,
-          phase: phase.name,
-          protocol,
-        });
-
-        await startLiveActivity({
-          startedAt,
-          targetHours: hours,
-          phase: phase.name,
-          phaseDescription: phase.description,
-          protocol,
-        });
+        // Bring up Zustand store, notifications, Live Activity, widget — shared
+        // with the adoption path so a fast started on another device looks
+        // identical on this one.
+        await applyActiveSession(
+          { sessionId, protocol, targetHours: hours, startedAt },
+          { isFreshStart: true }
+        );
       } catch (err) {
         setError('Failed to start fast. Please try again.');
         console.error('[useFasting] startFast error:', err);
@@ -270,7 +217,7 @@ export function useFasting(): UseFastingReturn {
         setIsLoading(false);
       }
     },
-    [profile, isPro, storeStart, setNotificationIds, queryClient]
+    [profile, isPro, queryClient]
   );
 
   const stopFast = useCallback(
