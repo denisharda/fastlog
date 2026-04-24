@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +18,8 @@ import { FastingSession } from '../../types';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
 import { useFastingStore } from '../../stores/fastingStore';
 import { useNow } from '../../hooks/useNow';
-import { endActiveFast } from '../../lib/endFast';
+import { endActiveFast, syncWithRemote } from '../../lib/endFast';
+import { syncHydrationWithRemote } from '../../lib/hydrationSync';
 import { getDeviceId } from '../../lib/deviceId';
 import {
   trackPaywallViewed,
@@ -121,7 +123,7 @@ export default function HistoryScreen() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
 
-  const { data: sessions, isLoading, error } = useQuery({
+  const { data: sessions, isLoading, error, refetch } = useQuery({
     queryKey: ['fasting_sessions', profile?.id],
     queryFn: async (): Promise<FastingSession[]> => {
       if (!profile?.id) return [];
@@ -136,6 +138,22 @@ export default function HistoryScreen() {
     },
     enabled: !!profile?.id,
   });
+
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetch(),
+        syncWithRemote(),
+        syncHydrationWithRemote(),
+        queryClient.invalidateQueries({ queryKey: ['daily_hydration_totals'] }),
+        queryClient.invalidateQueries({ queryKey: ['daily_hydration'] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch, queryClient]);
 
   const hydrationByDay = useDailyHydrationTotals();
   const { dailyGoalMl } = useHydration();
@@ -305,7 +323,18 @@ export default function HistoryScreen() {
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <ScreenHeader theme={theme} title="History" />
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_HEIGHT + 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_HEIGHT + 40 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }
+      >
         {allSessions.length === 0 ? (
           <Card theme={theme} padding={24} style={{ marginTop: 20, alignItems: 'center' }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text, marginBottom: 6 }}>No fasts yet</Text>
