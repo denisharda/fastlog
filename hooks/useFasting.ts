@@ -11,26 +11,26 @@ import {
   scheduleCompletionNotification,
   schedulePhaseNotifications,
   scheduleWaterReminders,
-  cancelAllNotifications,
+  scheduleHalfwayNotification,
 } from '../lib/notifications';
 import { useUserStore as useUserStoreForPrefs } from '../stores/userStore';
 import {
   trackFastStarted,
   trackFastCompleted,
   trackFastAbandoned,
+  trackFastPhaseEntered,
 } from '../lib/posthog';
 import {
   pushWidgetSnapshot,
   scheduleWidgetTimeline,
-  clearWidgetSnapshot,
 } from '../lib/widget';
 import {
   startLiveActivity,
   updateLiveActivity,
-  endLiveActivity,
   restoreLiveActivity,
   hasLiveActivity,
 } from '../lib/liveActivity';
+import { endActiveFast, reconcileActiveFast } from '../lib/endFast';
 import { FastingProtocol } from '../types';
 
 const TICK_INTERVAL_MS = 1000;
@@ -54,7 +54,7 @@ interface UseFastingReturn {
  */
 export function useFasting(): UseFastingReturn {
   const queryClient = useQueryClient();
-  const { activeFast, startFast: storeStart, stopFast: storeStop, setNotificationIds } = useFastingStore();
+  const { activeFast, startFast: storeStart, setNotificationIds } = useFastingStore();
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
 
@@ -66,6 +66,7 @@ export function useFasting(): UseFastingReturn {
 
   // Track previous phase for transition detection
   const prevPhaseRef = useRef<string | null>(null);
+  const elapsedHoursRef = useRef(0);
 
   // Sync elapsed seconds from persisted start time on mount / activeFast change
   useEffect(() => {
@@ -120,6 +121,10 @@ export function useFasting(): UseFastingReturn {
           phase: phase.name,
           protocol: activeFast.protocol,
         });
+        // Check whether the session was ended from another device while we
+        // were backgrounded. If so, endActiveFast runs and local teardown
+        // (LA, notifications, widget) follows.
+        reconcileActiveFast();
       }
     }
 
@@ -127,11 +132,19 @@ export function useFasting(): UseFastingReturn {
     return () => sub.remove();
   }, [activeFast]);
 
+  // Reconcile on mount too — covers cold-launch after another device ended
+  // the session. Only runs once per active session (key on sessionId).
+  useEffect(() => {
+    if (!sessionId) return;
+    reconcileActiveFast();
+  }, [sessionId]);
+
   // Derived values — memoized to avoid unnecessary recalculations
   const elapsedHours = elapsedSeconds / 3600;
   const targetHours = activeFast?.targetHours ?? 0;
   const progressRatio = targetHours > 0 ? Math.min(elapsedHours / targetHours, 1) : 0;
   const currentPhase = useMemo(() => getCurrentPhase(elapsedHours), [elapsedHours]);
+  elapsedHoursRef.current = elapsedHours;
 
   // Update Live Activity and shared state on phase change
   useEffect(() => {
@@ -141,6 +154,7 @@ export function useFasting(): UseFastingReturn {
     }
 
     if (prevPhaseRef.current !== currentPhase.name) {
+      const isInitialSync = prevPhaseRef.current === null;
       prevPhaseRef.current = currentPhase.name;
 
       pushWidgetSnapshot({
@@ -158,6 +172,16 @@ export function useFasting(): UseFastingReturn {
         phaseDescription: currentPhase.description,
         protocol: activeFast.protocol,
       });
+
+      // Only report real transitions — skip the initial phase on mount.
+      if (!isInitialSync) {
+        trackFastPhaseEntered({
+          phase: currentPhase.name,
+          elapsed_h: elapsedHoursRef.current,
+          protocol: activeFast.protocol,
+          target_hours: activeFast.targetHours,
+        });
+      }
     }
   }, [activeFast, currentPhase.name]);
 
@@ -203,14 +227,21 @@ export function useFasting(): UseFastingReturn {
         const start = new Date(startedAt);
         const endTime = new Date(start.getTime() + hours * 3600 * 1000);
 
-        const [startId, phaseIds, completionId, waterIds] = await Promise.all([
+        const [startId, phaseIds, completionId, waterIds, halfwayId] = await Promise.all([
           scheduleStartNotification(),
           prefs.phaseTransitions ? schedulePhaseNotifications(start, hours) : Promise.resolve([] as string[]),
           prefs.complete ? scheduleCompletionNotification(endTime) : Promise.resolve(''),
           prefs.hydration ? scheduleWaterReminders(start, hours) : Promise.resolve([] as string[]),
+          prefs.halfway ? scheduleHalfwayNotification(start, hours) : Promise.resolve(''),
         ] as const);
 
-        const ids = [startId, ...phaseIds, ...(completionId ? [completionId] : []), ...waterIds];
+        const ids = [
+          startId,
+          ...phaseIds,
+          ...(completionId ? [completionId] : []),
+          ...waterIds,
+          ...(halfwayId ? [halfwayId] : []),
+        ];
         setNotificationIds(ids);
 
         // Start Live Activity + widget updates (iOS only, no-op elsewhere)
@@ -251,11 +282,7 @@ export function useFasting(): UseFastingReturn {
         const endedAt = new Date().toISOString();
         const actualHours = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
 
-        const lastProtocol = activeFast.protocol;
-        storeStop();
-        await cancelAllNotifications();
-        await endLiveActivity();
-        clearWidgetSnapshot(lastProtocol);
+        await endActiveFast();
 
         if (completed) {
           trackFastCompleted({
@@ -290,7 +317,7 @@ export function useFasting(): UseFastingReturn {
         setIsLoading(false);
       }
     },
-    [activeFast, profile, storeStop, queryClient]
+    [activeFast, profile, queryClient]
   );
 
   return {

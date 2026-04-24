@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { useUserStore } from '../../stores/userStore';
 import { useFastingStore } from '../../stores/fastingStore';
+import { endActiveFast } from '../../lib/endFast';
 import { useHydrationStore } from '../../stores/hydrationStore';
 import { useHydration } from '../../hooks/useHydration';
 import { useTheme } from '../../hooks/useTheme';
@@ -17,10 +18,16 @@ import {
   trackPaywallViewed,
   trackWaterGoalChanged,
   trackProtocolChanged,
+  trackFastScheduleToggled,
+  trackNotificationPrefToggled,
+  trackSubscriptionRestored,
+  updateUserProperties,
 } from '../../lib/posthog';
+import type { NotificationPrefs } from '../../stores/userStore';
 import { syncFastSchedule } from '../../lib/fastScheduler';
 import { formatScheduleSubtitle } from '../../lib/scheduleFormat';
 import { FastScheduleSheet, FastScheduleSheetRef } from '../../components/profile/FastScheduleSheet';
+import { EditProfileSheet, EditProfileSheetRef } from '../../components/profile/EditProfileSheet';
 import { PROTOCOL_LIST } from '../../constants/protocols';
 import {
   MIN_DAILY_WATER_GOAL_ML,
@@ -49,6 +56,7 @@ export default function ProfileScreen() {
   const { dailyGoalMl, setDailyGoal } = useHydration();
   const [restoringPurchases, setRestoringPurchases] = useState(false);
   const scheduleSheetRef = useRef<FastScheduleSheetRef>(null);
+  const editProfileSheetRef = useRef<EditProfileSheetRef>(null);
 
   const { data: fastsLogged = 0 } = useQuery({
     queryKey: ['fasting_sessions_count', profile?.id],
@@ -89,7 +97,7 @@ export default function ProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await signOut();
     resetUser();
-    useFastingStore.getState().stopFast();
+    await endActiveFast();
     useHydrationStore.setState({
       todayLogs: [],
       lastResetDate: new Date().toISOString().split('T')[0],
@@ -98,7 +106,8 @@ export default function ProfileScreen() {
 
   async function handleRestore() {
     setRestoringPurchases(true);
-    await restorePurchases();
+    const pro = await restorePurchases();
+    trackSubscriptionRestored({ is_pro: pro });
     setRestoringPurchases(false);
   }
 
@@ -106,6 +115,7 @@ export default function ProfileScreen() {
     if (!profile || profile.preferred_protocol === next) return;
     Haptics.selectionAsync();
     trackProtocolChanged({ old_protocol: profile.preferred_protocol ?? '', new_protocol: next });
+    updateUserProperties({ preferred_protocol: next });
     setPreferredProtocol(next);
     supabase
       .from('profiles')
@@ -121,6 +131,7 @@ export default function ProfileScreen() {
     if (next < MIN_DAILY_WATER_GOAL_ML || next > MAX_DAILY_WATER_GOAL_ML) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     trackWaterGoalChanged({ old_goal_ml: dailyGoalMl, new_goal_ml: next });
+    updateUserProperties({ daily_water_goal_ml: next });
     setDailyGoal(next);
     if (profile) {
       supabase
@@ -147,6 +158,28 @@ export default function ProfileScreen() {
     }
   }
 
+  // Report schedule enable/disable transitions (covers sheet-confirmed enables too).
+  const prevScheduleEnabledRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    const enabled = !!schedule?.enabled;
+    if (prevScheduleEnabledRef.current === null) {
+      prevScheduleEnabledRef.current = enabled;
+      return;
+    }
+    if (prevScheduleEnabledRef.current !== enabled) {
+      prevScheduleEnabledRef.current = enabled;
+      trackFastScheduleToggled(enabled);
+      updateUserProperties({ fast_schedule_enabled: enabled });
+    }
+  }, [schedule?.enabled]);
+
+  function togglePref<K extends keyof NotificationPrefs>(key: K, value: boolean) {
+    setNotificationPrefs({ [key]: value } as Partial<NotificationPrefs>);
+    trackNotificationPrefToggled({ pref: key, enabled: value });
+    const propKey = `notif_${key === 'phaseTransitions' ? 'phase_transitions' : key}` as const;
+    updateUserProperties({ [propKey]: value } as Record<string, boolean>);
+  }
+
   function openScheduleSheet() {
     if (!isPro) {
       trackPaywallViewed('fast_schedule');
@@ -168,7 +201,7 @@ export default function ProfileScreen() {
         <Pressable
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/edit-profile');
+            editProfileSheetRef.current?.present();
           }}
           style={{ marginTop: 6 }}
         >
@@ -405,7 +438,7 @@ export default function ProfileScreen() {
             <Toggle
               theme={theme}
               on={notificationPrefs.phaseTransitions}
-              onChange={v => setNotificationPrefs({ phaseTransitions: v })}
+              onChange={v => togglePref('phaseTransitions', v)}
             />
           </View>
         </Card>
@@ -514,6 +547,7 @@ export default function ProfileScreen() {
         </Text>
       </ScrollView>
       <FastScheduleSheet ref={scheduleSheetRef} />
+      <EditProfileSheet ref={editProfileSheetRef} />
     </View>
   );
 }

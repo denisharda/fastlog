@@ -101,7 +101,10 @@ export default function ForgotPasswordScreen() {
     try {
       await verifyPasswordOtp(email, code);
       await updatePassword(password);
-      router.replace('/(tabs)');
+      // Don't drop the user into protected tabs — the session from the OTP
+      // flow may not be fully established yet. Send them back to log in
+      // with their new password.
+      router.replace('/(auth)/login');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not reset password');
     } finally {

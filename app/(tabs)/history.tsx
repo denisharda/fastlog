@@ -17,8 +17,12 @@ import { FastingSession } from '../../types';
 import { SessionDetailDrawer } from '../../components/history/SessionDetailDrawer';
 import { useFastingStore } from '../../stores/fastingStore';
 import { useNow } from '../../hooks/useNow';
-import { cancelAllNotifications } from '../../lib/notifications';
-import { trackPaywallViewed } from '../../lib/posthog';
+import { endActiveFast } from '../../lib/endFast';
+import {
+  trackPaywallViewed,
+  trackHistoryViewed,
+  trackHistorySessionOpened,
+} from '../../lib/posthog';
 import { useDailyHydrationTotals } from '../../hooks/useDailyHydration';
 import { useHydration } from '../../hooks/useHydration';
 import { useTheme } from '../../hooks/useTheme';
@@ -110,7 +114,6 @@ export default function HistoryScreen() {
   const profile = useUserStore(s => s.profile);
   const isPro = useUserStore(s => s.isPro);
   const activeFast = useFastingStore(s => s.activeFast);
-  const storeStop = useFastingStore(s => s.stopFast);
 
   const [cursorMonth, setCursorMonth] = useState(() => {
     const d = new Date();
@@ -142,6 +145,13 @@ export default function HistoryScreen() {
   const [drawerDate, setDrawerDate] = useState<string | null>(null);
 
   const allSessions = sessions ?? [];
+
+  const viewedRef = useRef(false);
+  useEffect(() => {
+    if (viewedRef.current || isLoading) return;
+    viewedRef.current = true;
+    trackHistoryViewed({ total_sessions: allSessions.length, is_pro: isPro });
+  }, [isLoading, allSessions.length, isPro]);
 
   const pagerRef = useRef<ScrollView>(null);
   const [gridWidth, setGridWidth] = useState(0);
@@ -218,12 +228,25 @@ export default function HistoryScreen() {
   function handleDayPress(dateString: string) {
     const daySessions = allSessions.filter(s => new Date(s.started_at).toDateString() === dateString);
     if (daySessions.length === 0) return;
+    const first = daySessions[0];
+    const endMs = first.ended_at ? new Date(first.ended_at).getTime() : Date.now();
+    trackHistorySessionOpened({
+      completed: first.completed,
+      duration_h: (endMs - new Date(first.started_at).getTime()) / 3600000,
+      protocol: first.protocol,
+    });
     setDrawerSessions(daySessions);
     setDrawerDate(dateString);
     setDrawerVisible(true);
   }
 
   function handleCardPress(session: FastingSession) {
+    const endMs = session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
+    trackHistorySessionOpened({
+      completed: session.completed,
+      duration_h: (endMs - new Date(session.started_at).getTime()) / 3600000,
+      protocol: session.protocol,
+    });
     setDrawerSessions([session]);
     setDrawerDate(null);
     setDrawerVisible(true);
@@ -236,8 +259,7 @@ export default function HistoryScreen() {
       .eq('id', sessionId);
     if (dbError) return;
     if (activeFast?.sessionId === sessionId) {
-      storeStop();
-      cancelAllNotifications();
+      await endActiveFast();
     }
     queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
   }

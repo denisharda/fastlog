@@ -1,7 +1,7 @@
 import '../global.css';
 import { validateEnv } from '../lib/validateEnv';
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, useColorScheme } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 import { fetchProfile } from '../lib/auth';
 import { useUserStore } from '../stores/userStore';
 import { initRevenueCat, identifyRevenueCatUser } from '../lib/revenuecat';
-import { initPostHog, trackAppLaunched } from '../lib/posthog';
+import { initPostHog, trackAppLaunched, identifyUser } from '../lib/posthog';
 import { registerForPushNotifications } from '../lib/notifications';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
@@ -50,22 +50,30 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
       router.replace('/(auth)/welcome');
     } else if (session && inAuthGroup) {
       // Signed in — load profile and redirect to tabs
-      fetchProfile(session.user.id).then((profile) => {
-        if (profile) {
-          setProfile({
-            id: profile.id,
-            name: profile.name,
-            preferred_protocol: profile.preferred_protocol,
-            daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
-            push_token: profile.push_token ?? null,
-            created_at: profile.created_at,
-          });
-          router.replace('/(tabs)');
-        } else {
-          // No profile yet — go to onboarding
+      fetchProfile(session.user.id)
+        .then((profile) => {
+          if (profile) {
+            setProfile({
+              id: profile.id,
+              name: profile.name,
+              preferred_protocol: profile.preferred_protocol,
+              daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
+              push_token: profile.push_token ?? null,
+              created_at: profile.created_at,
+            });
+            router.replace('/(tabs)');
+          } else {
+            // No profile yet — go to onboarding
+            router.replace('/onboarding/protocol');
+          }
+        })
+        .catch((err) => {
+          // Any unexpected throw (network fully offline, JS error in the
+          // Supabase client, etc.) must not strand the user on the auth
+          // screen. Route them to onboarding as a safe default.
+          console.error('[RootLayout] fetchProfile threw:', err);
           router.replace('/onboarding/protocol');
-        }
-      });
+        });
     }
   }, [session, isLoading, segments]);
 }
@@ -75,15 +83,30 @@ export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(true);
   const profile = useUserStore((s) => s.profile);
   const router = useRouter();
+  const isDark = useColorScheme() === 'dark';
 
   // Sync Pro status from RevenueCat into the user store
   useSubscription();
 
-  // Identify the user to RevenueCat whenever their profile is loaded
+  // Identify the user to RevenueCat and PostHog whenever their profile is loaded
   useEffect(() => {
-    if (profile?.id) {
-      try { identifyRevenueCatUser(profile.id); } catch (e) { console.warn('[RootLayout] RC identify failed:', e); }
-    }
+    if (!profile?.id) return;
+    try { identifyRevenueCatUser(profile.id); } catch (e) { console.warn('[RootLayout] RC identify failed:', e); }
+    try {
+      const prefs = useUserStore.getState().notificationPrefs;
+      const schedule = useUserStore.getState().fastSchedule;
+      identifyUser(profile.id, {
+        preferred_protocol: profile.preferred_protocol,
+        goal: profile.goal ?? null,
+        daily_water_goal_ml: profile.daily_water_goal_ml,
+        notif_phase_transitions: prefs.phaseTransitions,
+        notif_hydration: prefs.hydration,
+        notif_halfway: prefs.halfway,
+        notif_complete: prefs.complete,
+        fast_schedule_enabled: !!schedule?.enabled,
+        signup_date: profile.created_at,
+      });
+    } catch (e) { console.warn('[RootLayout] PostHog identify failed:', e); }
   }, [profile?.id]);
 
   // Register for push notifications once we have a profile
@@ -197,8 +220,15 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#FBF6EE', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#C8621B" size="large" />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: isDark ? '#17110A' : '#FBF6EE',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color={isDark ? '#E89B5C' : '#C8621B'} size="large" />
       </View>
     );
   }
@@ -209,7 +239,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <BottomSheetModalProvider>
             <View style={{ flex: 1 }}>
-              <StatusBar style="dark" />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
                 <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
@@ -223,13 +253,6 @@ export default function RootLayout() {
                 />
                 <Stack.Screen
                   name="fast-complete"
-                  options={{
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom',
-                  }}
-                />
-                <Stack.Screen
-                  name="edit-profile"
                   options={{
                     presentation: 'modal',
                     animation: 'slide_from_bottom',

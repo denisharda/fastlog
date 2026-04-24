@@ -87,6 +87,28 @@ export async function scheduleCompletionNotification(
 }
 
 /**
+ * Schedule a single quiet "halfway" check-in at the midpoint of the fast.
+ * Returns empty string if the midpoint is already in the past.
+ */
+export async function scheduleHalfwayNotification(
+  fastStartTime: Date,
+  targetHours: number
+): Promise<string> {
+  const triggerDate = new Date(fastStartTime.getTime() + (targetHours / 2) * 3600 * 1000);
+  if (triggerDate <= new Date()) return '';
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Halfway there',
+      body: "You're at the midpoint. Quiet progress — nice work.",
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: triggerDate,
+    },
+  });
+}
+
+/**
  * Encouraging messages per fasting phase, sent when entering each new phase.
  */
 const PHASE_NOTIFICATIONS: Record<string, { title: string; body: string }> = {
