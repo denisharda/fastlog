@@ -9,6 +9,7 @@ import {
   schedulePhaseNotifications,
   scheduleWaterReminders,
   scheduleHalfwayNotification,
+  cancelAllNotifications,
 } from './notifications';
 import type { FastingProtocol } from '../types';
 
@@ -58,6 +59,14 @@ export async function applyActiveSession(
     startedAt: session.startedAt,
     scheduledNotificationIds: [],
   });
+
+  // If this call isn't a fresh user-initiated start, there may be stale
+  // native-scheduled notifications from a previous session whose IDs were
+  // lost across persist rehydration. Cancel the whole pending set before
+  // scheduling new ones so the OS doesn't show duplicates.
+  if (!opts.isFreshStart) {
+    await cancelAllNotifications();
+  }
 
   // 2. Notifications — schedulers self-skip past triggers, so adoption
   //    of a fast already 4h in just schedules the remaining phases.
