@@ -66,9 +66,10 @@ export function buildExpoMessages(
   if (args.kind === 'end') {
     return recipients.map((t) => ({
       to: t.push_token,
-      sound: null,
+      title: 'Fast ended',
+      body: `Your ${args.protocol} fast ended on another device.`,
+      sound: 'default',
       priority: 'high',
-      _contentAvailable: true,
       data: { kind: 'fast_ended', sessionId: args.sessionId },
     }));
   }
