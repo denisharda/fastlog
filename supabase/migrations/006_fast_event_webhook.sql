@@ -29,7 +29,7 @@ create extension if not exists supabase_vault;
 create or replace function public.notify_fast_event() returns trigger
 language plpgsql
 security definer
-set search_path = public, extensions, vault
+set search_path = public, extensions, net, vault
 as $$
 declare
   edge_url    text;
@@ -44,7 +44,9 @@ begin
     return new;
   end if;
 
-  perform extensions.http_post(
+  -- pg_net publishes its functions in the `net` schema (not `extensions`),
+  -- regardless of where the extension itself is installed.
+  perform net.http_post(
     url     := edge_url || '/notify-fast-event',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
