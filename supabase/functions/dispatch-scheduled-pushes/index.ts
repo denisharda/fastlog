@@ -98,6 +98,19 @@ export async function handleRequest(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
   }
 
+  // Delete due rows immediately before any Expo call.
+  // This is best-effort (pushes may be dropped on Expo failure) and
+  // eliminates duplicate-send when a slow minute re-enters the cron window.
+  const dueIds = (due as ScheduledRow[]).map((r) => r.id);
+  const { error: delErr } = await supabase
+    .from('scheduled_pushes')
+    .delete()
+    .in('id', dueIds);
+  if (delErr) {
+    console.error('[dispatch-scheduled-pushes] delete failed', delErr);
+    return new Response(JSON.stringify({ error: 'delete failed' }), { status: 500 });
+  }
+
   // Group rows by user to minimize token lookups.
   const byUser = new Map<string, ScheduledRow[]>();
   for (const r of due as ScheduledRow[]) {
@@ -107,7 +120,6 @@ export async function handleRequest(req: Request): Promise<Response> {
   }
 
   let totalSent = 0;
-  const processedIds: string[] = [];
 
   for (const [userId, rows] of byUser) {
     const { data: tokens } = await supabase
@@ -122,20 +134,11 @@ export async function handleRequest(req: Request): Promise<Response> {
         await sendToExpo(messages);
         totalSent += messages.length;
       }
-      processedIds.push(row.id);
     }
   }
 
-  if (processedIds.length > 0) {
-    const { error: delErr } = await supabase
-      .from('scheduled_pushes')
-      .delete()
-      .in('id', processedIds);
-    if (delErr) console.error('[dispatch-scheduled-pushes] delete failed', delErr);
-  }
-
   return new Response(
-    JSON.stringify({ sent: totalSent, processed: processedIds.length }),
+    JSON.stringify({ sent: totalSent, processed: dueIds.length }),
     { status: 200 },
   );
 }
