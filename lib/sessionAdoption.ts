@@ -39,6 +39,17 @@ export async function applyActiveSession(
   const store = useFastingStore.getState();
   const prefs = useUserStore.getState().notificationPrefs;
 
+  // Idempotency: if the store already reflects this exact session and
+  // this isn't a fresh start, the notifications / LA / widget are
+  // already scheduled. Re-running would duplicate them and leak the
+  // previous notification IDs. Short-circuit.
+  if (
+    !opts.isFreshStart &&
+    store.activeFast?.sessionId === session.sessionId
+  ) {
+    return store.activeFast.scheduledNotificationIds;
+  }
+
   // 1. Local state
   store.startFast({
     sessionId: session.sessionId,
