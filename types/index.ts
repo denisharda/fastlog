@@ -7,7 +7,6 @@ export interface Profile {
   name: string | null;
   preferred_protocol: FastingProtocol;
   daily_water_goal_ml: number;
-  push_token: string | null;
   goal?: FastingGoal | null;
   created_at: string;
   notification_prefs?: {

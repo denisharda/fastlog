@@ -62,7 +62,6 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
               name: profile.name,
               preferred_protocol: profile.preferred_protocol,
               daily_water_goal_ml: profile.daily_water_goal_ml ?? 2000,
-              push_token: profile.push_token ?? null,
               created_at: profile.created_at,
             });
             // Hydrate notification prefs from DB so a fresh device picks
@@ -125,22 +124,7 @@ export default function RootLayout() {
     registerForPushNotifications()
       .then((token) => {
         if (!token) return;
-        // New per-device registration — used by the server fan-out path.
         void registerDeviceToken(profile.id, token);
-
-        // Legacy profiles.push_token write — retained for one release so
-        // anything reading that column (legacy scripts, etc.) still works.
-        // TODO: remove after one release cycle.
-        if (token !== profile.push_token) {
-          useUserStore.getState().updateProfile({ push_token: token });
-          supabase
-            .from('profiles')
-            .update({ push_token: token })
-            .eq('id', profile.id)
-            .then(({ error }) => {
-              if (error) console.warn('[RootLayout] Failed to save legacy push token:', error);
-            });
-        }
       })
       .catch((e) => {
         console.warn('[RootLayout] Push registration failed:', e);
