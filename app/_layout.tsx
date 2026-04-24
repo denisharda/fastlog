@@ -15,6 +15,7 @@ import { useUserStore } from '../stores/userStore';
 import { initRevenueCat, identifyRevenueCatUser } from '../lib/revenuecat';
 import { initPostHog, trackAppLaunched, identifyUser } from '../lib/posthog';
 import { registerForPushNotifications } from '../lib/notifications';
+import { registerDeviceToken } from '../lib/deviceTokens';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
 import { pushWidgetSnapshot } from '../lib/widget';
@@ -113,21 +114,29 @@ export default function RootLayout() {
   useEffect(() => {
     if (!profile?.id) return;
 
-    registerForPushNotifications().then((token) => {
-      if (token && token !== profile.push_token) {
-        // Save token to local store and Supabase
-        useUserStore.getState().updateProfile({ push_token: token });
-        supabase
-          .from('profiles')
-          .update({ push_token: token })
-          .eq('id', profile.id)
-          .then(({ error }) => {
-            if (error) console.warn('[RootLayout] Failed to save push token:', error);
-          });
-      }
-    }).catch((e) => {
-      console.warn('[RootLayout] Push registration failed:', e);
-    });
+    registerForPushNotifications()
+      .then((token) => {
+        if (!token) return;
+        // New per-device registration — used by the server fan-out path.
+        void registerDeviceToken(profile.id, token);
+
+        // Legacy profiles.push_token write — retained for one release so
+        // anything reading that column (legacy scripts, etc.) still works.
+        // TODO: remove after one release cycle.
+        if (token !== profile.push_token) {
+          useUserStore.getState().updateProfile({ push_token: token });
+          supabase
+            .from('profiles')
+            .update({ push_token: token })
+            .eq('id', profile.id)
+            .then(({ error }) => {
+              if (error) console.warn('[RootLayout] Failed to save legacy push token:', error);
+            });
+        }
+      })
+      .catch((e) => {
+        console.warn('[RootLayout] Push registration failed:', e);
+      });
   }, [profile?.id]);
 
   // Sync the recurring fast schedule notification on app launch
