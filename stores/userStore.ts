@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FastingProtocol, Profile } from '../types';
 import { DEFAULT_PROTOCOL } from '../constants/protocols';
+import { supabase } from '../lib/supabase';
 
 export interface FastSchedule {
   enabled: boolean;
@@ -59,7 +60,7 @@ const initialState = {
 
 export const useUserStore = create<UserState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...initialState,
 
       setProfile: (profile) => set({ profile }),
@@ -86,10 +87,22 @@ export const useUserStore = create<UserState>()(
             : null,
         })),
 
-      setNotificationPrefs: (prefs) =>
+      setNotificationPrefs: (prefs) => {
         set((state) => ({
           notificationPrefs: { ...state.notificationPrefs, ...prefs },
-        })),
+        }));
+        const profile = get().profile;
+        if (profile) {
+          const next = { ...get().notificationPrefs };
+          supabase
+            .from('profiles')
+            .update({ notification_prefs: next })
+            .eq('id', profile.id)
+            .then(({ error }) => {
+              if (error) console.warn('[userStore] sync notification_prefs failed:', error);
+            });
+        }
+      },
 
       reset: () => set(initialState),
     }),

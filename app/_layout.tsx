@@ -42,7 +42,7 @@ const queryClient = new QueryClient({
 function useProtectedRoute(session: Session | null, isLoading: boolean) {
   const segments = useSegments();
   const router = useRouter();
-  const { setProfile } = useUserStore();
+  const { setProfile, setNotificationPrefs } = useUserStore();
 
   useEffect(() => {
     if (isLoading) return;
@@ -65,6 +65,11 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
               push_token: profile.push_token ?? null,
               created_at: profile.created_at,
             });
+            // Hydrate notification prefs from DB so a fresh device picks
+            // up the user's saved preferences immediately after sign-in.
+            if (profile.notification_prefs) {
+              setNotificationPrefs(profile.notification_prefs);
+            }
             router.replace('/(tabs)');
           } else {
             // No profile yet — go to onboarding
