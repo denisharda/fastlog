@@ -202,7 +202,7 @@ export function useFasting(): UseFastingReturn {
               user_id: profile.id,
               protocol,
               target_hours: hours,
-              started_at: startedAt,
+              // started_at omitted — DB default now() is authoritative.
               last_modified_by_device: deviceId,
             })
             .then(({ error: dbError }) => {
