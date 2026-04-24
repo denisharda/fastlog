@@ -10,7 +10,10 @@
     "lint": "eslint . --ext .ts,.tsx",
     "postinstall": "node scripts/fix-expo-ui-either.js",
     "typecheck": "tsc --noEmit",
-    "brand:assets": "node scripts/generate-brand-assets.js"
+    "brand:assets": "node scripts/generate-brand-assets.js",
+    "android:prebuild": "expo prebuild --platform android --clean",
+    "android:apk": "npm run android:prebuild && cd android && ./gradlew assembleRelease",
+    "android:aab": "npm run android:prebuild && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@expo/ui": "~55.0.11",

@@ -33,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FBF6EE',
     },
-    package: 'com.fastlog.app',
+    package: 'com.vectolis.fastlog',
   },
   web: {
     bundler: 'metro',
@@ -56,6 +56,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         bundleIdentifier: 'com.fastlog.app.widgets',
       },
     ],
+    './plugins/withEasBuildGradle/app.plugin.js',
   ],
   experiments: {
     typedRoutes: true,

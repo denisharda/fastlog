@@ -297,6 +297,29 @@ All numeric displays use `TABULAR` (`fontVariant: ['tabular-nums']`).
 - PostHog event on every meaningful action (`fast_started`, `fast_completed`, `fast_abandoned`, `paywall_viewed`, `pro_purchased`, `water_logged`, `water_goal_reached`, `protocol_changed`, `share_session`, `history_exported`).
 - Copy tone is **warm, not pushy**: "You're in deep fat-burn", "Beautifully done", "Kind, not pushy". No streak-pressure language, no red alerts for inactivity.
 
+## Bundle identifiers
+- **iOS app:** `com.fastlog.app`
+- **iOS widget extension:** `com.fastlog.app.widgets`
+- **iOS App Group:** `group.com.fastlog.app`
+- **Android package:** `com.vectolis.fastlog` — different from iOS because the Play Store listing was registered under Vectolis. **Don't change this back to `com.fastlog.app`** — Google Play will reject any upload whose package doesn't match the listing.
+
+## Android local build
+Signing keystore lives at `~/keystores/fastlog/upload.jks` (outside the repo). `credentials.json` at the repo root points to it — gitignored, never commit. `plugins/withEasBuildGradle` wires `credentials.json` into `android/app/eas-build.gradle` on every `expo prebuild`, matching EAS cloud-build signing.
+
+**Prereqs:** JDK **17** (not 21 — gradle/AGP breaks). Android SDK at `~/Library/Android/sdk`.
+
+```
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export PATH=$JAVA_HOME/bin:$PATH
+```
+
+**Build commands** (defined in `package.json`):
+- `npm run android:prebuild` — regenerates `android/` from `app.config.ts`
+- `npm run android:apk` — prebuild + signed APK → `android/app/build/outputs/apk/release/app-release.apk`
+- `npm run android:aab` — prebuild + signed AAB → `android/app/build/outputs/bundle/release/app-release.aab`
+
+See `README.md` for full setup + troubleshooting.
+
 ## Environment variables (`.env`)
 ```
 EXPO_PUBLIC_SUPABASE_URL=

@@ -10,18 +10,29 @@
       "ios": {
         "simulator": false,
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk",
+        "credentialsSource": "local"
       }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "credentialsSource": "local"
       }
     }
   },
@@ -31,6 +42,10 @@
         "appleId": "REPLACE_WITH_YOUR_APPLE_ID@example.com",
         "ascAppId": "REPLACE_WITH_NUMERIC_APPLE_ID_FROM_ASC",
         "appleTeamId": "REPLACE_WITH_10_CHAR_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./play-service-account.json",
+        "track": "internal"
       }
     }
   }
