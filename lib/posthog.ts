@@ -102,3 +102,53 @@ export function trackShareSession(props: {
 }): void {
   posthogInstance?.capture('share_session', props);
 }
+
+export function trackFastPhaseEntered(props: {
+  phase: string;
+  elapsed_h: number;
+  protocol: string;
+  target_hours: number;
+}): void {
+  posthogInstance?.capture('fast_phase_entered', props);
+}
+
+export function trackHistoryViewed(props: {
+  total_sessions: number;
+  is_pro: boolean;
+}): void {
+  posthogInstance?.capture('history_viewed', props);
+}
+
+export function trackHistorySessionOpened(props: {
+  completed: boolean;
+  duration_h: number;
+  protocol: string;
+}): void {
+  posthogInstance?.capture('history_session_opened', props);
+}
+
+export function trackFastScheduleToggled(enabled: boolean): void {
+  posthogInstance?.capture('fast_schedule_toggled', { enabled });
+}
+
+export function trackNotificationPrefToggled(props: {
+  pref: string;
+  enabled: boolean;
+}): void {
+  posthogInstance?.capture('notification_pref_toggled', props);
+}
+
+export function trackSubscriptionRestored(props: { is_pro: boolean }): void {
+  posthogInstance?.capture('subscription_restored', props);
+}
+
+type UserProperties = Record<string, string | number | boolean | null>;
+
+export function identifyUser(userId: string, properties?: UserProperties): void {
+  posthogInstance?.identify(userId, properties);
+}
+
+export function updateUserProperties(properties: UserProperties): void {
+  // PostHog's canonical "set person properties" pattern.
+  posthogInstance?.capture('$set', { $set: properties });
+}
