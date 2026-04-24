@@ -15,6 +15,7 @@ import type { FastingProtocol } from '../types';
 
 let channel: RealtimeChannel | null = null;
 let ownDeviceId: string | null = null;
+let stopPromise: Promise<void> | null = null;
 
 async function ensureDeviceId(): Promise<string> {
   if (!ownDeviceId) ownDeviceId = await getDeviceId();
@@ -79,8 +80,12 @@ function handleHydrationDelete(row: Pick<HydrationLogRow, 'id'>) {
  * hydration_logs. Safe to call repeatedly — no-op if already subscribed.
  * On reconnect (after a transient network drop) we run a full reconcile
  * to close any gap that happened while the socket was down.
+ *
+ * If stopRealtime is in flight (e.g. during a user switch), we wait for it
+ * to complete before opening a new channel to avoid a leaked subscription.
  */
 export async function startRealtime(): Promise<void> {
+  if (stopPromise) await stopPromise;
   if (channel) return;
   const userId = useUserStore.getState().profile?.id;
   if (!userId) return;
@@ -116,8 +121,15 @@ export async function startRealtime(): Promise<void> {
     });
 }
 
-export async function stopRealtime(): Promise<void> {
-  if (!channel) return;
-  await supabase.removeChannel(channel);
-  channel = null;
+export function stopRealtime(): Promise<void> {
+  if (stopPromise) return stopPromise;
+  if (!channel) return Promise.resolve();
+  const closing = channel;
+  channel = null; // null eagerly so startRealtime idempotency check doesn't re-enter
+  stopPromise = supabase.removeChannel(closing).then(() => {
+    ownDeviceId = null;
+  }).finally(() => {
+    stopPromise = null;
+  });
+  return stopPromise;
 }
