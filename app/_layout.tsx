@@ -18,6 +18,7 @@ import { registerForPushNotifications } from '../lib/notifications';
 import { registerDeviceToken } from '../lib/deviceTokens';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
+import { registerBackgroundNotificationTask } from '../lib/backgroundNotifications';
 import { pushWidgetSnapshot } from '../lib/widget';
 import { useFastingStore } from '../stores/fastingStore';
 import { getCurrentPhase } from '../constants/phases';
@@ -142,6 +143,13 @@ export default function RootLayout() {
   // Sync the recurring fast schedule notification on app launch
   useEffect(() => {
     try { syncFastSchedule(); } catch (e) { console.warn('[RootLayout] syncFastSchedule failed:', e); }
+  }, []);
+
+  // Register the background notification task so silent fast_ended pushes can
+  // cancel this device's pending local notifications when another device ends
+  // the fast.
+  useEffect(() => {
+    registerBackgroundNotificationTask();
   }, []);
 
   // Handle notification taps — navigate to timer tab and reschedule
