@@ -10,7 +10,8 @@ Target: iOS App Store. Light + dark mode parity.
 - **Routing**: Expo Router v3 (file-based, app/ directory), custom glass-pill TabBar
 - **Backend**: Supabase (auth, Postgres + RLS)
 - **Payments**: RevenueCat (iOS). Entitlement id: `FastBuddy Pro`. Packages: `monthly`, `yearly`.
-- **Notifications**: Expo Push + scheduled local (phase transitions, hydration, completion)
+- **Notifications**: Expo Push. Phase/halfway/water/complete notifications are **server-scheduled** (Postgres `scheduled_pushes` + `pg_cron` → Edge Function → Expo API) so every signed-in device gets the same pings. Only the one-shot "fast started" confirmation is scheduled locally.
+- **Multi-device sync**: Supabase **Realtime** (`postgres_changes` channel on `fasting_sessions` + `hydration_logs`) drives instant cross-device sync while foregrounded. Edge Function fan-out via Expo push wakes backgrounded devices. See "Multi-device sync" section.
 - **Analytics**: PostHog React Native
 - **State**: Zustand (persisted via AsyncStorage), React Query for server data
 - **SVG**: `react-native-svg` — all rings, glows, icons are drawn, no bitmaps
@@ -71,17 +72,28 @@ Target: iOS App Store. Light + dark mode parity.
 ├── lib/
 │   ├── supabase.ts
 │   ├── revenuecat.ts
-│   ├── notifications.ts
+│   ├── notifications.ts        # Only start-notification + registerForPushNotifications remain — server owns the rest
 │   ├── liveActivity.ts
-│   ├── sharedState.ts          # App Groups bridge for widgets
-│   ├── auth.ts                 # signInWithApple/Email, resetPassword, signUpWithEmail
-│   ├── exportHistory.ts
+│   ├── widget.ts               # App Groups bridge for widgets / snapshot pushes
+│   ├── auth.ts                 # signInWithApple/Email/Google, resetPassword, signUpWithEmail, signOut
+│   ├── deviceId.ts             # Stable per-install UUID stored in AsyncStorage
+│   ├── deviceTokens.ts         # register/unregister push tokens per (user, device)
+│   ├── sessionAdoption.ts      # applyActiveSession — shared fresh-start + adopt bring-up
+│   ├── endFast.ts              # endActiveFast + syncWithRemote + pendingEnd outbox flush
+│   ├── realtime.ts             # Supabase Realtime subscription (foreground instant sync)
+│   ├── hydrationSync.ts        # syncHydrationWithRemote — fetch-on-open catchup
+│   ├── fastScheduler.ts        # Recurring "time to start your fast" reminder (local only)
+│   ├── captureShareCard.ts
+│   ├── scheduleFormat.ts
+│   ├── validateEnv.ts
 │   └── posthog.ts
 ├── stores/
-│   ├── fastingStore.ts
+│   ├── fastingStore.ts         # activeFast + scheduledNotificationIds + pendingEnd outbox
 │   ├── userStore.ts            # profile + isPro + hasSeenIntro + notificationPrefs + fastSchedule
-│   └── hydrationStore.ts
-├── supabase/migrations/        # 001 initial, 002 hydration, 003 constraints
+│   └── hydrationStore.ts       # todayLogs + applyRemoteLog/removeLogById for Realtime merges
+├── supabase/
+│   ├── migrations/             # 001–011 — see Database schema section below
+│   └── functions/              # Deno Edge Functions (see below)
 ├── widgets/                    # iOS Home Screen Widget + Live Activity
 │   ├── FastingWidget.tsx
 │   └── FastingActivity.tsx
@@ -120,10 +132,33 @@ create table hydration_logs (
   amount_ml int not null check (amount_ml > 0),
   logged_at timestamptz default now()
 );
-```
-RLS: users can only read/write their own rows. A trigger auto-creates a profile row on `auth.users` insert.
 
-> The legacy `checkins` table and `coach_personality` column from the original build remain in prior migrations but are no longer referenced by the app. The `generate-checkin` / `weekly-insight` Edge Functions have been removed.
+-- Added later — multi-device sync plumbing
+create table device_tokens (...)    -- one row per (user_id, device_id). push_token lives here.
+create table scheduled_pushes (...) -- seeded by seed_scheduled_pushes trigger on fast INSERT.
+create table push_tickets (...)     -- Expo ticket ledger reaped by reap-push-receipts.
+alter table profiles
+  add column notification_prefs jsonb default '{"phaseTransitions":true,"hydration":true,"halfway":true,"complete":true}';
+```
+
+**Triggers (migrations 006–010):**
+- `fasting_session_inserted` / `fasting_session_updated` → POST to `notify-fast-event` (visible cross-device push on start / early end).
+- `seed_scheduled_pushes` → on fast INSERT, seeds `scheduled_pushes` honoring the user's `notification_prefs`.
+- `reap_scheduled_pushes_on_end` → on UPDATE with `ended_at` transition, deletes future scheduled rows.
+- `pg_cron` `dispatch-scheduled-pushes` every minute → POSTs to `dispatch-scheduled-pushes` Edge Function. No-ops if `edge_url` Vault secret is unset (local dev is silent).
+- Partial unique index `fasting_sessions_one_active_per_user` on `(user_id) WHERE ended_at IS NULL` enforces one active fast per user. Client catches `23505` and adopts.
+
+**RLS:** users read/write only their own rows on `profiles`, `fasting_sessions`, `hydration_logs`, `device_tokens`. `scheduled_pushes` + `push_tickets` are service-role only.
+
+**Vault secrets** (seeded in 006, reused by 009/010): `edge_url` (base Edge Function URL), `webhook_secret` (shared secret; also `supabase secrets set WEBHOOK_SECRET=...` for the function env). Migration 011 dropped the legacy `checkins` table.
+
+## Edge Functions
+Three Deno functions in `supabase/functions/`:
+- `notify-fast-event` — triggered by fast INSERT/UPDATE. Fans out to other devices via Expo push. Originator-skip via `last_modified_by_device`.
+- `dispatch-scheduled-pushes` — pg_cron worker. Fetches due `scheduled_pushes` rows, **deletes them first** (prevents duplicate-send on slow minutes), then POSTs to Expo. Persist `tickets` into `push_tickets`.
+- `reap-push-receipts` — pg_cron worker. Pulls tickets ≥15min old, calls Expo `getReceipts`, deletes `DeviceNotRegistered` tokens + processed tickets.
+
+All three authenticate via `x-webhook-secret` header.
 
 ## Fasting phases
 | Range | Name | Description |
@@ -152,13 +187,39 @@ Free always gets: full Timer, Water tracking, basic notifications.
 Always read Pro status from RevenueCat (`FastBuddy Pro` entitlement); never persist to Supabase.
 
 ## Notification preferences
-`userStore.notificationPrefs` controls scheduling on fast start:
+Stored as `profiles.notification_prefs` (jsonb) in the DB; mirrored into `userStore.notificationPrefs` (AsyncStorage) for fast UI reads. `setNotificationPrefs` fire-and-forgets the update to `profiles` so the server-side `seed_scheduled_pushes` trigger honors the latest toggle state.
+
+Four toggles:
 - `phaseTransitions` — encouraging message when entering each new phase
 - `hydration` — every 2 hours during the fasting window
 - `halfway` — quiet midpoint check-in
 - `complete` — celebration at target end time
 
-Values are set via onboarding step 3 and adjustable from Profile.
+Values are set via onboarding step 3 and adjustable from Profile. On sign-in on a fresh device, `_layout.tsx` hydrates `userStore.notificationPrefs` from the DB so toggles follow the user across installs.
+
+## Multi-device sync architecture
+Goal: starting a fast on one device lights up timer/widget/LA on every other signed-in device, and every device receives the same notifications regardless of which one started it.
+
+**Transports:**
+| State | Transport | Latency |
+|---|---|---|
+| Both devices foreground | Supabase Realtime WebSocket (`postgres_changes` on `fasting_sessions` + `hydration_logs`, filtered by `user_id`) | <1s |
+| Other device backgrounded | `notify-fast-event` + `dispatch-scheduled-pushes` → Expo push | ~1–60s |
+| Reconnect / cold launch | `syncWithRemote()` + `syncHydrationWithRemote()` on foreground | seconds |
+
+**Ownership:**
+- **Server** owns phase/halfway/water/complete notification *timing* via `scheduled_pushes` + pg_cron. Client never schedules these locally.
+- **Client** owns: the one-shot "fast started" local confirmation, the recurring `fastScheduler` "time to start your fast" reminder, and foreground Realtime subscription (started/stopped on AppState).
+
+**Idempotency / dedup:**
+- `applyActiveSession({ isFreshStart: false })` is idempotent when `store.activeFast?.sessionId === session.sessionId`.
+- Fasting Realtime handlers filter own-device echoes via `last_modified_by_device === getDeviceId()`.
+- `hydrationStore.applyRemoteLog` dedups by id and guards today-only — originator's own echo is a no-op.
+- Dispatcher **deletes rows before sending** to Expo — accepts push-drop on Expo failure (pushes are best-effort) in exchange for zero duplicate sends when a cron run runs longer than its 60s slot.
+
+**Originator skip:** every write stamps `last_modified_by_device = getDeviceId()`. `notify-fast-event` validates the claim against `device_tokens` then excludes that token from fan-out so the originator doesn't get a push for its own action.
+
+**Durable end-write outbox:** `stopFast` persists `pendingEnd` in `fastingStore` before retrying the UPDATE up to 3× with backoff. `flushPendingEnd` runs before `syncWithRemote` and awaits Zustand rehydration first (prevents timer-resurrection on cold launch).
 
 ## RevenueCat
 - Entitlement: `FastBuddy Pro`
@@ -252,3 +313,7 @@ EXPO_PUBLIC_POSTHOG_KEY=
 - Don't add red alarm copy or streak-pressure nudges — it breaks the Amber Sunrise brand.
 - Don't skip `TABULAR` on numeric displays — it's what makes the app feel premium.
 - Don't hardcode theme colors in widgets or Live Activities — keep their COLORS constant in sync with `constants/theme.ts`.
+- **Don't schedule phase/halfway/water/complete notifications locally** — those are server-owned (`scheduled_pushes`). The only local schedule left is the one-shot `scheduleStartNotification` on fresh start and the recurring `fastScheduler` reminder.
+- **Don't skip stamping `last_modified_by_device`** on fasting_sessions / hydration_logs writes. It's how originator-skip + Realtime echo-dedup work.
+- **Don't write to `profiles.push_token`** — that column is legacy. Push tokens live in `device_tokens` keyed by `(user_id, device_id)`.
+- **Don't add a new scheduled notification kind** without also adding it to `seed_scheduled_pushes()` in a migration and making sure `notification_prefs` covers it.
