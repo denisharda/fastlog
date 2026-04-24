@@ -10,6 +10,12 @@ export interface Profile {
   push_token: string | null;
   goal?: FastingGoal | null;
   created_at: string;
+  notification_prefs?: {
+    phaseTransitions: boolean;
+    hydration: boolean;
+    halfway: boolean;
+    complete: boolean;
+  } | null;
 }
 
 export interface FastingSession {

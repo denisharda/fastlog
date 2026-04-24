@@ -1,7 +1,7 @@
 import '../global.css';
 import { validateEnv } from '../lib/validateEnv';
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, ActivityIndicator, useColorScheme, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -18,7 +18,9 @@ import { registerForPushNotifications } from '../lib/notifications';
 import { registerDeviceToken } from '../lib/deviceTokens';
 import { useSubscription } from '../hooks/useSubscription';
 import { syncFastSchedule } from '../lib/fastScheduler';
-import { registerBackgroundNotificationTask } from '../lib/backgroundNotifications';
+import { startRealtime, stopRealtime } from '../lib/realtime';
+import { syncHydrationWithRemote } from '../lib/hydrationSync';
+import { syncWithRemote } from '../lib/endFast';
 import { pushWidgetSnapshot } from '../lib/widget';
 import { useFastingStore } from '../stores/fastingStore';
 import { getCurrentPhase } from '../constants/phases';
@@ -40,7 +42,7 @@ const queryClient = new QueryClient({
 function useProtectedRoute(session: Session | null, isLoading: boolean) {
   const segments = useSegments();
   const router = useRouter();
-  const { setProfile } = useUserStore();
+  const { setProfile, setNotificationPrefs } = useUserStore();
 
   useEffect(() => {
     if (isLoading) return;
@@ -63,6 +65,11 @@ function useProtectedRoute(session: Session | null, isLoading: boolean) {
               push_token: profile.push_token ?? null,
               created_at: profile.created_at,
             });
+            // Hydrate notification prefs from DB so a fresh device picks
+            // up the user's saved preferences immediately after sign-in.
+            if (profile.notification_prefs) {
+              setNotificationPrefs(profile.notification_prefs);
+            }
             router.replace('/(tabs)');
           } else {
             // No profile yet — go to onboarding
@@ -145,12 +152,31 @@ export default function RootLayout() {
     try { syncFastSchedule(); } catch (e) { console.warn('[RootLayout] syncFastSchedule failed:', e); }
   }, []);
 
-  // Register the background notification task so silent fast_ended pushes can
-  // cancel this device's pending local notifications when another device ends
-  // the fast.
+  // Realtime subscription — only while app is foregrounded and signed in.
+  // Handles instant cross-device sync for fasting_sessions + hydration_logs.
+  // On backgrounded → unsubscribe (save battery); the Edge Function pushes
+  // carry the signal until next foreground.
   useEffect(() => {
-    registerBackgroundNotificationTask();
-  }, []);
+    if (!profile?.id) return;
+
+    void startRealtime();
+    void syncHydrationWithRemote();
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void startRealtime();
+        void syncWithRemote();
+        void syncHydrationWithRemote();
+      } else {
+        void stopRealtime();
+      }
+    });
+
+    return () => {
+      sub.remove();
+      void stopRealtime();
+    };
+  }, [profile?.id]);
 
   // Handle notification taps — navigate to timer tab and reschedule
   useEffect(() => {

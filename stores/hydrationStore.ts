@@ -18,6 +18,8 @@ interface HydrationState {
   removeLog: (logId: string) => void;
   setDailyGoal: (goalMl: number) => void;
   resetIfNewDay: () => void;
+  applyRemoteLog: (log: LocalHydrationLog) => void;
+  removeLogById: (logId: string) => void;
 }
 
 function getTodayDate(): string {
@@ -51,6 +53,21 @@ export const useHydrationStore = create<HydrationState>()(
           set({ todayLogs: [], lastResetDate: today });
         }
       },
+
+      applyRemoteLog: (log) => {
+        get().resetIfNewDay();
+        set((state) => {
+          if (state.todayLogs.some((l) => l.id === log.id)) return state;
+          const loggedToday = log.logged_at.slice(0, 10) === getTodayDate();
+          if (!loggedToday) return state;
+          return { todayLogs: [...state.todayLogs, log] };
+        });
+      },
+
+      removeLogById: (logId) =>
+        set((state) => ({
+          todayLogs: state.todayLogs.filter((l) => l.id !== logId),
+        })),
     }),
     {
       name: 'hydration-store',

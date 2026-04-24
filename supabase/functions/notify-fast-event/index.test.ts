@@ -105,19 +105,18 @@ Deno.test('buildExpoMessages: title and body match brand voice', () => {
   assertEquals((messages[0].data as any).sessionId, 'sess-1');
 });
 
-Deno.test('buildExpoMessages: end kind produces silent data-only push', () => {
-  const tokens = [{ device_id: 'tablet', push_token: 'ExponentPushToken[B]' }];
-  const messages = buildExpoMessages(tokens, {
+Deno.test('buildExpoMessages: end is a visible push', () => {
+  const tokens = [{ device_id: 'd1', push_token: 'tok1' }];
+  const msgs = buildExpoMessages(tokens, {
     originDeviceId: null,
     protocol: '16:8',
-    sessionId: 'sess-1',
+    sessionId: 's1',
     kind: 'end',
   });
-  assertEquals(messages.length, 1);
-  assertEquals(messages[0].title, undefined);
-  assertEquals(messages[0].body, undefined);
-  assertEquals(messages[0].sound, null);
-  assertEquals(messages[0]._contentAvailable, true);
-  assertEquals((messages[0].data as any).kind, 'fast_ended');
-  assertEquals((messages[0].data as any).sessionId, 'sess-1');
+  assertEquals(msgs.length, 1);
+  assertEquals(msgs[0].title, 'Fast ended');
+  assertEquals(msgs[0].sound, 'default');
+  assertEquals(msgs[0].data.kind, 'fast_ended');
+  // No _contentAvailable — this is not a silent push anymore.
+  assertEquals((msgs[0] as unknown as Record<string, unknown>)._contentAvailable, undefined);
 });

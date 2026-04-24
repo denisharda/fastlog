@@ -1,14 +1,9 @@
 import { useFastingStore } from '../stores/fastingStore';
-import { useUserStore } from '../stores/userStore';
 import { getCurrentPhase } from '../constants/phases';
 import { startLiveActivity } from './liveActivity';
 import { pushWidgetSnapshot, scheduleWidgetTimeline } from './widget';
 import {
   scheduleStartNotification,
-  scheduleCompletionNotification,
-  schedulePhaseNotifications,
-  scheduleWaterReminders,
-  scheduleHalfwayNotification,
   cancelAllNotifications,
 } from './notifications';
 import { syncFastSchedule } from './fastScheduler';
@@ -39,7 +34,6 @@ export async function applyActiveSession(
   opts: { isFreshStart: boolean }
 ): Promise<string[]> {
   const store = useFastingStore.getState();
-  const prefs = useUserStore.getState().notificationPrefs;
 
   // Idempotency: if the store already reflects this exact session and
   // this isn't a fresh start, the notifications / LA / widget are
@@ -72,29 +66,16 @@ export async function applyActiveSession(
     await syncFastSchedule();
   }
 
-  // 2. Notifications — schedulers self-skip past triggers, so adoption
-  //    of a fast already 4h in just schedules the remaining phases.
-  const start = new Date(session.startedAt);
-  const endTime = new Date(start.getTime() + session.targetHours * 3600 * 1000);
-
-  const [startId, phaseIds, completionId, waterIds, halfwayId] = await Promise.all([
-    opts.isFreshStart ? scheduleStartNotification() : Promise.resolve(''),
-    prefs.phaseTransitions ? schedulePhaseNotifications(start, session.targetHours) : Promise.resolve([] as string[]),
-    prefs.complete ? scheduleCompletionNotification(endTime) : Promise.resolve(''),
-    prefs.hydration ? scheduleWaterReminders(start, session.targetHours) : Promise.resolve([] as string[]),
-    prefs.halfway ? scheduleHalfwayNotification(start, session.targetHours) : Promise.resolve(''),
-  ] as const);
-
-  const ids = [
-    ...(startId ? [startId] : []),
-    ...phaseIds,
-    ...(completionId ? [completionId] : []),
-    ...waterIds,
-    ...(halfwayId ? [halfwayId] : []),
-  ];
+  // 2. Notifications — phase/halfway/water/complete pushes are owned by
+  //    the server (scheduled_pushes + dispatch-scheduled-pushes). We only
+  //    show a one-shot local "fast started" notification on fresh starts
+  //    — gives the originator immediate confirmation.
+  const startId = opts.isFreshStart ? await scheduleStartNotification() : '';
+  const ids = startId ? [startId] : [];
   store.setNotificationIds(ids);
 
   // 3. Live Activity + widget
+  const start = new Date(session.startedAt);
   const elapsedH = (Date.now() - start.getTime()) / 3600000;
   const phase = getCurrentPhase(elapsedH);
 
