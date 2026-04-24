@@ -101,7 +101,9 @@ export function useFasting(): UseFastingReturn {
   // Re-sync shared state when app returns to foreground
   useEffect(() => {
     function handleAppState(nextState: AppStateStatus) {
-      if (nextState === 'active' && activeFast) {
+      if (nextState !== 'active') return;
+
+      if (activeFast) {
         const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
         const phase = getCurrentPhase(elapsed);
         pushWidgetSnapshot({
@@ -111,23 +113,24 @@ export function useFasting(): UseFastingReturn {
           phase: phase.name,
           protocol: activeFast.protocol,
         });
-        // Check whether the session was ended from another device while we
-        // were backgrounded. If so, endActiveFast runs and local teardown
-        // (LA, notifications, widget) follows.
-        syncWithRemote();
       }
+      // Always reconcile on foreground — covers both directions of drift:
+      // a fast ended elsewhere (tear down) AND a fast started elsewhere
+      // while this device had no local session (adopt).
+      syncWithRemote();
     }
 
     const sub = AppState.addEventListener('change', handleAppState);
     return () => sub.remove();
   }, [activeFast]);
 
-  // Reconcile on mount too — covers cold-launch after another device ended
-  // the session. Only runs once per active session (key on sessionId).
+  // Reconcile on mount — runs on every fresh render of this hook, which
+  // covers cold-launch and also the case where a second device opens the
+  // app with no local state but an active fast waiting on Supabase.
   useEffect(() => {
-    if (!sessionId) return;
     syncWithRemote();
-  }, [sessionId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Derived values — memoized to avoid unnecessary recalculations
   const elapsedHours = elapsedSeconds / 3600;
