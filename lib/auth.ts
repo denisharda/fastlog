@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { resetRevenueCatUser } from './revenuecat';
+import { unregisterDeviceToken } from './deviceTokens';
 
 /**
  * Sign in with Apple. Returns the Supabase session user ID.
@@ -109,6 +110,14 @@ export async function updatePassword(newPassword: string): Promise<void> {
  * Sign out the current user.
  */
 export async function signOut(): Promise<void> {
+  // Best-effort: remove this device's push registration so the user
+  // doesn't keep getting notifications on a device they've signed out of.
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await unregisterDeviceToken(user.id);
+  } catch (e) {
+    console.warn('[auth] device token cleanup failed:', e);
+  }
   await resetRevenueCatUser();
   await supabase.auth.signOut();
 }
