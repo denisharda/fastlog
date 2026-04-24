@@ -18,7 +18,7 @@ import {
   restoreLiveActivity,
   hasLiveActivity,
 } from '../lib/liveActivity';
-import { endActiveFast, reconcileActiveFast } from '../lib/endFast';
+import { endActiveFast, syncWithRemote } from '../lib/endFast';
 import { applyActiveSession } from '../lib/sessionAdoption';
 import { FastingProtocol } from '../types';
 
@@ -113,7 +113,7 @@ export function useFasting(): UseFastingReturn {
         // Check whether the session was ended from another device while we
         // were backgrounded. If so, endActiveFast runs and local teardown
         // (LA, notifications, widget) follows.
-        reconcileActiveFast();
+        syncWithRemote();
       }
     }
 
@@ -125,7 +125,7 @@ export function useFasting(): UseFastingReturn {
   // the session. Only runs once per active session (key on sessionId).
   useEffect(() => {
     if (!sessionId) return;
-    reconcileActiveFast();
+    syncWithRemote();
   }, [sessionId]);
 
   // Derived values — memoized to avoid unnecessary recalculations
