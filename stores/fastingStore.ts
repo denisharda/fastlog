@@ -11,18 +11,29 @@ export interface ActiveFast {
   scheduledNotificationIds: string[];
 }
 
+export interface PendingEnd {
+  sessionId: string;
+  endedAt: string;      // ISO
+  completed: boolean;
+  deviceId: string;     // the device id that initiated the end
+  attempts: number;     // incremented by the retry path; diagnostic only
+}
+
 interface FastingState {
   activeFast: ActiveFast | null;
-  // Actions
+  pendingEnd: PendingEnd | null;
   startFast: (fast: ActiveFast) => void;
   stopFast: () => void;
   setNotificationIds: (ids: string[]) => void;
+  setPendingEnd: (pending: PendingEnd | null) => void;
+  incrementPendingEndAttempts: () => void;
 }
 
 export const useFastingStore = create<FastingState>()(
   persist(
     (set) => ({
       activeFast: null,
+      pendingEnd: null,
 
       startFast: (fast) => {
         set({ activeFast: fast });
@@ -38,6 +49,14 @@ export const useFastingStore = create<FastingState>()(
             ? { ...state.activeFast, scheduledNotificationIds: ids }
             : null,
         })),
+
+      setPendingEnd: (pending) => set({ pendingEnd: pending }),
+      incrementPendingEndAttempts: () =>
+        set((state) => ({
+          pendingEnd: state.pendingEnd
+            ? { ...state.pendingEnd, attempts: state.pendingEnd.attempts + 1 }
+            : null,
+        })),
     }),
     {
       name: 'fasting-store',
@@ -47,6 +66,7 @@ export const useFastingStore = create<FastingState>()(
           ...state.activeFast,
           scheduledNotificationIds: [], // Don't persist notification IDs — they are invalid after app restart
         } : null,
+        pendingEnd: state.pendingEnd,
       }),
     }
   )
