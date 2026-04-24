@@ -5,8 +5,9 @@
 -- Configuration: set the following database settings before applying:
 --   alter database postgres set "app.settings.edge_url"
 --     = 'https://<project-ref>.functions.supabase.co';
---   alter database postgres set "app.settings.edge_anon_key"
---     = '<your supabase anon key>';
+--   alter database postgres set "app.settings.webhook_secret"
+--     = '<a random 32+ char secret — also set WEBHOOK_SECRET in the
+--        Edge Function environment via `supabase secrets set`>';
 --
 -- These are read at trigger time. If edge_url is unset, the trigger
 -- short-circuits — useful for local dev where the Edge Function isn't
@@ -17,10 +18,11 @@ create extension if not exists pg_net with schema extensions;
 create or replace function public.notify_fast_event() returns trigger
 language plpgsql
 security definer
+set search_path = public, extensions
 as $$
 declare
-  edge_url text := current_setting('app.settings.edge_url', true);
-  edge_key text := current_setting('app.settings.edge_anon_key', true);
+  edge_url    text := current_setting('app.settings.edge_url', true);
+  edge_secret text := current_setting('app.settings.webhook_secret', true);
 begin
   if edge_url is null or edge_url = '' then
     return new;
@@ -30,7 +32,7 @@ begin
     url     := edge_url || '/notify-fast-event',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || coalesce(edge_key, '')
+      'x-webhook-secret', coalesce(edge_secret, '')
     ),
     body    := jsonb_build_object(
       'type', tg_op,

@@ -74,6 +74,16 @@ async function sendToExpo(messages: ExpoMessage[]): Promise<void> {
 }
 
 export async function handleRequest(req: Request): Promise<Response> {
+  const expectedSecret = Deno.env.get('WEBHOOK_SECRET');
+  if (!expectedSecret) {
+    console.error('[notify-fast-event] WEBHOOK_SECRET not configured');
+    return new Response(JSON.stringify({ error: 'server not configured' }), { status: 500 });
+  }
+  const provided = req.headers.get('x-webhook-secret');
+  if (provided !== expectedSecret) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+  }
+
   let payload: WebhookPayload;
   try {
     payload = (await req.json()) as WebhookPayload;
