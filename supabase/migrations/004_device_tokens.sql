@@ -36,8 +36,24 @@ create policy "Users can delete their own device tokens"
 -- One-time backfill: existing single push_token values become a row in
 -- device_tokens with a synthetic device_id. Subsequent app launches will
 -- replace this with the real per-install device_id.
-insert into public.device_tokens (user_id, device_id, push_token, platform)
-select id, 'legacy-backfill', push_token, 'ios'
-from public.profiles
-where push_token is not null
-on conflict (user_id, device_id) do nothing;
+--
+-- Guarded by a runtime column check so this migration also applies cleanly
+-- to schemas where profiles.push_token was never added (or was dropped).
+-- Uses EXECUTE so the SELECT is only parsed when the column actually exists.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name   = 'profiles'
+      and column_name  = 'push_token'
+  ) then
+    execute $backfill$
+      insert into public.device_tokens (user_id, device_id, push_token, platform)
+      select id, 'legacy-backfill', push_token, 'ios'
+      from public.profiles
+      where push_token is not null
+      on conflict (user_id, device_id) do nothing
+    $backfill$;
+  end if;
+end $$;
