@@ -53,6 +53,10 @@ export function syncWithRemote(): Promise<void> {
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
+    // Flush any unacked end from a prior stopFast before we reconcile. If
+    // it's still failing we proceed — the next foreground tick will try
+    // again — so a transient failure doesn't block adoption logic.
+    await flushPendingEnd();
     const profile = useUserStore.getState().profile;
     if (!profile) return;
 
@@ -130,4 +134,41 @@ export function syncWithRemote(): Promise<void> {
   });
 
   return syncInFlight;
+}
+
+async function attemptEndWrite(p: {
+  sessionId: string;
+  endedAt: string;
+  completed: boolean;
+  deviceId: string;
+}): Promise<boolean> {
+  const { error } = await supabase
+    .from('fasting_sessions')
+    .update({
+      ended_at: p.endedAt,
+      completed: p.completed,
+      last_modified_by_device: p.deviceId,
+    })
+    .eq('id', p.sessionId);
+  return !error;
+}
+
+/**
+ * Try to apply a pending end write. Called before syncWithRemote each
+ * foreground so an unacked stop doesn't leave a ghost fast on the server.
+ * Succeeds fast on a good network; returns false on any failure so the
+ * pendingEnd entry stays in the outbox for the next attempt.
+ */
+export async function flushPendingEnd(): Promise<boolean> {
+  const { pendingEnd, setPendingEnd, incrementPendingEndAttempts } =
+    useFastingStore.getState();
+  if (!pendingEnd) return true;
+
+  incrementPendingEndAttempts();
+  const ok = await attemptEndWrite(pendingEnd);
+  if (ok) {
+    setPendingEnd(null);
+    return true;
+  }
+  return false;
 }

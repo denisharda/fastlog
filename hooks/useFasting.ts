@@ -268,15 +268,43 @@ export function useFasting(): UseFastingReturn {
 
         if (profile) {
           const deviceId = await getDeviceId();
-          const { error: dbError } = await supabase
-            .from('fasting_sessions')
-            .update({ ended_at: endedAt, completed, last_modified_by_device: deviceId })
-            .eq('id', activeFast.sessionId);
+          const MAX_ATTEMPTS = 3;
+          const BACKOFF_MS = [0, 500, 2000];
 
-          if (dbError) {
-            console.error('[useFasting] DB update error:', dbError);
-          } else {
+          // Persist the intent so a surprise app-kill or network loss mid-retry
+          // doesn't leave the server with a still-active row.
+          useFastingStore.getState().setPendingEnd({
+            sessionId: activeFast.sessionId,
+            endedAt,
+            completed,
+            deviceId,
+            attempts: 0,
+          });
+
+          let acked = false;
+          for (let i = 0; i < MAX_ATTEMPTS; i++) {
+            if (BACKOFF_MS[i]) await new Promise((r) => setTimeout(r, BACKOFF_MS[i]));
+            const { error: dbError } = await supabase
+              .from('fasting_sessions')
+              .update({
+                ended_at: endedAt,
+                completed,
+                last_modified_by_device: deviceId,
+              })
+              .eq('id', activeFast.sessionId);
+            useFastingStore.getState().incrementPendingEndAttempts();
+            if (!dbError) {
+              acked = true;
+              break;
+            }
+            console.warn('[useFasting] stopFast DB update failed, retrying:', dbError);
+          }
+
+          if (acked) {
+            useFastingStore.getState().setPendingEnd(null);
             queryClient.invalidateQueries({ queryKey: ['fasting_sessions'] });
+          } else {
+            console.error('[useFasting] stopFast update exhausted retries, outbox retains it');
           }
         }
       } catch (err) {
