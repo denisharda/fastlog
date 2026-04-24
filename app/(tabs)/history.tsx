@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useUserStore } from '../../stores/userStore';
 import { supabase } from '../../lib/supabase';
@@ -34,6 +34,7 @@ import { TABULAR, hexAlpha } from '../../constants/theme';
 import { TAB_BAR_HEIGHT } from '../../components/ui/TabBar';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const SESSIONS_PAGE_SIZE = 50;
 
 interface DayCell {
   day: number;
@@ -123,20 +124,35 @@ export default function HistoryScreen() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
 
-  const { data: sessions, isLoading, error, refetch } = useQuery({
+  const {
+    data: sessionPages,
+    isLoading,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['fasting_sessions', profile?.id],
-    queryFn: async (): Promise<FastingSession[]> => {
+    enabled: !!profile?.id,
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }): Promise<FastingSession[]> => {
       if (!profile?.id) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from('fasting_sessions')
         .select('*')
         .eq('user_id', profile.id)
         .order('started_at', { ascending: false })
-        .limit(200);
+        .limit(SESSIONS_PAGE_SIZE);
+      if (pageParam) q = q.lt('started_at', pageParam);
+      const { data, error } = await q;
       if (error) throw error;
       return data as FastingSession[];
     },
-    enabled: !!profile?.id,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length < SESSIONS_PAGE_SIZE) return undefined;
+      return lastPage[lastPage.length - 1].started_at;
+    },
   });
 
   const [refreshing, setRefreshing] = useState(false);
@@ -163,7 +179,10 @@ export default function HistoryScreen() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [drawerDate, setDrawerDate] = useState<string | null>(null);
 
-  const allSessions = sessions ?? [];
+  const allSessions = useMemo(
+    () => sessionPages?.pages.flat() ?? [],
+    [sessionPages],
+  );
 
   const viewedRef = useRef(false);
   useEffect(() => {
@@ -705,6 +724,32 @@ export default function HistoryScreen() {
                 );
               })}
             </Card>
+
+            {/* Load more — only for Pro (free users are gated to 3 recent) */}
+            {isPro && hasNextPage && (
+              <Pressable
+                onPress={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                style={{
+                  marginTop: 12,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 14,
+                  backgroundColor: theme.surface,
+                  borderWidth: theme.isDark ? 0.5 : 0,
+                  borderColor: theme.hairline,
+                  flexDirection: 'row',
+                  gap: 8,
+                  opacity: isFetchingNextPage ? 0.6 : 1,
+                }}
+              >
+                {isFetchingNextPage && <ActivityIndicator size="small" color={theme.primary} />}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
+                  {isFetchingNextPage ? 'Loading…' : 'Show earlier fasts'}
+                </Text>
+              </Pressable>
+            )}
 
             {/* Pro gate */}
             {!isPro && allSessions.filter(s => s.ended_at).length > 3 && (
