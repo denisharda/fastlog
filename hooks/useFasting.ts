@@ -58,6 +58,9 @@ export function useFasting(): UseFastingReturn {
   const prevPhaseRef = useRef<string | null>(null);
   const elapsedHoursRef = useRef(0);
 
+  // Stable ref so the AppState effect can call stopFast before it is declared.
+  const stopFastRef = useRef<(completed?: boolean) => Promise<void>>(async () => {});
+
   // Sync elapsed seconds from persisted start time on mount / activeFast change
   useEffect(() => {
     if (activeFast) {
@@ -104,16 +107,29 @@ export function useFasting(): UseFastingReturn {
       if (nextState !== 'active') return;
 
       if (activeFast) {
-        const elapsed = (Date.now() - new Date(activeFast.startedAt).getTime()) / 3600000;
-        const phase = getCurrentPhase(elapsed);
-        pushWidgetSnapshot({
-          isActive: true,
-          startedAt: activeFast.startedAt,
-          targetHours: activeFast.targetHours,
-          phase: phase.name,
-          protocol: activeFast.protocol,
-        });
+        const elapsedMs = Date.now() - new Date(activeFast.startedAt).getTime();
+        const targetMs = activeFast.targetHours * 3600000;
+        const pendingEnd = useFastingStore.getState().pendingEnd;
+
+        // Foreground fallback for server auto-end. If cron lagged or this
+        // device was offline when target hit, end locally now.
+        if (elapsedMs >= targetMs && !pendingEnd) {
+          // stopFast(true) handles its own DB write + outbox retry. We
+          // don't await — keep this handler synchronous-ish for AppState.
+          void stopFastRef.current(true);
+        } else {
+          const elapsed = elapsedMs / 3600000;
+          const phase = getCurrentPhase(elapsed);
+          pushWidgetSnapshot({
+            isActive: true,
+            startedAt: activeFast.startedAt,
+            targetHours: activeFast.targetHours,
+            phase: phase.name,
+            protocol: activeFast.protocol,
+          });
+        }
       }
+
       // Always reconcile on foreground — covers both directions of drift:
       // a fast ended elsewhere (tear down) AND a fast started elsewhere
       // while this device had no local session (adopt).
@@ -316,6 +332,9 @@ export function useFasting(): UseFastingReturn {
     },
     [activeFast, profile, queryClient]
   );
+
+  // Keep the ref in sync so the AppState effect always calls the latest version.
+  stopFastRef.current = stopFast;
 
   return {
     isActive: !!activeFast,
