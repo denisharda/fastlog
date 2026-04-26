@@ -50,6 +50,16 @@ export function trackFastAbandoned(props: {
   posthogInstance?.capture('fast_abandoned', props);
 }
 
+export function trackFastMoodLogged(props: {
+  mood: 'rough' | 'meh' | 'good' | 'great' | 'amazing';
+  sessionId: string;
+}): void {
+  posthogInstance?.capture('fast_mood_logged', {
+    mood: props.mood,
+    session_id: props.sessionId,
+  });
+}
+
 export function trackPaywallViewed(source: string): void {
   posthogInstance?.capture('paywall_viewed', { source });
 }
