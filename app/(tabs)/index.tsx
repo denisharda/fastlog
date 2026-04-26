@@ -125,7 +125,8 @@ export default function TimerScreen() {
           onPress: async () => {
             await stopFast(true);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push('/fast-complete');
+            // /fast-complete is now surfaced by the layout effect that
+            // watches lastEndedSessionId — see app/_layout.tsx.
             if (!isPro && !hasSeenSuccessPaywall) {
               setHasSeenSuccessPaywall(true);
             }
