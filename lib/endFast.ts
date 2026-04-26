@@ -15,13 +15,21 @@ import { applyActiveSession } from './sessionAdoption';
  * the History drawer's end-session, and sign-out. Leaving any of these out
  * produces a zombie Live Activity or ghost notifications after the fast is over.
  */
-export async function endActiveFast(): Promise<void> {
+export async function endActiveFast(
+  opts: { stampEndedSessionId?: boolean } = {},
+): Promise<void> {
+  const { stampEndedSessionId = true } = opts;
   const { activeFast, stopFast, setLastEndedSessionId } = useFastingStore.getState();
   const lastProtocol = activeFast?.protocol ?? '16:8';
   const endedSessionId = activeFast?.sessionId ?? null;
 
   stopFast();
-  if (endedSessionId) setLastEndedSessionId(endedSessionId);
+  // Default true: every "real" end stamps the flag so the layout effect
+  // surfaces /fast-complete. Pass false from the syncWithRemote swap-out
+  // path where we're discarding a stale local session in favor of a
+  // different remote-active one — that local session was abandoned, not
+  // completed, so it should not pop the success drawer.
+  if (stampEndedSessionId && endedSessionId) setLastEndedSessionId(endedSessionId);
 
   await Promise.all([
     cancelAllNotifications(),
@@ -91,9 +99,11 @@ export function syncWithRemote(): Promise<void> {
       }
       // Adopt the remote session. If we have a different local one, tear
       // it down first so notifications/LA from the stale local session
-      // are cleaned up before we bring up the new one.
+      // are cleaned up before we bring up the new one. Pass
+      // stampEndedSessionId: false so the layout effect doesn't pop a
+      // /fast-complete drawer for an abandoned (not completed) session.
       if (local && local.sessionId !== remoteActive.id) {
-        await endActiveFast();
+        await endActiveFast({ stampEndedSessionId: false });
       }
       await applyActiveSession(
         {
