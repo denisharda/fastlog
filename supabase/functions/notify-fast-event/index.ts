@@ -39,6 +39,9 @@ export interface MessageArgs {
   protocol: string;
   sessionId: string;
   kind: 'start' | 'end';
+  /** Raw `last_modified_by_device` value. Used to branch end-push copy
+   * when the system auto-ended the fast vs. another user-owned device. */
+  endOrigin?: string | null;
 }
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -64,10 +67,15 @@ export function buildExpoMessages(
     : tokens;
 
   if (args.kind === 'end') {
+    const isAutoEnd = args.endOrigin === 'system:auto-end';
+    const title = isAutoEnd ? 'Beautifully done.' : 'Fast ended';
+    const body = isAutoEnd
+      ? `Your ${args.protocol} fast is complete.`
+      : `Your ${args.protocol} fast ended on another device.`;
     return recipients.map((t) => ({
       to: t.push_token,
-      title: 'Fast ended',
-      body: `Your ${args.protocol} fast ended on another device.`,
+      title,
+      body,
       sound: 'default',
       priority: 'high',
       data: { kind: 'fast_ended', sessionId: args.sessionId },
@@ -192,11 +200,34 @@ export async function handleRequest(req: Request): Promise<Response> {
 
   const kind: 'start' | 'end' = payload.type === 'UPDATE' ? 'end' : 'start';
 
+  if (kind === 'end') {
+    // Honor the user's complete-pref toggle. Phase-transition / start
+    // pushes don't go through this gate.
+    const { data: profile, error: prefsErr } = await supabase
+      .from('profiles')
+      .select('notification_prefs')
+      .eq('id', payload.record.user_id)
+      .maybeSingle();
+    if (prefsErr) {
+      console.warn('[notify-fast-event] notification_prefs lookup failed:', prefsErr);
+    }
+    const prefs = (profile?.notification_prefs ?? {}) as { complete?: boolean };
+    const completeEnabled = prefs.complete ?? true;
+    if (!completeEnabled) {
+      console.log('[notify-fast-event] user has complete-pref disabled, skipping end push');
+      return new Response(JSON.stringify({ skipped: 'complete_pref_disabled' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   const messages = buildExpoMessages(tokens ?? [], {
     originDeviceId: origin,
     protocol: payload.record.protocol,
     sessionId: payload.record.id,
     kind,
+    endOrigin: payload.record.last_modified_by_device,
   });
 
   const tokenByAddress: Record<string, string> = {};
