@@ -36,3 +36,16 @@ export interface HydrationLog {
   amount_ml: number;
   logged_at: string;
 }
+
+export type { Mood } from '../constants/moods';
+
+export interface FastingNote {
+  id: string;
+  user_id: string;
+  session_id: string;
+  mood: import('../constants/moods').Mood | null;
+  metadata: Record<string, unknown>;
+  last_modified_by_device: string | null;
+  created_at: string;
+  updated_at: string;
+}
