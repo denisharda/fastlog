@@ -1,6 +1,6 @@
 import '../global.css';
 import { validateEnv } from '../lib/validateEnv';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, useColorScheme, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -27,6 +27,7 @@ import { useFastingStore } from '../stores/fastingStore';
 import { getCurrentPhase } from '../constants/phases';
 import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
+import { FastCompleteSheet, FastCompleteSheetRef } from '../components/fast-complete/FastCompleteSheet';
 
 try { validateEnv(); } catch (e) { console.warn('[RootLayout] validateEnv failed:', e); }
 try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
@@ -262,6 +263,7 @@ export default function RootLayout() {
 
   useProtectedRoute(session, isLoading);
 
+  const fastCompleteRef = useRef<FastCompleteSheetRef>(null);
   const lastEndedSessionId = useFastingStore((s) => s.lastEndedSessionId);
   const lastSeenEndedSessionId = useFastingStore((s) => s.lastSeenEndedSessionId);
 
@@ -269,7 +271,11 @@ export default function RootLayout() {
     if (isLoading) return;
     if (!lastEndedSessionId) return;
     if (lastEndedSessionId === lastSeenEndedSessionId) return;
-    router.push('/fast-complete');
+    // Server auto-end completed the row but our cache may still show it as
+    // active — invalidate so the sheet's query refetches the just-ended
+    // session before we present.
+    queryClient.invalidateQueries({ queryKey: ['recent_completed_sessions'] });
+    fastCompleteRef.current?.present();
     useFastingStore.getState().setLastSeenEndedSessionId(lastEndedSessionId);
   }, [isLoading, lastEndedSessionId, lastSeenEndedSessionId]);
 
@@ -306,14 +312,8 @@ export default function RootLayout() {
                     animation: 'slide_from_bottom',
                   }}
                 />
-                <Stack.Screen
-                  name="fast-complete"
-                  options={{
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom',
-                  }}
-                />
               </Stack>
+              <FastCompleteSheet ref={fastCompleteRef} />
             </View>
           </BottomSheetModalProvider>
         </SafeAreaProvider>
