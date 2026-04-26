@@ -173,7 +173,7 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  // Handle deep links from widget
+  // Handle deep links arriving while the app is running.
   useEffect(() => {
     function handleURL(event: { url: string }) {
       const { hostname } = Linking.parse(event.url);
@@ -181,16 +181,22 @@ export default function RootLayout() {
         router.push('/(tabs)');
       }
     }
-
-    // Handle URL that launched the app
-    Linking.getInitialURL().then((url) => {
-      if (url) handleURL({ url });
-    });
-
-    // Handle URLs while app is running
     const sub = Linking.addEventListener('url', handleURL);
     return () => sub.remove();
   }, []);
+
+  // Handle the URL that launched the app, but only after auth has
+  // resolved so the navigator + protected-route guard are stable.
+  useEffect(() => {
+    if (isLoading) return;
+    Linking.getInitialURL().then((url) => {
+      if (!url) return;
+      const { hostname } = Linking.parse(url);
+      if (hostname === 'timer' || hostname === 'start') {
+        router.push('/(tabs)');
+      }
+    });
+  }, [isLoading]);
 
   // Push an initial widget snapshot on launch so the home-screen widget
   // has something to render before a fast is started.
@@ -223,11 +229,23 @@ export default function RootLayout() {
     try { initPostHog(); } catch (e) { console.warn('[RootLayout] PostHog init failed:', e); }
     try { trackAppLaunched(); } catch (e) { /* silent */ }
 
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    // Belt-and-suspenders timeout — guarantees the spinner unsticks even
+    // if getSession hangs. 5s is generous; AsyncStorage-backed lookups
+    // typically resolve in <100ms.
+    const safety = setTimeout(() => {
+      setIsLoading((prev) => {
+        if (prev) console.warn('[RootLayout] getSession timeout — forcing isLoading false');
+        return false;
+      });
+    }, 5000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => setSession(session))
+      .catch((e) => console.error('[RootLayout] getSession failed:', e))
+      .finally(() => {
+        clearTimeout(safety);
+        setIsLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -236,10 +254,24 @@ export default function RootLayout() {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safety);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useProtectedRoute(session, isLoading);
+
+  const lastEndedSessionId = useFastingStore((s) => s.lastEndedSessionId);
+  const lastSeenEndedSessionId = useFastingStore((s) => s.lastSeenEndedSessionId);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!lastEndedSessionId) return;
+    if (lastEndedSessionId === lastSeenEndedSessionId) return;
+    router.push('/fast-complete');
+    useFastingStore.getState().setLastSeenEndedSessionId(lastEndedSessionId);
+  }, [isLoading, lastEndedSessionId, lastSeenEndedSessionId]);
 
   if (isLoading) {
     return (
