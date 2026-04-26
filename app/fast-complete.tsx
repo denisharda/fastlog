@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../hooks/useTheme';
 import { useUserStore } from '../stores/userStore';
 import { supabase } from '../lib/supabase';
@@ -13,16 +13,11 @@ import { FastingSession } from '../types';
 import { AmbientGlow, Card, CircleIcon, PrimaryButton } from '../components/ui';
 import { PHASES, TABULAR, hexAlpha } from '../constants/theme';
 import { useHydration } from '../hooks/useHydration';
-import { trackPaywallViewed } from '../lib/posthog';
+import { trackPaywallViewed, trackFastMoodLogged } from '../lib/posthog';
 import { ShareCardPreviewSheet, ShareCardPreviewSheetRef } from '../components/share/ShareCardPreviewSheet';
-
-const MOODS: { emoji: string; label: string }[] = [
-  { emoji: '😣', label: 'Rough' },
-  { emoji: '😐', label: 'Meh' },
-  { emoji: '🙂', label: 'Good' },
-  { emoji: '😊', label: 'Great' },
-  { emoji: '🤩', label: 'Amazing' },
-];
+import { MOODS, Mood } from '../constants/moods';
+import { upsertFastingNote } from '../lib/fastingNotes';
+import { fastingNoteQueryKey } from '../hooks/useFastingNote';
 
 function formatDuration(ms: number): string {
   const totalMin = Math.floor(ms / 60000);
@@ -43,7 +38,8 @@ export default function FastCompleteScreen() {
   const isPro = useUserStore(s => s.isPro);
   const { todayTotalMl } = useHydration();
   const shareSheetRef = useRef<ShareCardPreviewSheetRef>(null);
-  const [mood, setMood] = useState<string | null>('Great');
+  const [mood, setMood] = useState<Mood | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: recentCompleted } = useQuery({
     queryKey: ['recent_completed_sessions', profile?.id],
@@ -336,13 +332,13 @@ export default function FastCompleteScreen() {
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
             {MOODS.map(m => {
-              const isSel = mood === m.label;
+              const isSel = mood === m.value;
               return (
                 <Pressable
-                  key={m.label}
+                  key={m.value}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setMood(m.label);
+                    setMood(m.value);
                   }}
                   style={{ alignItems: 'center', flex: 1 }}
                 >
@@ -378,7 +374,20 @@ export default function FastCompleteScreen() {
         </Card>
 
         <View style={{ marginTop: 18 }}>
-          <PrimaryButton theme={theme} onPress={() => router.back()}>
+          <PrimaryButton
+            theme={theme}
+            onPress={() => {
+              if (session && profile?.id && mood) {
+                upsertFastingNote({ sessionId: session.id, userId: profile.id, mood })
+                  .then(() =>
+                    queryClient.invalidateQueries({ queryKey: fastingNoteQueryKey(session.id) }),
+                  )
+                  .catch(e => console.warn('[fast-complete] mood save failed', e));
+                trackFastMoodLogged({ mood, sessionId: session.id });
+              }
+              router.back();
+            }}
+          >
             Save to journal
           </PrimaryButton>
           <Pressable
