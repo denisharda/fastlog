@@ -146,7 +146,15 @@ export const FastCompleteSheet = forwardRef<FastCompleteSheetRef>((_, ref) => {
         }}
         handleComponent={null}
       >
-        <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: theme.bg,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            overflow: 'hidden',
+          }}
+        >
           <AmbientGlow
             color={theme.primary}
             alpha={theme.isDark ? 0x55 : 0x44}
