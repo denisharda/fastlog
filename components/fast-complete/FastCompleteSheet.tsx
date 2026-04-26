@@ -144,7 +144,7 @@ export const FastCompleteSheet = forwardRef<FastCompleteSheetRef>((_, ref) => {
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.hairline, width: 40, height: 4 }}
+        handleComponent={null}
       >
         <View style={{ flex: 1, backgroundColor: theme.bg }}>
           <AmbientGlow
@@ -165,7 +165,7 @@ export const FastCompleteSheet = forwardRef<FastCompleteSheetRef>((_, ref) => {
 
           <View
             style={{
-              paddingTop: 4,
+              paddingTop: 14,
               paddingHorizontal: 16,
               flexDirection: 'row',
               justifyContent: 'flex-end',
