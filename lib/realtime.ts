@@ -8,6 +8,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { useUserStore } from '../stores/userStore';
 import { useHydrationStore, LocalHydrationLog } from '../stores/hydrationStore';
+import { useFastingStore } from '../stores/fastingStore';
 import { applyActiveSession } from './sessionAdoption';
 import { endActiveFast, syncWithRemote } from './endFast';
 import { getDeviceId } from './deviceId';
@@ -67,6 +68,12 @@ async function handleFastingUpdate(row: FastingSessionRow) {
   const deviceId = await ensureDeviceId();
   if (row.last_modified_by_device === deviceId) return; // own echo
   if (!row.ended_at) return; // only act on end transitions
+
+  // Stamp the flag BEFORE tearing down, so the case where this device
+  // had no local activeFast (and therefore endActiveFast wouldn't know
+  // the session id) still surfaces the drawer.
+  useFastingStore.getState().setLastEndedSessionId(row.id);
+
   await endActiveFast();
 }
 
