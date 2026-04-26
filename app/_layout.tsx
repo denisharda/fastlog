@@ -121,14 +121,18 @@ export default function RootLayout() {
   useEffect(() => {
     if (!profile?.id) return;
 
-    registerForPushNotifications()
-      .then((token) => {
-        if (!token) return;
-        void registerDeviceToken(profile.id, token);
-      })
-      .catch((e) => {
-        console.warn('[RootLayout] Push registration failed:', e);
-      });
+    (async () => {
+      try {
+        const token = await registerForPushNotifications();
+        if (!token) {
+          console.warn('[RootLayout] No push token returned (simulator or denied permission)');
+          return;
+        }
+        await registerDeviceToken(profile.id, token);
+      } catch (e) {
+        console.error('[RootLayout] Push registration failed:', e);
+      }
+    })();
   }, [profile?.id]);
 
   // Sync the recurring fast schedule notification on app launch

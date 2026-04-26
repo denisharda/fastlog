@@ -29,8 +29,10 @@ export async function registerDeviceToken(
   );
 
   if (error) {
-    console.warn('[deviceTokens] register failed:', error);
+    console.error('[deviceTokens] register failed:', error);
+    throw error;
   }
+  console.log('[deviceTokens] registered', { userId, deviceId, platform, appVersion });
 }
 
 /**

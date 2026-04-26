@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 Notifications.setNotificationHandler({
@@ -43,7 +44,17 @@ export async function registerForPushNotifications(): Promise<string | null> {
     });
   }
 
-  const token = await Notifications.getExpoPushTokenAsync();
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    (Constants as unknown as { easConfig?: { projectId?: string } }).easConfig?.projectId;
+  if (!projectId) {
+    throw new Error(
+      '[Notifications] Missing EAS projectId — set extra.eas.projectId in app.config.ts/app.json',
+    );
+  }
+
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
+  console.log('[Notifications] Expo push token registered:', token.data);
   return token.data;
 }
 
