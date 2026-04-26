@@ -16,10 +16,12 @@ import { applyActiveSession } from './sessionAdoption';
  * produces a zombie Live Activity or ghost notifications after the fast is over.
  */
 export async function endActiveFast(): Promise<void> {
-  const { activeFast, stopFast } = useFastingStore.getState();
+  const { activeFast, stopFast, setLastEndedSessionId } = useFastingStore.getState();
   const lastProtocol = activeFast?.protocol ?? '16:8';
+  const endedSessionId = activeFast?.sessionId ?? null;
 
   stopFast();
+  if (endedSessionId) setLastEndedSessionId(endedSessionId);
 
   await Promise.all([
     cancelAllNotifications(),
