@@ -1,0 +1,15 @@
+# Supabase project config — persistent settings for `supabase` CLI commands.
+# Without this file, `supabase functions deploy <name>` defaults to
+# verify_jwt=true on newer CLI versions, which makes the gateway reject
+# any call without an Authorization header — including our Postgres
+# triggers (notify-fast-event) and pg_cron jobs (dispatch-scheduled-pushes,
+# reap-push-receipts) that authenticate via the `x-webhook-secret` header.
+
+[functions.notify-fast-event]
+verify_jwt = false
+
+[functions.dispatch-scheduled-pushes]
+verify_jwt = false
+
+[functions.reap-push-receipts]
+verify_jwt = false
