@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, useColorScheme, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -29,15 +30,6 @@ import * as Linking from 'expo-linking';
 
 try { validateEnv(); } catch (e) { console.warn('[RootLayout] validateEnv failed:', e); }
 try { initRevenueCat(); } catch (e) { console.warn('[RootLayout] RevenueCat init failed:', e); }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      staleTime: 1000 * 60 * 5,
-    },
-  },
-});
 
 function useProtectedRoute(session: Session | null, isLoading: boolean) {
   const segments = useSegments();

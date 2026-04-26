@@ -11,6 +11,8 @@ import { useHydrationStore, LocalHydrationLog } from '../stores/hydrationStore';
 import { applyActiveSession } from './sessionAdoption';
 import { endActiveFast, syncWithRemote } from './endFast';
 import { getDeviceId } from './deviceId';
+import { queryClient } from './queryClient';
+import { fastingNoteQueryKey } from '../hooks/useFastingNote';
 import type { FastingProtocol } from '../types';
 
 let channel: RealtimeChannel | null = null;
@@ -37,6 +39,13 @@ interface HydrationLogRow {
   user_id: string;
   amount_ml: number;
   logged_at: string;
+}
+
+interface FastingNoteRow {
+  id: string;
+  user_id: string;
+  session_id: string;
+  last_modified_by_device: string | null;
 }
 
 async function handleFastingInsert(row: FastingSessionRow) {
@@ -73,6 +82,12 @@ async function handleHydrationInsert(row: HydrationLogRow) {
 function handleHydrationDelete(row: Pick<HydrationLogRow, 'id'>) {
   const { removeLogById } = useHydrationStore.getState();
   removeLogById(row.id);
+}
+
+async function handleFastingNoteChange(row: FastingNoteRow) {
+  const deviceId = await ensureDeviceId();
+  if (row.last_modified_by_device === deviceId) return; // own echo
+  queryClient.invalidateQueries({ queryKey: fastingNoteQueryKey(row.session_id) });
 }
 
 /**
@@ -112,6 +127,16 @@ export async function startRealtime(): Promise<void> {
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'hydration_logs', filter: `user_id=eq.${userId}` },
       (p) => handleHydrationDelete(p.old as HydrationLogRow),
+    )
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'fasting_notes', filter: `user_id=eq.${userId}` },
+      (p) => void handleFastingNoteChange(p.new as FastingNoteRow),
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'fasting_notes', filter: `user_id=eq.${userId}` },
+      (p) => void handleFastingNoteChange(p.new as FastingNoteRow),
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
