@@ -17,6 +17,8 @@ import { useHydration } from '../../hooks/useHydration';
 import { trackPaywallViewed } from '../../lib/posthog';
 import { useTheme } from '../../hooks/useTheme';
 import { ShareCardPreviewSheet, ShareCardPreviewSheetRef } from '../share/ShareCardPreviewSheet';
+import { useFastingNote } from '../../hooks/useFastingNote';
+import { moodOption } from '../../constants/moods';
 
 interface SessionDetailDrawerProps {
   visible: boolean;
@@ -73,6 +75,8 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
 
   const { logs: hydrationLogs, totalMl: dayWaterMl, logCount: waterLogCount, isLoading: waterLoading } = useDailyHydration(date ?? null);
   const { dailyGoalMl } = useHydration();
+  const { data: note } = useFastingNote(session?.id ?? null);
+  const mood = moodOption(note?.mood ?? null);
 
   const hasSessions = sessions.length > 0 && !!session;
 
@@ -326,6 +330,19 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
                 </View>
               )}
             </Pressable>
+
+            {/* Mood */}
+            {mood && (
+              <View className="rounded-2xl p-4 mb-3" style={cardStyle}>
+                <Text className="text-xs mb-1" style={{ color: theme.textMuted }}>Mood</Text>
+                <View className="flex-row items-center gap-3">
+                  <Text style={{ fontSize: 28 }}>{mood.emoji}</Text>
+                  <Text className="text-base font-semibold" style={{ color: theme.text }}>
+                    {mood.label}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Notes */}
             {session!.notes && (
