@@ -32,6 +32,21 @@ export async function registerDeviceToken(
     console.error('[deviceTokens] register failed:', error);
     throw error;
   }
+
+  // Sweep stale rows that point at this same Expo push token under a
+  // different device_id — they happen when AsyncStorage was wiped (reinstall,
+  // "clear app data"), which rotates device_id while Expo keeps issuing the
+  // same token. Without this sweep, server fan-out double-delivers.
+  const { error: sweepErr } = await supabase
+    .from('device_tokens')
+    .delete()
+    .eq('user_id', userId)
+    .eq('push_token', pushToken)
+    .neq('device_id', deviceId);
+  if (sweepErr) {
+    console.warn('[deviceTokens] stale-row sweep failed:', sweepErr);
+  }
+
   console.log('[deviceTokens] registered', { userId, deviceId, platform, appVersion });
 }
 

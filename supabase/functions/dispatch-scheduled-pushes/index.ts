@@ -29,11 +29,23 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_ACCESS_TOKEN = Deno.env.get('EXPO_ACCESS_TOKEN');
 const BATCH_LIMIT = 200;
 
+/**
+ * Collapse tokens that share the same push_token (different device_id from a
+ * stale install) so a single physical device receives one push, not N.
+ */
+export function dedupTokensByPushToken(tokens: DeviceToken[]): DeviceToken[] {
+  const byToken = new Map<string, DeviceToken>();
+  for (const t of tokens) {
+    if (!byToken.has(t.push_token)) byToken.set(t.push_token, t);
+  }
+  return Array.from(byToken.values());
+}
+
 export function buildMessagesForRow(
   row: ScheduledRow,
   tokens: DeviceToken[],
 ): ExpoMessage[] {
-  return tokens.map((t) => ({
+  return dedupTokensByPushToken(tokens).map((t) => ({
     to: t.push_token,
     title: row.payload.title,
     body: row.payload.body,

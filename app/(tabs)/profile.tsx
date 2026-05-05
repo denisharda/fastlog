@@ -39,6 +39,29 @@ import { TABULAR, hexAlpha } from '../../constants/theme';
 import { FastingProtocol } from '../../types';
 import { TAB_BAR_HEIGHT } from '../../components/ui/TabBar';
 
+const NOTIFICATION_ROWS: { key: keyof NotificationPrefs; title: string; desc: string }[] = [
+  {
+    key: 'phaseTransitions',
+    title: 'Phase transitions',
+    desc: 'A soft note when your body shifts to fat-burning, autophagy, or deep fast.',
+  },
+  {
+    key: 'hydration',
+    title: 'Hydration nudges',
+    desc: 'Three gentle reminders during your fasting window.',
+  },
+  {
+    key: 'halfway',
+    title: 'Halfway cheer',
+    desc: 'A quiet check-in at the midpoint.',
+  },
+  {
+    key: 'complete',
+    title: 'Fast complete',
+    desc: 'Celebrate when you’ve reached your target.',
+  },
+];
+
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -398,8 +421,6 @@ export default function ProfileScreen() {
               alignItems: 'center',
               padding: 14,
               paddingHorizontal: 16,
-              borderBottomWidth: 0.5,
-              borderBottomColor: theme.hairline,
             }}
           >
             <View style={{ flex: 1 }}>
@@ -425,22 +446,38 @@ export default function ProfileScreen() {
             )}
             <Toggle theme={theme} on={!!schedule?.enabled} onChange={toggleSchedule} />
           </Pressable>
+        </Card>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, paddingHorizontal: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, letterSpacing: -0.2 }}>
-                Phase notifications
-              </Text>
-              <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
-                Gentle alert when you enter a new zone
-              </Text>
+        {/* Notifications */}
+        <SectionLabel theme={theme}>Notifications</SectionLabel>
+        <Card theme={theme} padding={0}>
+          {NOTIFICATION_ROWS.map((row, i) => (
+            <View
+              key={row.key}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 14,
+                paddingHorizontal: 16,
+                borderBottomWidth: i < NOTIFICATION_ROWS.length - 1 ? 0.5 : 0,
+                borderBottomColor: theme.hairline,
+              }}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, letterSpacing: -0.2 }}>
+                  {row.title}
+                </Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2, lineHeight: 17 }}>
+                  {row.desc}
+                </Text>
+              </View>
+              <Toggle
+                theme={theme}
+                on={notificationPrefs[row.key]}
+                onChange={v => togglePref(row.key, v)}
+              />
             </View>
-            <Toggle
-              theme={theme}
-              on={notificationPrefs.phaseTransitions}
-              onChange={v => togglePref('phaseTransitions', v)}
-            />
-          </View>
+          ))}
         </Card>
 
         {/* Hydration */}

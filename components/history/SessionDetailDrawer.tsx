@@ -55,8 +55,10 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   const theme = useTheme();
   const sheetRef = useRef<BottomSheetModal>(null);
   const shareSheetRef = useRef<ShareCardPreviewSheetRef>(null);
+  const isPresentedRef = useRef(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [phaseExpanded, setPhaseExpanded] = useState(false);
+  const [openKey, setOpenKey] = useState(0);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -64,9 +66,22 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   }, [sessions]);
 
   useEffect(() => {
-    if (visible) sheetRef.current?.present();
-    else sheetRef.current?.dismiss();
+    if (visible && !isPresentedRef.current) {
+      // Force-remount the BottomSheetModal each open. Re-using the same
+      // instance after a dismiss triggers a stack-desync bug in
+      // BottomSheetModalProvider where every other present() silently
+      // fails (goes straight to onDismiss without animating in).
+      setOpenKey(k => k + 1);
+    } else if (!visible && isPresentedRef.current) {
+      sheetRef.current?.dismiss();
+    }
   }, [visible]);
+
+  useEffect(() => {
+    if (openKey > 0 && visible) {
+      sheetRef.current?.present();
+    }
+  }, [openKey]);
 
   const session = sessions[selectedIndex];
   const isInProgress = session && !session.ended_at;
@@ -82,12 +97,14 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
 
   const snapPoints = useMemo(() => ['85%', '95%'], []);
 
-  const handleSheetChange = useCallback(
-    (index: number) => {
-      if (index === -1) onClose();
-    },
-    [onClose],
-  );
+  const handleSheetChange = useCallback((index: number) => {
+    isPresentedRef.current = index >= 0;
+  }, []);
+
+  const handleDismiss = useCallback(() => {
+    isPresentedRef.current = false;
+    onClose();
+  }, [onClose]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -121,9 +138,11 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
   return (
     <>
     <BottomSheetModal
+      key={openKey}
       ref={sheetRef}
       snapPoints={snapPoints}
       onChange={handleSheetChange}
+      onDismiss={handleDismiss}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={{
@@ -139,7 +158,7 @@ export function SessionDetailDrawer({ visible, sessions, onClose, onEndSession, 
           {hasSessions ? 'Session Details' : 'Daily Summary'}
         </Text>
         <Pressable
-          onPress={onClose}
+          onPress={() => sheetRef.current?.dismiss()}
           className="p-2"
           accessibilityRole="button"
           accessibilityLabel="Close session details"

@@ -1,6 +1,6 @@
 // supabase/functions/dispatch-scheduled-pushes/index_test.ts
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { buildMessagesForRow } from './index.ts';
+import { buildMessagesForRow, dedupTokensByPushToken } from './index.ts';
 
 Deno.test('buildMessagesForRow builds one message per device token', () => {
   const tokens = [
@@ -22,6 +22,30 @@ Deno.test('buildMessagesForRow builds one message per device token', () => {
   assertEquals(msgs[0].sound, 'default');
   assertEquals(msgs[0].data.kind, 'halfway');
   assertEquals(msgs[0].data.sessionId, 's1');
+});
+
+Deno.test('dedupTokensByPushToken collapses duplicate push_tokens', () => {
+  const tokens = [
+    { push_token: 'ExpoPushToken[a]', device_id: 'd1-stale' },
+    { push_token: 'ExpoPushToken[a]', device_id: 'd1-current' },
+    { push_token: 'ExpoPushToken[b]', device_id: 'd2' },
+  ];
+  assertEquals(dedupTokensByPushToken(tokens).length, 2);
+});
+
+Deno.test('buildMessagesForRow does not double-send to a duplicated push_token', () => {
+  const tokens = [
+    { push_token: 'ExpoPushToken[a]', device_id: 'd1-stale' },
+    { push_token: 'ExpoPushToken[a]', device_id: 'd1-current' },
+  ];
+  const row = {
+    id: '1', user_id: 'u1', session_id: 's1',
+    kind: 'phase_autophagy', fire_at: new Date().toISOString(),
+    payload: { title: 'Autophagy activated!', body: '16h — magic', sessionId: 's1' },
+  };
+  const msgs = buildMessagesForRow(row, tokens);
+  assertEquals(msgs.length, 1);
+  assertEquals(msgs[0].to, 'ExpoPushToken[a]');
 });
 
 Deno.test('buildMessagesForRow returns empty when no tokens', () => {

@@ -58,13 +58,42 @@ export function shouldNotify(payload: WebhookPayload): boolean {
   return false;
 }
 
+/**
+ * Collapse tokens that share the same push_token but differ in device_id —
+ * which happens when a physical device's AsyncStorage was wiped (reinstall /
+ * "clear app data") and a fresh device_id was minted while Expo kept the
+ * same token. Without this, fan-out delivers duplicate pushes and the
+ * originator-skip below leaks "started on another device" back to the sender.
+ *
+ * When the origin device_id is among the duplicates, we keep that row as the
+ * canonical representative so the originator filter still removes it.
+ */
+export function dedupTokensByPushToken(
+  tokens: DeviceTokenRow[],
+  originDeviceId: string | null,
+): DeviceTokenRow[] {
+  const byToken = new Map<string, DeviceTokenRow>();
+  for (const t of tokens) {
+    const existing = byToken.get(t.push_token);
+    if (!existing) {
+      byToken.set(t.push_token, t);
+      continue;
+    }
+    if (originDeviceId && t.device_id === originDeviceId) {
+      byToken.set(t.push_token, t);
+    }
+  }
+  return Array.from(byToken.values());
+}
+
 export function buildExpoMessages(
   tokens: DeviceTokenRow[],
   args: MessageArgs,
 ): ExpoMessage[] {
+  const deduped = dedupTokensByPushToken(tokens, args.originDeviceId);
   const recipients = args.originDeviceId
-    ? tokens.filter((t) => t.device_id !== args.originDeviceId)
-    : tokens;
+    ? deduped.filter((t) => t.device_id !== args.originDeviceId)
+    : deduped;
 
   if (args.kind === 'end') {
     const isAutoEnd = args.endOrigin === 'system:auto-end';

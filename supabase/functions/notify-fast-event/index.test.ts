@@ -1,5 +1,5 @@
 import { assertEquals } from 'std/assert/mod.ts';
-import { buildExpoMessages, shouldNotify } from './index.ts';
+import { buildExpoMessages, dedupTokensByPushToken, shouldNotify } from './index.ts';
 
 Deno.test('shouldNotify: ignores DELETE events', () => {
   const payload = {
@@ -103,6 +103,38 @@ Deno.test('buildExpoMessages: title and body match brand voice', () => {
   assertEquals(messages[0].title, 'Fast started');
   assertEquals(messages[0].body, 'Your 16:8 fast is running on another device.');
   assertEquals((messages[0].data as any).sessionId, 'sess-1');
+});
+
+Deno.test('dedupTokensByPushToken: collapses duplicate push_tokens, prefers origin row', () => {
+  const tokens = [
+    { device_id: 'stale', push_token: 'ExpoPushToken[A]' },
+    { device_id: 'current', push_token: 'ExpoPushToken[A]' },
+    { device_id: 'tablet', push_token: 'ExpoPushToken[B]' },
+  ];
+  const deduped = dedupTokensByPushToken(tokens, 'current');
+  assertEquals(deduped.length, 2);
+  const aRow = deduped.find((t) => t.push_token === 'ExpoPushToken[A]');
+  assertEquals(aRow?.device_id, 'current');
+});
+
+Deno.test('buildExpoMessages: stale duplicate of originator does not leak push', () => {
+  // Same physical device, two device_tokens rows (stale + current). The
+  // originator-skip used to filter only the matching device_id, so the stale
+  // row would receive "started on another device" — this regression test
+  // pins the dedup fix.
+  const tokens = [
+    { device_id: 'stale', push_token: 'ExpoPushToken[same-device]' },
+    { device_id: 'current', push_token: 'ExpoPushToken[same-device]' },
+    { device_id: 'tablet', push_token: 'ExpoPushToken[other-device]' },
+  ];
+  const messages = buildExpoMessages(tokens, {
+    originDeviceId: 'current',
+    protocol: '16:8',
+    sessionId: 'sess-1',
+    kind: 'start',
+  });
+  assertEquals(messages.length, 1);
+  assertEquals(messages[0].to, 'ExpoPushToken[other-device]');
 });
 
 Deno.test('buildExpoMessages: end is a visible push', () => {

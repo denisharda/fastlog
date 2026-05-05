@@ -178,6 +178,7 @@ export default function HistoryScreen() {
   const [drawerSessions, setDrawerSessions] = useState<FastingSession[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [drawerDate, setDrawerDate] = useState<string | null>(null);
+  const [drawerEpoch, setDrawerEpoch] = useState(0);
 
   const allSessions = useMemo(
     () => sessionPages?.pages.flat() ?? [],
@@ -275,6 +276,7 @@ export default function HistoryScreen() {
     });
     setDrawerSessions(daySessions);
     setDrawerDate(dateString);
+    setDrawerEpoch(e => e + 1);
     setDrawerVisible(true);
   }
 
@@ -287,6 +289,7 @@ export default function HistoryScreen() {
     });
     setDrawerSessions([session]);
     setDrawerDate(null);
+    setDrawerEpoch(e => e + 1);
     setDrawerVisible(true);
   }
 
@@ -792,6 +795,7 @@ export default function HistoryScreen() {
       </ScrollView>
 
       <SessionDetailDrawer
+        key={drawerEpoch}
         visible={drawerVisible}
         sessions={drawerSessions}
         date={drawerDate}
